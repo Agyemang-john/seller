@@ -16,7 +16,7 @@ const SalesTrendChart = ({ data, isLoading, error, period, setPeriod }) => {
   return (
     <Box className="p-4 rounded-md mb-2 border border-gray-200">
       <Box className="flex justify-between items-center mb-4">
-        <Typography variant="h5" className="text-2xl font-bold" style={{ color: '#000' }}>
+        <Typography variant="h5" className="text-2xl font-bold">
           Sales Trends
         </Typography>
         <FormControl size="small">

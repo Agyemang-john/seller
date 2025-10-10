@@ -54,7 +54,7 @@ export async function createServerAxios() {
           if (!refreshToken) throw new Error('No refresh token');
           
           const refreshRes = await axios.post(
-            `${process.env.NEXT_PUBLIC_HOST}/api/jwt/refresh/`,
+            `${process.env.NEXT_PUBLIC_HOST}/api/jwt/refresh/vendor/`,
             { refresh: refreshToken },
             {
               headers: {

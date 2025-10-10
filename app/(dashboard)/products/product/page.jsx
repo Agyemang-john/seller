@@ -164,7 +164,6 @@ export default function ProductForm() {
   
       // Append main product image only if it's a File
       if (formData.image instanceof File) {
-        console.log("Appending image to FormData:", formData.image.name);
         submitData.append("image", formData.image);
       } else if (formData.image) {
         console.error("Unexpected formData.image:", formData.image);
@@ -172,7 +171,6 @@ export default function ProductForm() {
   
       // Append video only if it's a File
       if (formData.video instanceof File) {
-        console.log("Appending video to FormData:", formData.video.name);
         submitData.append("video", formData.video);
       }
   
@@ -182,13 +180,11 @@ export default function ProductForm() {
           ...v,
           image: null, // Always null in JSON
         }));
-        console.log("Variants for submit:", variantsForSubmit);
         submitData.append("variants", JSON.stringify(variantsForSubmit));
   
         // Append variant images from variants state
         variants.forEach((variant, index) => {
           if (variant.image instanceof File) {
-            console.log(`Appending variant_image_${index}:`, variant.image.name);
             submitData.append(`variant_image_${index}`, variant.image);
           }
         });
@@ -197,7 +193,6 @@ export default function ProductForm() {
       // Append product images
       const newImages = images.filter((img) => img.file instanceof File);
       newImages.forEach((img, index) => {
-        console.log(`Appending images[${index}]:`, img.file.name);
         submitData.append("images[]", img.file);
       });
   
@@ -206,18 +201,16 @@ export default function ProductForm() {
         const keepImages = images
           .filter((img) => img.id && !img.file)
           .map((img) => img.id);
-        console.log("keep_images:", keepImages);
         submitData.append("keep_images", JSON.stringify(keepImages));
       }
   
       // Log FormData contents
-      for (let [key, value] of submitData.entries()) {
-        console.log(`FormData ${key}:`, value instanceof File ? `[File: ${value.name}]` : value);
-      }
+      // for (let [key, value] of submitData.entries()) {
+      //   console.log(`FormData ${key}:`, value instanceof File ? `[File: ${value.name}]` : value);
+      // }
   
       let response;
       if (id) {
-        console.log("Submitting PUT request for product ID:", id);
         response = await axiosClient.put(`/api/v1/vendor/products/${id}/`, submitData, {
           headers: { "Content-Type": "multipart/form-data" },
         });

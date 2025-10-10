@@ -25,7 +25,9 @@ const baseQuery = fetchBaseQuery({
 		if (currency) {
 		headers.set('X-Currency', currency);  // Attach currency as a custom header
 		}
-	}
+
+		return headers;
+	},
 });
 const baseQueryWithReauth: BaseQueryFn<
 	string | FetchArgs,
@@ -36,12 +38,13 @@ const baseQueryWithReauth: BaseQueryFn<
 	let result = await baseQuery(args, api, extraOptions);
 
 	if (result.error && result.error.status === 401) {
+
 		if (!mutex.isLocked()) {
 			const release = await mutex.acquire();
 			try {
 				const refreshResult = await baseQuery(
 					{
-						url: '/jwt/refresh/',
+						url: '/jwt/refresh/vendor/',
 						method: 'POST',
 					},
 					api,

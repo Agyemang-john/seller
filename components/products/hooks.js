@@ -207,9 +207,9 @@ export const useProductForm = (id = null) => {
     if (field === "image") {
       validation = await validateImage(file, {
         maxSizeMB: 2,
-        minResolution: 800,
-        maxResolution: 1200,
-        mustBeSquare: true,
+        // minResolution: 700,
+        // maxResolution: 1200,
+        mustBeSquare: false,
         checkBackground: true,
       });
     } else if (field === "video") {
@@ -292,7 +292,6 @@ export const useProductForm = (id = null) => {
     setFieldOptions(options);
     setFormData((prev) => {
       const updated = { ...prev, delivery_options: options };
-      console.log('Updated formData (delivery_options):', updated);
       return updated;
     });
     setDeliveryError(error);

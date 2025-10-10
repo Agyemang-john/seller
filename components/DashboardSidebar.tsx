@@ -20,6 +20,7 @@ import AddCardIcon from '@mui/icons-material/AddCard';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ReviewsIcon from '@mui/icons-material/Reviews';
+import LogoutIcon from '@mui/icons-material/Logout';
 // import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
 import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
 import HelpCenterIcon from '@mui/icons-material/HelpCenter';
@@ -56,6 +57,7 @@ const mainListItems = [
 const secondaryListItems = [
   // { id: 'settings', text: 'Settings', icon: <SettingsRoundedIcon />, path: '/settings' },
   { id: 'about', text: 'About', icon: <InfoRoundedIcon />, path: '/about' },
+  { id: 'logout', text: 'logout', icon: <LogoutIcon />, path: '/logout' },
   // { id: 'feedback', text: 'Feedback', icon: <HelpRoundedIcon />, path: '/feedback' },
 ];
 

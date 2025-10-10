@@ -42,6 +42,7 @@ export default function LoginForm() {
       if (response.detail?.includes('OTP sent')) {
         // Set cookie for identifier (10-minute expiry)
         Cookies.set('otp_identifier', emailOrPhone);
+        toast.success(`An otp has been sent to ${emailOrPhone}`);
         router.push(`/auth/verify?redirect=${encodeURIComponent(redirectPath)}`);
       } else {
         dispatch(setAuth({}));
@@ -62,10 +63,7 @@ export default function LoginForm() {
         } else if (data.detail) {
           errorMsg = data.detail;
         }
-
-        if (errorMsg === 'Your account is not activated yet.') {
-          router.push('/auth/resend-activation');
-        } else if (errorMsg === 'OTP verification not required for this user.') {
+      if (errorMsg === 'OTP verification not required for this user.') {
           errorMsg = 'This portal is for vendors only. Please use the customer portal at www.negromart.com.';
         }
       }

@@ -1,61 +1,80 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const protectedRoutes = ['/dashboard'];
+const protectedRoutes = [
+  '/dashboard',
+  '/orders',
+  '/payment',
+  '/products',
+  '/profile',
+  '/reviews',
+  '/working-hours',
+  '/help',
+  '/about',
+];
 
 // Helper to decode JWT safely
 function decodeJWT(token: string) {
   try {
-    const payload = token.split('.')[1]; // header.payload.signature
-    const decoded = JSON.parse(Buffer.from(payload, 'base64').toString());
-    return decoded;
-  } catch (err) {
+    const payload = token.split('.')[1];
+    return JSON.parse(Buffer.from(payload, 'base64').toString());
+  } catch {
     return null;
   }
 }
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get('access')?.value;
+  const access = request.cookies.get('access')?.value;
+  const refresh = request.cookies.get('refresh')?.value;
 
-  const isProtected = protectedRoutes.some(route =>
+  const isProtected = protectedRoutes.some((route) =>
     request.nextUrl.pathname.startsWith(route)
   );
 
   if (isProtected) {
-    if (!token) {
-      // 🔐 No token → redirect to login
+    // ❌ No tokens at all → redirect
+    if (!access && !refresh) {
       const redirectUrl = new URL('/auth/login', request.url);
       redirectUrl.searchParams.set('redirect', request.nextUrl.pathname);
       return NextResponse.redirect(redirectUrl);
     }
 
-    // ✅ Decode token
-    const decoded = decodeJWT(token);
+    // ✅ If access exists, check expiry
+    if (access) {
+      const decoded = decodeJWT(access);
+      const now = Math.floor(Date.now() / 1000);
 
-    if (!decoded) {
-      const redirectUrl = new URL('/auth/login', request.url);
-      return NextResponse.redirect(redirectUrl);
+      if (!decoded) {
+        const redirectUrl = new URL('/auth/login', request.url);
+        return NextResponse.redirect(redirectUrl);
+      }
+
+      if (decoded.exp && decoded.exp < now) {
+        // ⏳ Access expired — allow if refresh exists
+        if (!refresh) {
+          const redirectUrl = new URL('/auth/login', request.url);
+          redirectUrl.searchParams.set('expired', 'true');
+          return NextResponse.redirect(redirectUrl);
+        }
+      }
+
+      // 👔 Vendor verification check
+      if (request.nextUrl.pathname.startsWith('/dashboard')) {
+        if (decoded.role !== 'vendor' || !decoded.is_verified_vendor) {
+          const redirectUrl = new URL('/not-verified', request.url);
+          return NextResponse.redirect(redirectUrl);
+        }
+      }
     }
 
-    const now = Math.floor(Date.now() / 1000);
-
-    // ⏳ Check expiry
-    if (decoded.exp && decoded.exp < now) {
-      const redirectUrl = new URL('/auth/login', request.url);
-      redirectUrl.searchParams.set('expired', 'true');
-      return NextResponse.redirect(redirectUrl);
+    if (!access && refresh) {
+      return NextResponse.next();
     }
-
-    // // 👔 Check role (only allow vendors for dashboard/checkout)
-    // if (request.nextUrl.pathname.startsWith('/dashboard') && decoded.role !== 'vendor') {
-    //   return NextResponse.redirect(new URL('/', request.url)); // or /403
-    // }
   }
 
   return NextResponse.next();
 }
 
-// 🧭 Apply middleware
 export const config = {
-  matcher: ['/dashboard/:path*'],
+  matcher: ['/dashboard', '/orders', '/payment', '/products', '/profile', '/reviews', '/working-hours', '/help', '/about'],
 };

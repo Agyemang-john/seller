@@ -1,20 +1,7 @@
 // app/layout.tsx
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import Provider from '@/redux/provider';
-import { Setup } from '@/utils';
 import Header from '@/components/ui/Header';
 import Footer from '@/components/ui/Footer';
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 
 export const metadata: Metadata = {
@@ -41,7 +28,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Negromart | Buy Black, Build Black Wealth",
     description: "Negromart is a Pan-African marketplace where Black-owned businesses connect with buyers worldwide. Shop authentic African products and support Black entrepreneurship.",
-    url: "https://www.negromart.com", // change to your actual domain
+    url: "https://seller.negromart.com", // change to your actual domain
     siteName: "Negromart",
     images: [
       {
@@ -63,19 +50,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <Provider>
-          <Setup />
-          <div className="min-h-screen bg-gray-100">
-            <Header />
-            {children}
-            <Footer />
-          </div> 
-        </Provider>
-      </body>
-    </html>
+    <>
+      <div className="min-h-screen bg-gray-100">
+        <Header />
+        {children}
+        <Footer />
+      </div> 
+    </>
   );
 }

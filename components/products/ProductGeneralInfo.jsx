@@ -111,7 +111,7 @@ const ProductGeneralInfo = ({
         />
 
         <FormControl fullWidth>
-            <InputLabel>Product Type</InputLabel>
+            <InputLabel>Product variant</InputLabel>
             <Select
               value={formData.variant}
               error={!!formErrors.variant}

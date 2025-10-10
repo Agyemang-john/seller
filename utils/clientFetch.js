@@ -56,7 +56,7 @@ export const createAxiosClient = () => {
           if (!refreshToken) throw new Error('No refresh token');
 
           const refreshResponse = await axios.post(
-            `${process.env.NEXT_PUBLIC_HOST}/api/jwt/refresh/`,
+            `${process.env.NEXT_PUBLIC_HOST}/api/jwt/refresh/vendor/`,
             { refresh: refreshToken },
             { withCredentials: true }
           );
@@ -64,7 +64,6 @@ export const createAxiosClient = () => {
           const newAccessToken = refreshResponse.data.access;
           if (!newAccessToken) throw new Error('No new access token');
 
-          Cookies.set('access', newAccessToken);
           originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
           axiosClient.defaults.headers['Authorization'] = `Bearer ${newAccessToken}`;
 

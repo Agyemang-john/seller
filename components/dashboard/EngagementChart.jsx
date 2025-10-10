@@ -20,7 +20,7 @@ const EngagementChart = ({ data, isLoading, error }) => {
 
   return (
     <Box className="p-4 border border-gray-200 rounded-md">
-      <Typography variant="h5" className="text-2xl font-bold text-center mb-4" style={{ color: '#2e2d2dff' }}>
+      <Typography variant="h5" className="text-2xl font-bold text-center mb-4">
         Customer Engagement
       </Typography>
       <BarChart

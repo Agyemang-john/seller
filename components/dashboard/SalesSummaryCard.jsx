@@ -17,27 +17,27 @@ const SalesSummaryCard = ({ data, isLoading, error }) => {
     { label: 'Cancellation Rate', value: `${data?.cancellation_rate?.toFixed(1)}%`, icon: <FaShoppingCart size={24} /> },
     { label: 'Refund Rate', value: `${data?.refund_rate?.toFixed(1)}%`, icon: <FaDollarSign size={24} /> },
     { label: 'On-Time Delivery', value: `${data?.on_time_delivery_rate?.toFixed(1)}%`, icon: <FaStar size={24} /> },
-    { label: 'Avg Rating', value: `${data?.avg_rating?.toFixed(1)}/5`, icon: <FaStar size={24} /> },
+    { label: 'Avg Rating', value: `${data?.avg_rating?.toFixed(1)}/5.0`, icon: <FaStar size={24} /> },
     { label: 'Total Views', value: data?.total_views, icon: <FaEye size={24} /> },
     { label: 'Wishlist Count', value: data?.wishlist_count, icon: <FaHeart size={24} /> },
   ];
 
   return (
     <Box className="p-4 border border-gray-200 rounded-md">
-      <Typography variant="h5" className="text-2xl font-bold text-center mb-6" style={{ color: '#000' }}>
-        Sales Summary
+      <Typography variant="h5" className="text-2xl font-bold text-center mb-6" >
+        Sales summary
       </Typography>
       <Grid container spacing={2}>
         {metrics.map((metric, index) => (
           <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
-            <Card className="shadow-lg hover:shadow-xl transition-shadow">
+            <Card className="hover:shadow-xl transition-shadow">
               <CardContent className="flex items-center space-x-4">
-                <Box className="text-black">{metric.icon}</Box>
+                <Box className="">{metric.icon}</Box>
                 <Box>
-                  <Typography variant="h6" className="font-semibold" style={{ color: '#000' }}>
+                  <Typography variant="h6" className="font-semibold" >
                     {metric.label}
                   </Typography>
-                  <Typography variant="body1" style={{ color: '#333' }}>
+                  <Typography variant="body1">
                     {metric.value}
                   </Typography>
                 </Box>

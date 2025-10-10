@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Box, Button, Typography, CircularProgress, Alert } from "@mui/material";
 import Swal from "sweetalert2";
-import axios from "axios";
 import { useSellerForm } from "../SellerFormContext";
 import { createAxiosClient } from '@/utils/clientFetch';
 
@@ -116,7 +115,7 @@ export default function Step4() {
         text: "Registration completed successfully.",
       }).then(() => {
         sessionStorage.removeItem("seller-form-data"); // Clear only after success
-        router.push("/dashboard");
+        router.push("/");
       });
     } catch (error) {
       Swal.fire({

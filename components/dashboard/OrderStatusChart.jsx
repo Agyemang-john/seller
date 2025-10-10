@@ -17,7 +17,7 @@ const OrderStatusChart = ({ data, isLoading, error }) => {
 
   return (
     <Box className="p-4 mb-2 rounded-md border border-gray-200">
-      <Typography variant="h5" className="text-2xl font-bold text-center mb-4" style={{ color: '#000' }}>
+      <Typography variant="h5" className="text-2xl font-bold text-center mb-4" >
         Order Status Distribution
       </Typography>
       <PieChart

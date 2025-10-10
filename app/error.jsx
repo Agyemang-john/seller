@@ -3,8 +3,7 @@ import Link from "next/link";
 
 export default function GlobalError({ error, reset }) {
   return (
-    <html>
-      <body>
+      <>
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-6">
           {/* Illustration / Icon */}
           <div className="mb-6">
@@ -38,7 +37,6 @@ export default function GlobalError({ error, reset }) {
             </Link>
           </div>
         </div>
-      </body>
-    </html>
+      </>
   );
 }

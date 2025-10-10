@@ -29,6 +29,7 @@ const LogoContainer = styled('div')({
   '& img': {
     maxHeight: 40,
   },
+  boxShadow: 'white'
 });
 
 export interface DashboardHeaderProps {
@@ -89,7 +90,7 @@ export default function DashboardHeader({
         >
           <Stack direction="row" alignItems="center">
             <Box sx={{ mr: 1 }}>{getMenuIcon(menuOpen)}</Box>
-            <Link href="/dashboard" style={{ textDecoration: 'none' }}>
+            <Link href={"/dashboard"} style={{ textDecoration: 'none' }}>
               <Stack direction="row" alignItems="center">
                 {logo ? <LogoContainer>{logo}</LogoContainer> : null}
                 {title ? (
