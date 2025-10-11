@@ -1,3 +1,4 @@
+'use client';
 
 import Main from './_components/Main';
 import PageContainer from '@/components/PageContainer';

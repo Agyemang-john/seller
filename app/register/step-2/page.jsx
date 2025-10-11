@@ -24,7 +24,7 @@ export default function Step2() {
       }
       try {
         const response = await axiosClient.get(
-          `/api/v1/vendor/location/autocomplete`,
+          `/api/v1/vendor/location/autocomplete/`,
           { params: { q: query } }
         );
         setSuggestions(response.data);
