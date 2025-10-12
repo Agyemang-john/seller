@@ -1,6 +1,7 @@
 export default function Head() {
   return (
     <>
+    <meta name="msvalidate.01" content="5DA71870689BE44E8BBAC87A7BF7461A" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
