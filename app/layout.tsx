@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://seller.negromart.com'),
   title: "Seller - Negromart | Buy Black, Build Black Wealth",
-  description: "Negromart is a Pan-African marketplace where Black-owned businesses connect with buyers worldwide. Shop authentic African products and support Black entrepreneurship.",
+  description: "Negromart is a marketplace where Black-owned businesses connect with buyers worldwide.",
   keywords: [
     "Negromart",
     "E-commerce",
@@ -39,8 +39,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Negromart | Buy Black, Build Black Wealth",
-    description: "Negromart is a Pan-African marketplace where Black-owned businesses connect with buyers worldwide. Shop authentic African products and support Black entrepreneurship.",
-    url: "https://www.negromart.com", // change to your actual domain
+    description: "Negromart is a marketplace where Black-owned businesses connect with buyers worldwide.",
+    url: "https://seller.negromart.com", // change to your actual domain
     siteName: "Negromart",
     images: [
       {

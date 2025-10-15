@@ -15,24 +15,44 @@ export default function Step2() {
   const router = useRouter();
   const [errors, setErrors] = useState({});
   const [suggestions, setSuggestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const fetchSuggestions = useCallback(
-    debounce(async (query) => {
+    debounce(async (query, retryCount = 0) => {
+      // Validate query length
       if (query.length < 3) {
         setSuggestions([]);
+        setError(null);
         return;
       }
+
+      setIsLoading(true);
+      setError(null);
+
       try {
         const response = await axiosClient.get(
-          `/api/v1/vendor/location/autocomplete/`,
+          `/api/v1/vendor/location/autocomplete`,
           { params: { q: query } }
         );
         setSuggestions(response.data);
+        setIsLoading(false);
       } catch (error) {
-        console.error("Error fetching suggestions:", error);
-        setSuggestions([]);
+        console.error('Error fetching suggestions:', error);
+
+        // Implement exponential backoff for retries (up to 3 attempts)
+        if (retryCount < 3) {
+          const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+          setTimeout(() => {
+            fetchSuggestions(query, retryCount + 1);
+          }, delay);
+        } else {
+          setError('Unable to fetch location suggestions. Please try again later.');
+          setSuggestions([]);
+          setIsLoading(false);
+        }
       }
-    }, 300),
+    }, 500), // Increased debounce delay to 500ms for better rate control
     []
   );
 
@@ -124,6 +144,8 @@ export default function Step2() {
         errors={errors}
         suggestions={suggestions}
         handleSuggestionClick={handleSuggestionClick}
+        isLoading={isLoading}
+        error={error} 
       />
       <Box display="flex" justifyContent="space-between" mt={3}>
         <Button onClick={handleBack}>Back</Button>

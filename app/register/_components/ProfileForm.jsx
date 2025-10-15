@@ -10,6 +10,8 @@ const ProfileSetupForm = ({
   errors,
   suggestions,
   handleSuggestionClick,
+  isLoading,
+  error
 }) => {
   useEffect(() => {
     const missingFiles = [];
@@ -105,7 +107,12 @@ const ProfileSetupForm = ({
         error={!!errors.address}
         helperText={errors.address}
         sx={{ mb: 2 }}
+        placeholder="Start typing to get location suggestions e.g.,'Bantama, Kumasi, Ghana'"
       />
+
+      {isLoading && <p>Loading suggestions...</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+
       {suggestions.length > 0 && (
         <Box sx={{ maxHeight: 200, overflowY: "auto", bgcolor: "background.paper", p: 1, borderRadius: 1, mb: 2 }}>
           {suggestions.map((suggestion, index) => (
