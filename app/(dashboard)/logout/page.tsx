@@ -1,3 +1,5 @@
+'use client'; 
+
 import * as React from 'react';
 import Logout from './_components/Logout';
 import PageContainer from '@/components/PageContainer';

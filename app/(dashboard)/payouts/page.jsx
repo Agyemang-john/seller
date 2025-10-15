@@ -1,3 +1,4 @@
+'use client';
 
 import PayoutList from './_components/PayoutList';
 import PageContainer from '@/components/PageContainer';

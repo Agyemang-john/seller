@@ -1,13 +1,21 @@
 'use client';
 
-import { Box } from '@mui/material';
 import OrderList from './_components/OrderList';
+import PageContainer from '@/components/PageContainer';
 
 export default function Page() {
+  const pageTitle = 'Orders';
+
 
   return (
-    <Box className='container' mt={4}>
-      <OrderList />
-    </Box>
+    <PageContainer
+          title={pageTitle}
+          breadcrumbs={[
+            { title: 'Home', path: '/dashboard' },
+            { title: pageTitle },
+          ]}
+        >
+          <OrderList />
+    </PageContainer>
   );
 }

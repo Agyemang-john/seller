@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
 import React from 'react';
-import { Container, Typography, Box, Button, Grid } from '@mui/material';
+import { Container, Typography, Box, Button } from '@mui/material';
 import { motion } from 'framer-motion';
 import { FaShoppingCart, FaUsers, FaRocket, FaHeart } from 'react-icons/fa';
 import Link from 'next/link';
@@ -26,15 +26,7 @@ const About = () => {
   };
 
   return (
-    <Box className="relative min-h-screen bg-white text-black">
-      {/* Hero Section with Gradient Overlay */}
-      <Box
-        className="absolute inset-0 -z-10"
-        style={{
-          background: 'linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(255,255,255,1) 100%)',
-        }}
-      />
-      <Container maxWidth="lg" className="py-16">
+      <Container className="py-10">
         <motion.div
           variants={containerVariants}
           initial="hidden"
@@ -46,7 +38,6 @@ const About = () => {
             <Typography
               variant="h1"
               className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-4"
-              style={{ color: '#000' }}
               aria-label="About Negromart"
             >
               Welcome to Negromart
@@ -54,7 +45,7 @@ const About = () => {
             <Typography
               variant="h5"
               className="text-lg sm:text-xl md:text-2xl text-center mb-8 max-w-3xl mx-auto"
-              style={{ color: '#333' }}
+              
             >
               Empowering Black entrepreneurs to thrive in the global marketplace with a platform built for success and community.
             </Typography>
@@ -67,19 +58,18 @@ const About = () => {
               whileHover="hover"
               className="flex justify-center mb-6"
             >
-              <FaUsers size={60} className="text-black" aria-hidden="true" />
+              <FaUsers size={60} className="" aria-hidden="true" />
             </motion.div>
             <Typography
               variant="h4"
               className="text-2xl sm:text-3xl font-semibold mb-4"
-              style={{ color: '#000' }}
             >
               Our Mission
             </Typography>
             <Typography
               variant="body1"
               className="text-base sm:text-lg max-w-4xl mx-auto"
-              style={{ color: '#333' }}
+              
             >
               Negromart is dedicated to uplifting Black-owned businesses by connecting sellers with a vibrant community of buyers who celebrate culture, quality, and authenticity. Our tools and insights empower you to grow, succeed, and make a lasting impact.
             </Typography>
@@ -92,19 +82,18 @@ const About = () => {
               whileHover="hover"
               className="flex justify-center mb-6"
             >
-              <FaShoppingCart size={60} className="text-black" aria-hidden="true" />
+              <FaShoppingCart size={60} className="" aria-hidden="true" />
             </motion.div>
             <Typography
               variant="h4"
               className="text-2xl sm:text-3xl font-semibold mb-4"
-              style={{ color: '#000' }}
             >
               Your Seller Dashboard
             </Typography>
             <Typography
               variant="body1"
               className="text-base sm:text-lg max-w-4xl mx-auto"
-              style={{ color: '#333' }}
+              
             >
               The Negromart Seller Dashboard is your all-in-one command center. Effortlessly manage products, track sales, analyze performance, and engage with customers. With intuitive tools and real-time analytics, we help you focus on building your brand.
             </Typography>
@@ -117,19 +106,18 @@ const About = () => {
               whileHover="hover"
               className="flex justify-center mb-6"
             >
-              <FaRocket size={60} className="text-black" aria-hidden="true" />
+              <FaRocket size={60} className="" aria-hidden="true" />
             </motion.div>
             <Typography
               variant="h4"
               className="text-2xl sm:text-3xl font-semibold mb-4"
-              style={{ color: '#000' }}
             >
               Why Choose Negromart?
             </Typography>
             <Typography
               variant="body1"
               className="text-base sm:text-lg max-w-4xl mx-auto"
-              style={{ color: '#333' }}
+              
             >
               Negromart is a movement celebrating Black excellence. Our platform offers a space where your business can shine, supported by streamlined inventory management, marketing tools, and a community that values your vision. Scale and succeed with us.
             </Typography>
@@ -142,19 +130,18 @@ const About = () => {
               whileHover="hover"
               className="flex justify-center mb-6"
             >
-              <FaHeart size={60} className="text-black" aria-hidden="true" />
+              <FaHeart size={60} className="" aria-hidden="true" />
             </motion.div>
             <Typography
               variant="h4"
               className="text-2xl sm:text-3xl font-semibold mb-4"
-              style={{ color: '#000' }}
             >
               Our Commitment
             </Typography>
             <Typography
               variant="body1"
               className="text-base sm:text-lg max-w-4xl mx-auto"
-              style={{ color: '#333' }}
+              
             >
               We are committed to fostering a thriving ecosystem for Black entrepreneurs. Negromart provides resources, support, and opportunities to help you succeed while celebrating the richness of Black culture and innovation.
             </Typography>
@@ -183,7 +170,6 @@ const About = () => {
           }}
         />
       </Container>
-    </Box>
   );
 };
 

@@ -1,29 +1,40 @@
 // app/vendor/products/page.jsx
+'use client';
+
+import { useEffect, useState } from 'react';
 import ProductList from '@/components/products/ProductList';
-import { createServerAxios } from "@/utils/serverFetch";
+import Swal from 'sweetalert2';
+import { createAxiosClient } from '@/utils/clientFetch';
 
-export const metadata = {
-  title: 'Products',
-  description: 'View and manage your store products. Add, update, or delete listings efficiently.',
-  keywords: ['negromart', 'dashboard', 'ecommerce', 'seller management'],
-  robots: 'noindex, nofollow', 
-};
 
-async function getProducts() {
-  try {
-    const axiosClient = await createServerAxios();
-    const response = await axiosClient.get(`/api/v1/vendor/products/`);
-    return response.data.products || response.data || [];
-  } catch (err) {
-    console.error('Error fetching products:', err.message);
-    return [];
+export default function ProductsPage() {
+  const axiosClient = createAxiosClient();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await axiosClient.get('/api/v1/vendor/products/');
+        setProducts(response.data.products || response.data || []);
+      } catch (err) {
+        console.error('Error fetching products:', err.message);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error loading products',
+          text: 'Please try again later.',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  if (loading) {
+    return <div className="p-6 text-center text-gray-500">Loading products...</div>;
   }
-}
 
-export default async function ProductsPage() {
-  const products = await getProducts();
-
-  return (
-      <ProductList products={products} />
-  );
+  return <ProductList products={products} />;
 }
