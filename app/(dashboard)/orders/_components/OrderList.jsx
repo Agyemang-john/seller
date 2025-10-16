@@ -1,6 +1,8 @@
+"use client";
+
 import { useState, useEffect, useCallback } from 'react';
 import { createAxiosClient } from '@/utils/clientFetch';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import EditIcon from '@mui/icons-material/Edit';
 
@@ -9,9 +11,19 @@ const INITIAL_PAGE_SIZE = 10;
 export default function OrderList() {
   const axiosClient = createAxiosClient();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(INITIAL_PAGE_SIZE);
+  // Initialize state from URL query parameters, with fallback for prerendering
+  const [page, setPage] = useState(() => {
+    if (!searchParams) return 0; // Fallback for prerendering
+    const pageParam = parseInt(searchParams.get('page'), 10);
+    return isNaN(pageParam) ? 0 : pageParam - 1; // Convert to 0-based index
+  });
+  const [pageSize, setPageSize] = useState(() => {
+    if (!searchParams) return INITIAL_PAGE_SIZE; // Fallback for prerendering
+    const sizeParam = parseInt(searchParams.get('page_size'), 10);
+    return isNaN(sizeParam) ? INITIAL_PAGE_SIZE : sizeParam;
+  });
   const [data, setData] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,17 +48,26 @@ export default function OrderList() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, pageSize, axiosClient]);
+  }, [page, pageSize]);
 
+  // Update URL and load data when page or pageSize changes
   useEffect(() => {
+    // Skip URL updates during prerendering (when router is not fully available)
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams({
+        page: (page + 1).toString(), // 1-based for URL
+        page_size: pageSize.toString(),
+      });
+      router.push(`?${params.toString()}`, { scroll: false });
+    }
     loadData();
-  }, []); // Include loadData in dependencies to re-run when page or pageSize changes
+  }, [page, pageSize, router]);
 
   const handleRefresh = useCallback(() => {
     if (!isLoading) {
       loadData();
     }
-  }, [isLoading, loadData]);
+  }, [isLoading]);
 
   const handleRowClick = useCallback((orderId) => {
     router.push(`/orders/${orderId}/detail`);
@@ -65,11 +86,11 @@ export default function OrderList() {
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 max-w-7xl">
       {/* Header Section */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Order List</h2>
+        <h2 className="text-2xl font-bold text-gray-600">Order List</h2>
         <button
           onClick={handleRefresh}
           disabled={isLoading}
-          className={`flex items-center px-4 py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed ${isLoading ? 'animate-pulse' : ''}`}
+          className={`flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed ${isLoading ? 'animate-pulse' : ''}`}
         >
           <RefreshIcon className="mr-2" />
           Refresh
@@ -92,7 +113,7 @@ export default function OrderList() {
                 {['ID', 'Order Number', 'Ordered On', 'Amount (GHS)', 'Payment Method', 'Customer', 'Status', 'Delivery Status', 'Actions'].map((header) => (
                   <th
                     key={header}
-                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6"
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider sm:px-6"
                   >
                     {header}
                   </th>
@@ -106,17 +127,17 @@ export default function OrderList() {
                   onClick={() => handleRowClick(row.id)}
                   className="hover:bg-gray-50 cursor-pointer transition"
                 >
-                  <td className="px-4 py-4 sm:px-6 text-sm text-gray-500">{row.id}</td>
-                  <td className="px-4 py-4 sm:px-6 text-sm text-gray-500">{row.order_number}</td>
-                  <td className="px-4 py-4 sm:px-6 text-sm text-gray-500">
+                  <td className="px-4 py-4 sm:px-6 text-sm text-gray-600">{row.id}</td>
+                  <td className="px-4 py-4 sm:px-6 text-sm text-gray-600">{row.order_number}</td>
+                  <td className="px-4 py-4 sm:px-6 text-sm text-gray-600">
                     {row.date_created ? new Date(row.date_created).toLocaleDateString() : ''}
                   </td>
-                  <td className="px-4 py-4 sm:px-6 text-sm text-gray-500">{row.grand_total}</td>
-                  <td className="px-4 py-4 sm:px-6 text-sm text-gray-500">{row.payment_method}</td>
-                  <td className="px-4 py-4 sm:px-6 text-sm text-gray-500">{row.user_email}</td>
-                  <td className="px-4 py-4 sm:px-6 text-sm text-gray-500">{row.status}</td>
-                  <td className="px-4 py-4 sm:px-6 text-sm text-gray-500">{row.vendor_delivery_status}</td>
-                  <td className="px-4 py-4 sm:px-6 text-sm text-gray-500">
+                  <td className="px-4 py-4 sm:px-6 text-sm text-gray-600">{row.grand_total}</td>
+                  <td className="px-4 py-4 sm:px-6 text-sm text-gray-600">{row.payment_method}</td>
+                  <td className="px-4 py-4 sm:px-6 text-sm text-gray-600">{row.user_email}</td>
+                  <td className="px-4 py-4 sm:px-6 text-sm text-gray-600">{row.status}</td>
+                  <td className="px-4 py-4 sm:px-6 text-sm text-gray-600">{row.vendor_delivery_status}</td>
+                  <td className="px-4 py-4 sm:px-6 text-sm text-gray-600">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -175,11 +196,11 @@ export default function OrderList() {
 
       {/* Empty State */}
       {data.length === 0 && !isLoading && (
-        <div className="flex flex-col items-center justify-center h-64 shadow-md rounded-lg">
+        <div className="flex flex-col items-center justify-center h-64 bg-white shadow-md rounded-lg">
           <p className="text-lg font-medium text-gray-500">No orders found</p>
           <button
             onClick={handleRefresh}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-700 transition"
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
           >
             Try Refreshing
           </button>

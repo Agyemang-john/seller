@@ -2,6 +2,7 @@
 
 import OrderList from './_components/OrderList';
 import PageContainer from '@/components/PageContainer';
+import { Suspense } from 'react';
 
 export default function Page() {
   const pageTitle = 'Orders';
@@ -15,7 +16,9 @@ export default function Page() {
             { title: pageTitle },
           ]}
         >
-          <OrderList />
+          <Suspense fallback={<div>...</div>}>
+            <OrderList />
+          </Suspense>
     </PageContainer>
   );
 }
