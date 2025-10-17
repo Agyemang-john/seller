@@ -52,7 +52,7 @@ export default function OtpForm() {
       Cookies.remove('otp_identifier');
       setMessage({ type: 'success', text: 'Logged in successfully!' });
       toast.success('Logged in successfully!');
-      router.push(redirectPath);
+      router.push(redirectPath || '/dashboard');
     } catch (err) {
       const status = err?.status;
       const data = err?.data || {};

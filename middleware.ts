@@ -32,14 +32,12 @@ export function middleware(request: NextRequest) {
   );
 
   if (isProtected) {
-    // ❌ No tokens at all → redirect
     if (!access && !refresh) {
       const redirectUrl = new URL('/auth/login', request.url);
-      redirectUrl.searchParams.set('redirect', request.nextUrl.pathname);
+      redirectUrl.searchParams.set('redirect', encodeURIComponent(request.nextUrl.pathname));
       return NextResponse.redirect(redirectUrl);
     }
 
-    // ✅ If access exists, check expiry
     if (access) {
       const decoded = decodeJWT(access);
       const now = Math.floor(Date.now() / 1000);
@@ -50,7 +48,6 @@ export function middleware(request: NextRequest) {
       }
 
       if (decoded.exp && decoded.exp < now) {
-        // ⏳ Access expired — allow if refresh exists
         if (!refresh) {
           const redirectUrl = new URL('/auth/login', request.url);
           redirectUrl.searchParams.set('expired', 'true');
@@ -58,7 +55,6 @@ export function middleware(request: NextRequest) {
         }
       }
 
-      // 👔 Vendor verification check
       if (request.nextUrl.pathname.startsWith('/dashboard')) {
         if (decoded.role !== 'vendor' || !decoded.is_verified_vendor) {
           const redirectUrl = new URL('/not-verified', request.url);
