@@ -20,8 +20,17 @@ export default function OtpForm() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect');
-  const redirectPath = redirect ? decodeURIComponent(redirect) : '/dashboard';
+  let redirect = searchParams.get('redirect');
+  if (redirect) {
+    try {
+      // Decode twice safely if needed
+      redirect = decodeURIComponent(decodeURIComponent(redirect));
+    } catch {
+      redirect = decodeURIComponent(redirect);
+    }
+  }
+
+  const redirectPath = redirect || '/dashboard';
 
   // Guard: Redirect to login if no identifier cookie
   useEffect(() => {
@@ -52,7 +61,7 @@ export default function OtpForm() {
       Cookies.remove('otp_identifier');
       setMessage({ type: 'success', text: 'Logged in successfully!' });
       toast.success('Logged in successfully!');
-      router.push(redirectPath || '/dashboard');
+      window.location.href = redirectPath || '/dashboard';
     } catch (err) {
       const status = err?.status;
       const data = err?.data || {};
