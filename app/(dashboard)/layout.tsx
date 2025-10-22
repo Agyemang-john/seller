@@ -8,15 +8,15 @@ export const metadata: Metadata = {
     default: 'Negromart Seller Dashboard - Negromart',
     template: '%s | Negromart Seller Dashboard', // For nested pages, e.g., "Orders | Ecommerce Seller Dashboard"
   },
-  description: 'Unlock powerful insights with your ecommerce seller dashboard. Track sales, manage inventory, monitor orders, and optimize performance to boost revenue.',
-  keywords: 'negromart seller dashboard, sales analytics, inventory management, order tracking, ecommerce tools, seller performance, Amazon Shopify dashboard',
+  description: 'Connecting you to global buyers. Sell millions of affordable products from around the world on NegroMart',
+  keywords: 'negromart seller dashboard, sales analytics',
   authors: [{ name: 'Negromart' }], // Customize with your brand
   creator: 'Negromart',
   publisher: 'Negromart',
   // Open Graph for social sharing (e.g., LinkedIn, Twitter)
   openGraph: {
     title: 'Negromart Seller Dashboard - Drive Sales Growth',
-    description: 'Access real-time ecommerce analytics, inventory alerts, and order insights to scale your online store effortlessly.',
+    description: 'Connecting you to global buyers. Sell millions of affordable products from around the world on NegroMart',
     url: 'https://seller.negromart.com/dashboard', // Replace with your actual domain
     siteName: 'Negromart',
     images: [
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Seller Dashboard - Negromart',
-    description: 'Monitor sales, inventory, and orders in one place. Perfect for growing your ecommerce business.',
+    description: 'Connecting you to global buyers. Sell millions of affordable products from around the world on NegroMart',
     images: ['https://negromart.com/favicon.png'], // Optional: Separate image for Twitter
     creator: '@negromart.llc', // Replace with your X handle
   },

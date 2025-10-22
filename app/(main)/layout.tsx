@@ -6,8 +6,8 @@ import Footer from '@/components/ui/Footer';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://seller.negromart.com'),
-  title: "Seller - Negromart | Buy Black, Build Black Wealth",
-  description: "Negromart is a Pan-African marketplace where Black-owned businesses connect with buyers worldwide. Shop authentic African products and support Black entrepreneurship.",
+  title: "Seller - Negromart | Wherever You Are, Sell With Ease",
+  description: "Connecting you to global buyers. Sell millions of affordable products from around the world on NegroMart",
   keywords: [
     "Negromart",
     "E-commerce",
@@ -26,8 +26,8 @@ export const metadata: Metadata = {
     icon: "/favicon.ico",
   },
   openGraph: {
-    title: "Negromart | Buy Black, Build Black Wealth",
-    description: "Negromart is a Pan-African marketplace where Black-owned businesses connect with buyers worldwide. Shop authentic African products and support Black entrepreneurship.",
+    title: "Negromart | Wherever You Are, Sell With Ease",
+    description: "Connecting you to global buyers. Sell millions of affordable products from around the world on NegroMart",
     url: "https://seller.negromart.com", // change to your actual domain
     siteName: "Negromart",
     images: [

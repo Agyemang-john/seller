@@ -3,9 +3,9 @@ import { Metadata } from "next";
 // Reusable metadata generator
 export const generateMetadata = (pageTitle: string, pageDescription: string): Metadata => {
   const siteName = "Negromart";
-  const defaultTitle = `${siteName} | Buy Black, Build Black Wealth`;
+  const defaultTitle = `${siteName} | Wherever You Are, Sell With Ease`;
   const defaultDescription =
-    "Negromart is a Pan-African marketplace where Black-owned businesses connect with buyers worldwide. Shop authentic African products and support Black entrepreneurship.";
+    "Connecting you to global buyers. Sell millions of affordable products from around the world on NegroMart";
 
   return {
     title: pageTitle ? `${pageTitle} | ${siteName}` : defaultTitle,
@@ -36,7 +36,7 @@ export const generateMetadata = (pageTitle: string, pageDescription: string): Me
           url: "/favicon.png",
           width: 1200,
           height: 630,
-          alt: "Negromart - Pan-African Marketplace",
+          alt: "Negromart - Marketplace",
         },
       ],
       locale: "en_US",
