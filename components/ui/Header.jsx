@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+// import { useRouter } from 'next/navigation';
+import AuthButtons from './AuthButtons';
+
 
 export default function Header() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const router = useRouter()
+  // const router = useRouter()
 
 
   return (
@@ -31,8 +33,7 @@ export default function Header() {
           <Link href="/" className="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition duration-300">Pricing</Link>
         </div>
         <div className="flex items-center space-x-4">
-          <button onClick={() => router.push('/auth/login') } className="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition duration-300">Log in</button>
-          <button onClick={() => router.push('/register') } className="bg-black text-white px-3 sm:px-4 py-1 sm:py-2 rounded-full hover:bg-gray-600 transition duration-300 animate-bounce">Sign up</button>
+          <AuthButtons />
         </div>
       </nav>
 
