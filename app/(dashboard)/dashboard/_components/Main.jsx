@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Box, Container, Button, CircularProgress } from '@mui/material';
+import { Box, Button, CircularProgress } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import useSWR from 'swr';
 import { createAxiosClient } from '@/utils/clientFetch';
@@ -74,8 +74,8 @@ export default function Dashboard() {
   };
 
   return (
-    <ErrorBoundary>
-      <Container className="min-h-screen py-5 relative">
+    <>
+      <Box className="py-5 relative">
         <Box justifyContent="space-between" mb={4}>
           <Box display="flex" gap={2} sx={{ mb: 1 }}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -131,7 +131,7 @@ export default function Dashboard() {
             backgroundSize: '30px 30px',
           }}
         />
-      </Container>
-    </ErrorBoundary>
+      </Box>
+    </>
   );
 }

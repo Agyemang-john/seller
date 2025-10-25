@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { Box, Typography, FormControl, Select, MenuItem } from '@mui/material';
 
@@ -9,9 +9,20 @@ const SalesTrendChart = ({ data, isLoading, error, period, setPeriod }) => {
   if (error) return <Typography color="error">{error}</Typography>;
   if (!data || data.length === 0) return <Typography>No data available</Typography>;
 
-  const xAxis = data?.map(item => new Date(item.date));
-  const revenueSeries = data?.map(item => item.revenue);
-  const ordersSeries = data?.map(item => item.orders);
+  // Validate and filter data
+  const validData = data.filter(
+    item =>
+      item.date &&
+      !isNaN(new Date(item.date).getTime()) && // Ensure valid date
+      typeof item.revenue === 'number' && // Ensure revenue is a number
+      typeof item.orders === 'number' // Ensure orders is a number
+  );
+
+  if (validData.length === 0) return <Typography>No valid data available</Typography>;
+
+  const xAxis = validData.map(item => new Date(item.date));
+  const revenueSeries = validData.map(item => item.revenue);
+  const ordersSeries = validData.map(item => item.orders);
 
   return (
     <Box className="p-4 rounded-md mb-2 border border-gray-200">

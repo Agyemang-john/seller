@@ -18,7 +18,7 @@ export const createAxiosClient = () => {
   // Request Interceptor
   axiosClient.interceptors.request.use(
     (config) => {
-      const accessToken = Cookies.get('access');
+      const accessToken = Cookies.get('vendor_access');
       const guestCart = Cookies.get('guest_cart');
       const currency = Cookies.get('currency');
       const recentlyViewed = Cookies.get('recently_viewed');
@@ -52,17 +52,13 @@ export const createAxiosClient = () => {
         originalRequest._retry = true;
 
         try {
-          const refreshToken = Cookies.get('refresh');
-          if (!refreshToken) throw new Error('No refresh token');
-
           const refreshResponse = await axios.post(
             `${process.env.NEXT_PUBLIC_HOST}/api/jwt/refresh/vendor/`,
-            { refresh: refreshToken },
             { withCredentials: true }
           );
 
-          const newAccessToken = refreshResponse.data.access;
-          if (!newAccessToken) throw new Error('No new access token');
+          const newAccessToken = refreshResponse.data.vendor_access;
+          if (!newAccessToken) throw new Error('No new vendor access token');
 
           originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
           axiosClient.defaults.headers['Authorization'] = `Bearer ${newAccessToken}`;

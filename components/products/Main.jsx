@@ -258,7 +258,7 @@ const handleSubmit = async (event) => {
 };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ padding: 1,width: "100%" }}>
+    <Box component="form" onSubmit={handleSubmit} sx={{ padding: 0,width: "100%" }}>
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, lg: 12, md: 12 }} className="w-full">
           <Card>

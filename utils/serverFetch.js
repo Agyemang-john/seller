@@ -7,7 +7,7 @@ import { cookies } from 'next/headers';
 // Server-side instance creator
 export async function createServerAxios() {
   const cookieStore = cookies();
-  const accessToken = (await cookieStore).get('access')?.value;
+  const accessToken = (await cookieStore).get('vendor_access')?.value;
   const guestCart = (await cookieStore).get('guest_cart')?.value;
   const currency = (await cookieStore).get('currency')?.value;
 
@@ -50,9 +50,7 @@ export async function createServerAxios() {
         originalRequest._retry = true;
         
         try {
-          const refreshToken = (await cookieStore).get('refresh')?.value;
-          if (!refreshToken) throw new Error('No refresh token');
-          
+          const refreshToken = (await cookieStore).get('vendor_refresh')?.value;          
           const refreshRes = await axios.post(
             `${process.env.NEXT_PUBLIC_HOST}/api/jwt/refresh/vendor/`,
             { refresh: refreshToken },
@@ -64,7 +62,7 @@ export async function createServerAxios() {
               withCredentials: true,
             }
           );
-          const newAccessToken = refreshRes.data.access;
+          const newAccessToken = refreshRes.data.vendor_access;
           if (!newAccessToken) throw new Error('No new access token');
 
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;

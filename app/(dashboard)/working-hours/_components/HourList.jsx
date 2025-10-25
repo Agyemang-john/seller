@@ -72,7 +72,7 @@ const OpeningHoursList = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 w-full">
+    <div className="mx-auto p-0 w-full">
       <div className="flex justify-between items-center mb-6 p-4 rounded-lg shadow-sm">
         <h4 className="text-xl font-bold">Opening Hours</h4>
         <button
@@ -96,7 +96,7 @@ const OpeningHoursList = () => {
           <p className="mt-4 text-gray-600 text-lg">No opening hours set yet</p>
         </div>
       ) : (
-        <div className="shadow-md rounded-lg overflow-hidden w-full">
+        <div className="shadow-md rounded-lg overflow-scroll w-full">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="">
               <tr>

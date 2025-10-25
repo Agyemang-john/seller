@@ -11,21 +11,21 @@ const authApiSlice = apiSlice.injectEndpoints({
     }),
     otpVerify: builder.mutation({
       query: ({ email, otp }) => ({
-        url: '/jwt/otp-verify/',
+        url: '/jwt/otp-verify/vendor/',
         method: 'POST',
         body: { email, otp },
       }),
     }),
 	otpResend: builder.mutation({
 	  query: (data) => ({
-		url: '/jwt/otp-resend/',
+		url: '/jwt/otp-resend/vendor/',
 		method: 'POST',
 		body: data,
 	  }),
 	}),
     verify: builder.mutation({
       query: () => ({
-        url: '/jwt/verify/',
+        url: '/jwt/verify/vendor/',
         method: 'POST',
       }),
     }),
@@ -37,7 +37,7 @@ const authApiSlice = apiSlice.injectEndpoints({
     }),
     logout: builder.mutation({
       query: () => ({
-        url: '/logout/',
+        url: '/vendor/logout/',
         method: 'POST',
         credentials: 'include',
       }),

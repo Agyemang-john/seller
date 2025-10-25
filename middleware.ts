@@ -24,22 +24,22 @@ function decodeJWT(token: string) {
 }
 
 export function middleware(request: NextRequest) {
-  const access = request.cookies.get('access')?.value;
-  const refresh = request.cookies.get('refresh')?.value;
+  const vendorAccess = request.cookies.get('vendor_access')?.value;
+  const vendorRefresh = request.cookies.get('vendor_refresh')?.value;
 
   const isProtected = protectedRoutes.some((route) =>
     request.nextUrl.pathname.startsWith(route)
   );
 
   if (isProtected) {
-    if (!access && !refresh) {
+    if (!vendorAccess && !vendorRefresh) {
       const redirectUrl = new URL('/auth/login', request.url);
       redirectUrl.searchParams.set('redirect', encodeURIComponent(request.nextUrl.pathname));
       return NextResponse.redirect(redirectUrl);
     }
 
-    if (access) {
-      const decoded = decodeJWT(access);
+    if (vendorAccess) {
+      const decoded = decodeJWT(vendorAccess);
       const now = Math.floor(Date.now() / 1000);
 
       if (!decoded) {
@@ -48,7 +48,7 @@ export function middleware(request: NextRequest) {
       }
 
       if (decoded.exp && decoded.exp < now) {
-        if (!refresh) {
+        if (!vendorRefresh) {
           const redirectUrl = new URL('/auth/login', request.url);
           redirectUrl.searchParams.set('expired', 'true');
           return NextResponse.redirect(redirectUrl);
@@ -63,7 +63,7 @@ export function middleware(request: NextRequest) {
       }
     }
 
-    if (!access && refresh) {
+    if (!vendorAccess && vendorRefresh) {
       return NextResponse.next();
     }
   }

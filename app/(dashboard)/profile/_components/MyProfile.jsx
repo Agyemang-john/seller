@@ -207,7 +207,7 @@ export default function MyProfile() {
   return (
     <Box sx={{ flex: 1, width: '100%' }}>
       <Stack
-        spacing={4}
+        spacing={2}
         sx={{
           // maxWidth: '800px',
           mx: 'auto',

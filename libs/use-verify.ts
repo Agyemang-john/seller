@@ -4,7 +4,6 @@ import { useEffect } from 'react';
 import { useAppDispatch } from '@/redux/hooks';
 import { setAuth, finishInitialLoad, logout } from '@/redux/features/authSlice';
 import { useVerifyMutation, useRefreshMutation } from '@/redux/features/authApiSlice';
-import Cookies from 'js-cookie';
 
 export default function useVerify() {
   const dispatch = useAppDispatch();

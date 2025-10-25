@@ -293,7 +293,7 @@ const PaymentForm = () => {
         { title: pageTitle },
       ]}
     >
-      <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen py-8 px-0 sm:px-0 lg:px-8">
         <div className="max-w-2xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: -20 }}

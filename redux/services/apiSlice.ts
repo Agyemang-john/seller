@@ -13,7 +13,7 @@ const baseQuery = fetchBaseQuery({
 	baseUrl: `${process.env.NEXT_PUBLIC_HOST}/api`,
 	credentials: 'include',
 	prepareHeaders: (headers) => {
-		const accessToken = Cookies.get('access');
+		const accessToken = Cookies.get('vendor_access');
 		const guestCart = Cookies.get('guest_cart');
 		const currency = Cookies.get('currency');
 		if (accessToken) {

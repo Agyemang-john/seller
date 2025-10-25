@@ -83,7 +83,7 @@ export default function OrderList() {
   };
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 max-w-7xl">
+    <div className="container mx-auto px-0 sm:px-6 lg:px-0 py-6 max-w-7xl">
       {/* Header Section */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-600">Order List</h2>
