@@ -1,6 +1,5 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import React, { Suspense } from 'react';
 import { Box, CircularProgress, Typography } from '@mui/material';
 

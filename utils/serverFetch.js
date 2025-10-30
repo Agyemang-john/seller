@@ -62,11 +62,8 @@ export async function createServerAxios() {
               withCredentials: true,
             }
           );
-          const newAccessToken = refreshRes.data.vendor_access;
-          if (!newAccessToken) throw new Error('No new access token');
-
+          const newAccessToken = refreshRes.data.access;
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-
           instance.defaults.headers.Authorization = `Bearer ${newAccessToken}`;
 
           return instance(originalRequest);

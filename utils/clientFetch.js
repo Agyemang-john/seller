@@ -54,11 +54,11 @@ export const createAxiosClient = () => {
         try {
           const refreshResponse = await axios.post(
             `${process.env.NEXT_PUBLIC_HOST}/api/jwt/refresh/vendor/`,
+            {},
             { withCredentials: true }
           );
 
-          const newAccessToken = refreshResponse.data.vendor_access;
-          if (!newAccessToken) throw new Error('No new vendor access token');
+          const newAccessToken = refreshResponse.data.access;
 
           originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
           axiosClient.defaults.headers['Authorization'] = `Bearer ${newAccessToken}`;
