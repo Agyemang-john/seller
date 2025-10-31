@@ -6,7 +6,7 @@ import Footer from '@/components/ui/Footer';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://seller.negromart.com'),
-  title: "Seller - Negromart | Wherever You Are, Sell With Ease",
+  title: "Seller | Wherever You Are, Sell With Ease",
   description: "Connecting you to global buyers. Sell millions of affordable products from around the world on NegroMart",
   keywords: [
     "Negromart",
@@ -26,16 +26,16 @@ export const metadata: Metadata = {
     icon: "/favicon.ico",
   },
   openGraph: {
-    title: "Negromart | Wherever You Are, Sell With Ease",
+    title: "Seller | Wherever You Are, Sell With Ease",
     description: "Connecting you to global buyers. Sell millions of affordable products from around the world on NegroMart",
     url: "https://seller.negromart.com", // change to your actual domain
-    siteName: "Negromart",
+    siteName: "Negromart Seller",
     images: [
       {
-        url: "/favicon.png", // You can generate an Open Graph image
+        url: "/openGraph/graph-1488.png", // You can generate an Open Graph image
         width: 1200,
         height: 630,
-        alt: "Negromart - Pan-African Marketplace",
+        alt: "Negromart - Marketplace",
       }
     ],
     locale: "en_US",
