@@ -22,6 +22,6 @@ export default function robots(): MetadataRoute.Robots {
       },
     ],
     sitemap: 'https://seller.negromart.com/sitemap.xml',
-    host: 'https://seller.negromart.com',
+    // host: 'https://seller.negromart.com',
   };
 }
