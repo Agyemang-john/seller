@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     "Sustainable African products"
   ],
   icons: {
-    icon: "/favicon.ico",
+    icon: "/favicon-new.ico",
   },
   openGraph: {
     title: "Seller | Wherever You Are, Sell With Ease",

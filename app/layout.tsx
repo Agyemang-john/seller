@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     "Sustainable African products"
   ],
   icons: {
-    icon: "/favicon.ico",
+    icon: "/favicon-new.ico",
   },
   openGraph: {
     title: "Seller | Wherever You Are, Sell With Ease",
@@ -68,7 +68,7 @@ export default function RootLayout({
         
         {/* Bing */}
         <meta name="msvalidate.01" content="347ABCC9900620D6D0780EB419BA2B57" /> 
-        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/favicon-new.ico" sizes="any" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

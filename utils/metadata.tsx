@@ -11,8 +11,8 @@ export const generateMetadata = (pageTitle: string, pageDescription: string): Me
     title: pageTitle ? `${pageTitle} | ${siteName}` : defaultTitle,
     description: pageDescription || defaultDescription,
     icons: {
-      icon: "/favicon.ico",
-      shortcut: "/favicon.ico",
+      icon: "/favicon-new.ico",
+      shortcut: "/favicon-new.ico",
     },
     keywords: [
       "Negromart",
