@@ -38,6 +38,7 @@ export async function createServerAxios() {
         currency: currency,
       };
     }
+    config.headers["X-User-Type"] = "vendor";
     return config;
   });
 

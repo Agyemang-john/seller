@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "@ckeditor/ckeditor5-build-classic/build/styles/content.css";
+
 
 :root {
   --background: #ffffff;

@@ -11,10 +11,6 @@ const CKEditor = dynamic(
   { ssr: false }
 );
 
-// const ClassicEditor = dynamic(
-//   () => import('@ckeditor/ckeditor5-build-classic'),
-//   { ssr: false }
-// );
 
 const Editor = ({ label, value, onChange, placeholder }) => {
   return (

@@ -26,6 +26,7 @@ const baseQuery = fetchBaseQuery({
 		headers.set('X-Currency', currency);  // Attach currency as a custom header
 		}
 
+		headers.set("X-User-Type", "vendor");
 		return headers;
 	},
 });

@@ -35,7 +35,7 @@ export const createAxiosClient = () => {
       if (recentlyViewed) {
         config.headers['X-Recently-Viewed'] = recentlyViewed;
       }
-
+      config.headers["X-User-Type"] = "vendor";
       config.headers['X-SSR-Refresh'] = 'true';
       return config;
     },
