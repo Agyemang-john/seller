@@ -20,7 +20,6 @@ export default function Step2() {
 
   const fetchSuggestions = useCallback(
     debounce(async (query, retryCount = 0) => {
-      // Validate query length
       if (query.length < 3) {
         setSuggestions([]);
         setError(null);
@@ -31,30 +30,48 @@ export default function Step2() {
       setError(null);
 
       try {
-        const response = await axiosClient.get(
-          `/api/v1/vendor/location/autocomplete`,
-          { params: { q: query } }
+        const response = await axios.get(
+          "https://nominatim.openstreetmap.org/search",
+          {
+            params: {
+              q: query,
+              format: "json",
+              addressdetails: 1,
+              limit: 10,      // Number of suggestions returned
+            },
+            headers: {
+              "Accept-Language": "en",       // Return results in English
+            }
+          }
         );
-        setSuggestions(response.data);
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error fetching suggestions:', error);
 
-        // Implement exponential backoff for retries (up to 3 attempts)
+        const formatted = response.data.map(item => ({
+          display_name: item.display_name,
+          lat: item.lat,
+          lon: item.lon,
+        }));
+
+        setSuggestions(formatted);
+        setIsLoading(false);
+
+      } catch (error) {
+        console.error("Error fetching suggestions:", error);
+
         if (retryCount < 3) {
           const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
           setTimeout(() => {
             fetchSuggestions(query, retryCount + 1);
           }, delay);
         } else {
-          setError('Unable to fetch location suggestions. Please try again later.');
+          setError("Unable to fetch location suggestions. Please try again later.");
           setSuggestions([]);
           setIsLoading(false);
         }
       }
-    }, 500), // Increased debounce delay to 500ms for better rate control
+    }, 500),
     []
   );
+
 
   const handleSuggestionClick = (suggestion) => {
     setFormData((prev) => ({
