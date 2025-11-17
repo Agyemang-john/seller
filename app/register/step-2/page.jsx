@@ -3,14 +3,14 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useCallback } from "react";
-import { createAxiosClient } from '@/utils/clientFetch';
+// import { createAxiosClient } from '@/utils/clientFetch';
 import { Box, Button, Divider, Link } from "@mui/material";
 import ProfileSetupForm from "../_components/ProfileForm";
 import { useSellerForm } from "../SellerFormContext";
 import debounce from "lodash.debounce";
 
 export default function Step2() {
-  const axiosClient = createAxiosClient();
+  // const axiosClient = createAxiosClient();
   const { formData, setFormData } = useSellerForm();
   const router = useRouter();
   const [errors, setErrors] = useState({});
