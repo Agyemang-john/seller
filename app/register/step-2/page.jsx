@@ -8,6 +8,7 @@ import { Box, Button, Divider, Link } from "@mui/material";
 import ProfileSetupForm from "../_components/ProfileForm";
 import { useSellerForm } from "../SellerFormContext";
 import debounce from "lodash.debounce";
+import axios from "axios";
 
 export default function Step2() {
   // const axiosClient = createAxiosClient();
