@@ -259,7 +259,7 @@ export default function OrderDetailPage({ id }) {
                       alt={product.product.title}
                     />
                   </TableCell>
-                  <TableCell>{product.product.title}</TableCell>
+                  <TableCell >{product.product.title}</TableCell>
                   <TableCell>
                     {product.variant 
                       ? [product.variant.size_name, product.variant.color_name].filter(Boolean).join(' / ') || 'None'

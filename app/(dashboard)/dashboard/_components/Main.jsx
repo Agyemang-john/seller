@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Box, Button, CircularProgress } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import useSWR from 'swr';
@@ -15,67 +15,142 @@ import Grid from '@mui/material/Grid';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
+// ----------------------------
+// Safe Fetcher (No Crashes)
+// ----------------------------
 const fetcher = async (url) => {
+  if (!url) return null; // prevent SWR crash
+
   const axiosClient = createAxiosClient();
-  const response = await axiosClient.get(url);
-  return response.data;
+  try {
+    const response = await axiosClient.get(url);
+    return response.data;
+  } catch (err) {
+    console.error("Fetcher Error:", err?.response || err);
+    throw err; // SWR will handle
+  }
 };
 
-function ErrorBoundary({ children }) {
-  return (
-    <React.Fragment>
-      {children}
-    </React.Fragment>
-  );
+// ----------------------------
+// REAL ERROR BOUNDARY
+// ----------------------------
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, info) {
+    console.error("Component Error:", error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Box p={3} bgcolor="#fee" borderRadius={2}>
+          <strong>Error loading component.</strong>
+          <pre style={{ whiteSpace: "pre-wrap" }}>
+            {this.state.error?.message}
+          </pre>
+        </Box>
+      );
+    }
+    return this.props.children;
+  }
 }
 
+// ----------------------------
+// MAIN DASHBOARD
+// ----------------------------
 export default function Dashboard() {
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [period, setPeriod] = useState('day');
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Construct salesTrendUrl with proper query parameter concatenation
-  const salesTrendUrl = `/api/v1/vendor/sales-trend/?period=${period}${
-    startDate && endDate
-      ? `&start_date=${startDate.toISOString()}&end_date=${endDate.toISOString()}&refresh=${refreshKey}`
-      : `&refresh=${refreshKey}`
-  }`;
+  // -----------------------------------
+  // SAFE DATE → ISO STRING
+  // -----------------------------------
+  const toISO = (d) => {
+    if (!d || !d.isValid?.()) return null;
+    return d.toISOString();
+  };
 
+  const startISO = toISO(startDate);
+  const endISO = toISO(endDate);
+
+  // Prevent invalid date range
+  const invalidRange = startISO && endISO && new Date(endISO) < new Date(startISO);
+
+  // -----------------------------------
+  // BUILD URL SAFELY
+  // -----------------------------------
+  const salesTrendUrl = invalidRange
+    ? null // prevent backend error
+    : `/api/v1/vendor/sales-trend/?period=${period}` +
+      `&refresh=${refreshKey}` +
+      (startISO && endISO ? `&start_date=${startISO}&end_date=${endISO}` : "");
+
+  // -----------------------------------
+  // SWR CALLS (Safe)
+  // -----------------------------------
   const { data: salesSummary, error: salesSummaryError, isLoading: salesSummaryLoading } = useSWR(
     `/api/v1/vendor/sales-summary/?refresh=${refreshKey}`,
     fetcher
   );
+
   const { data: salesTrend, error: salesTrendError, isLoading: salesTrendLoading } = useSWR(
     salesTrendUrl,
     fetcher
   );
+
   const { data: topProducts, error: topProductsError, isLoading: topProductsLoading } = useSWR(
     `/api/v1/vendor/top-products/?refresh=${refreshKey}`,
     fetcher
   );
+
   const { data: orderStatus, error: orderStatusError, isLoading: orderStatusLoading } = useSWR(
     `/api/v1/vendor/order-status/?refresh=${refreshKey}`,
     fetcher
   );
+
   const { data: engagement, error: engagementError, isLoading: engagementLoading } = useSWR(
     `/api/v1/vendor/engagement/?refresh=${refreshKey}`,
     fetcher
   );
+
   const { data: delivery, error: deliveryError, isLoading: deliveryLoading } = useSWR(
     `/api/v1/vendor/delivery-performance/?refresh=${refreshKey}`,
     fetcher
   );
 
-  const isAnyLoading = salesSummaryLoading || salesTrendLoading || topProductsLoading || orderStatusLoading || engagementLoading || deliveryLoading;
+  const isAnyLoading =
+    salesSummaryLoading ||
+    salesTrendLoading ||
+    topProductsLoading ||
+    orderStatusLoading ||
+    engagementLoading ||
+    deliveryLoading;
 
-  const handleRefresh = () => {
-    setRefreshKey(prev => prev + 1);
-  };
+  // -----------------------------------
+  // SAFE REFRESH
+  // Prevent spam clicking
+  // -----------------------------------
+  const handleRefresh = useCallback(() => {
+    if (!isAnyLoading) {
+      setRefreshKey((prev) => prev + 1);
+    }
+  }, [isAnyLoading]);
 
   return (
     <>
       <Box className="py-5 relative">
+        
+        {/* FILTERS + REFRESH */}
         <Box justifyContent="space-between" mb={4}>
           <Box display="flex" gap={2} sx={{ mb: 1 }}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -93,37 +168,61 @@ export default function Dashboard() {
               />
             </LocalizationProvider>
           </Box>
-          <Button variant="contained" onClick={handleRefresh} disabled={isAnyLoading}>
+
+          <Button variant="contained" onClick={handleRefresh} disabled={isAnyLoading || invalidRange}>
             {isAnyLoading ? <CircularProgress size={24} /> : 'Refresh Data'}
           </Button>
+
+          {invalidRange && (
+            <Box color="error.main" mt={1}>End date cannot be earlier than start date</Box>
+          )}
         </Box>
 
+        {/* GLOBAL LOADER */}
         {isAnyLoading && (
           <Box display="flex" justifyContent="center" my={4}>
             <CircularProgress />
           </Box>
         )}
 
-        <SalesSummaryCard data={salesSummary} isLoading={salesSummaryLoading} error={salesSummaryError} />
+        {/* DASHBOARD SECTIONS */}
+        <ErrorBoundary>
+          <SalesSummaryCard data={salesSummary} isLoading={salesSummaryLoading} error={salesSummaryError} />
+        </ErrorBoundary>
+
         <Grid container spacing={2}>
           <Grid sx={{ my: 2 }} size={{ xs: 12, sm: 12, md: 8, lg: 8 }}>
-            <SalesTrendChart
-              data={salesTrend}
-              isLoading={salesTrendLoading}
-              error={salesTrendError}
-              period={period}
-              setPeriod={setPeriod}
-            />
-            <TopProductsChart data={topProducts} isLoading={topProductsLoading} error={topProductsError} />
+            <ErrorBoundary>
+              <SalesTrendChart
+                data={salesTrend}
+                isLoading={salesTrendLoading}
+                error={salesTrendError}
+                period={period}
+                setPeriod={setPeriod}
+              />
+            </ErrorBoundary>
+
+            <ErrorBoundary>
+              <TopProductsChart data={topProducts} isLoading={topProductsLoading} error={topProductsError} />
+            </ErrorBoundary>
           </Grid>
+
           <Grid sx={{ my: 2 }} size={{ xs: 12, sm: 12, md: 4, lg: 4 }}>
-            <OrderStatusChart data={orderStatus} isLoading={orderStatusLoading} error={orderStatusError} />
-            <DeliveryPerformanceChart data={delivery} isLoading={deliveryLoading} error={deliveryError} />
+            <ErrorBoundary>
+              <OrderStatusChart data={orderStatus} isLoading={orderStatusLoading} error={orderStatusError} />
+            </ErrorBoundary>
+
+            <ErrorBoundary>
+              <DeliveryPerformanceChart data={delivery} isLoading={deliveryLoading} error={deliveryError} />
+            </ErrorBoundary>
           </Grid>
         </Grid>
 
-        <EngagementChart data={engagement} isLoading={engagementLoading} error={engagementError} />
+        <ErrorBoundary>
+          <EngagementChart data={engagement} isLoading={engagementLoading} error={engagementError} />
+        </ErrorBoundary>
 
+        {/* BACKGROUND EFFECT */}
         <Box
           className="absolute top-0 left-0 w-full h-full -z-10 opacity-5"
           style={{

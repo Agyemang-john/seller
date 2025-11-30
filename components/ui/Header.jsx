@@ -52,10 +52,10 @@ export default function Header() {
           </button>
           <nav className="flex flex-col space-y-4">
             <Link href="/register" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Start</Link>
-            <Link href="/grow" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Grow</Link>
-            <Link href="/services" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Services</Link>
-            <Link href="/resources" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Resources</Link>
-            <Link href="/pricing" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Pricing</Link>
+            <Link href="/" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Grow</Link>
+            <Link href="/" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Services</Link>
+            <Link href="/" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Resources</Link>
+            <Link href="/" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Pricing</Link>
           </nav>
         </div>
       </div>

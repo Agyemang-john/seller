@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Provider from '@/redux/provider';
 import { Setup } from '@/utils';
 import "./globals.css";
+import { Toaster } from 'react-hot-toast';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,7 +36,7 @@ export const metadata: Metadata = {
     "Sustainable African products"
   ],
   icons: {
-    icon: "/favicon-new.ico",
+    icon: "/favicon.ico",
   },
   openGraph: {
     title: "Seller | Wherever You Are, Sell With Ease",
@@ -68,13 +69,14 @@ export default function RootLayout({
         
         {/* Bing */}
         <meta name="msvalidate.01" content="C0B1BE8D62E65099CC0EC26BC04B076E" />
-        <link rel="icon" href="/favicon-new.ico" sizes="any" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Provider>
           <Setup />
+            <Toaster position="top-right" reverseOrder={false} />
             {children}
         </Provider>
       </body>

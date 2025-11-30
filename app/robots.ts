@@ -18,10 +18,11 @@ export default function robots(): MetadataRoute.Robots {
           '/help/',
           '/logout/',
           '/register/*',
+          '/register/',
         ],
       },
     ],
     sitemap: 'https://seller.negromart.com/sitemap.xml',
-    // host: 'https://seller.negromart.com',
+    host: 'https://seller.negromart.com',
   };
 }

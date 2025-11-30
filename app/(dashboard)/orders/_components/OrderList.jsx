@@ -83,7 +83,7 @@ export default function OrderList() {
   };
 
   return (
-    <div className="container mx-auto px-0 sm:px-6 lg:px-0 py-6 max-w-7xl">
+    <div className="container px-0 sm:px-6 lg:px-0 py-6 max-w-7xl">
       {/* Header Section */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-600">Order List</h2>
@@ -196,7 +196,7 @@ export default function OrderList() {
 
       {/* Empty State */}
       {data.length === 0 && !isLoading && (
-        <div className="flex flex-col items-center justify-center h-64 bg-white shadow-md rounded-lg">
+        <div className="flex flex-col items-center justify-center h-64 rounded-lg">
           <p className="text-lg font-medium text-gray-500">No orders found</p>
           <button
             onClick={handleRefresh}

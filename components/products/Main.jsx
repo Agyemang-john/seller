@@ -104,7 +104,7 @@ export default function Main({ id = null }) {
       if (data.variant === "Size" && !variant.size) {
         errors[`variant_${index}_size`] = `Size is required for variant ${index + 1}`;
       }
-      if (data.variant === "Color and Size" && (!variant.color || !variant.size)) {
+      if (data.variant === "Size-Color" && (!variant.color || !variant.size)) {
         errors[`variant_${index}_color_size`] = `Both color and size are required for variant ${index + 1}`;
       }
       if (!variant.image && !variant.id) {

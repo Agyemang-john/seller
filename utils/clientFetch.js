@@ -2,7 +2,7 @@
 
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { store } from '@/redux/store'; // you must import the store directly
+import { store } from '@/redux/store';
 import { setAuth } from '@/redux/features/authSlice';
 
 export const createAxiosClient = () => {
@@ -52,20 +52,12 @@ export const createAxiosClient = () => {
         originalRequest._retry = true;
 
         try {
-          const refreshResponse = await axios.post(
+          await axios.post(
             `${process.env.NEXT_PUBLIC_HOST}/api/jwt/refresh/vendor/`,
             {},
             { withCredentials: true }
           );
-
-          const newAccessToken = refreshResponse.data.access;
-
-          originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
-          axiosClient.defaults.headers['Authorization'] = `Bearer ${newAccessToken}`;
-
-          // Dispatch Redux action to update auth state
           store.dispatch(setAuth());
-
           return axiosClient(originalRequest);
         } catch (refreshError) {
           return Promise.reject(refreshError);

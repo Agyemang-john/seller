@@ -141,7 +141,7 @@ const VariantRow = ({
     if (formData.variant === "None") return true;
     if (formData.variant === "Color") return variant.color !== null;
     if (formData.variant === "Size") return variant.size !== null;
-    if (formData.variant === "Color and Size")
+    if (formData.variant === "Size-Color")
       return variant.color !== null && variant.size !== null;
     return false;
   };
@@ -150,7 +150,7 @@ const VariantRow = ({
     if (formData.variant === "None") return "";
     if (formData.variant === "Color" && !variant.color) return "Color is required";
     if (formData.variant === "Size" && !variant.size) return "Size is required";
-    if (formData.variant === "Color and Size") {
+    if (formData.variant === "Size-Color") {
       if (!variant.color && !variant.size) return "Color and Size are required";
       if (!variant.color) return "Color is required";
       if (!variant.size) return "Size is required";

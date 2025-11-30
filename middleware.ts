@@ -1,3 +1,4 @@
+// middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -11,60 +12,59 @@ const protectedRoutes = [
   '/working-hours',
   '/help',
   '/about',
-];
+] as const;
 
-// Helper to decode JWT safely
+// Safe JWT payload decoder (only decodes, no crypto verification)
 function decodeJWT(token: string) {
   try {
     const payload = token.split('.')[1];
-    return JSON.parse(Buffer.from(payload, 'base64').toString());
+    if (!payload) return null;
+    return JSON.parse(Buffer.from(payload, 'base64url').toString('utf-8'));
   } catch {
     return null;
   }
 }
 
 export function middleware(request: NextRequest) {
-  const vendorAccess = request.cookies.get('vendor_access')?.value;
-  const vendorRefresh = request.cookies.get('vendor_refresh')?.value;
+  const accessToken = request.cookies.get('vendor_access')?.value;
+  const { pathname } = request.nextUrl;
 
-  const isProtected = protectedRoutes.some((route) =>
-    request.nextUrl.pathname.startsWith(route)
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    pathname.startsWith(route)
   );
 
-  if (isProtected) {
-    if (!vendorAccess && !vendorRefresh) {
-      const redirectUrl = new URL('/auth/login', request.url);
-      redirectUrl.searchParams.set('redirect', encodeURIComponent(request.nextUrl.pathname));
-      return NextResponse.redirect(redirectUrl);
+  // If trying to access a protected route
+  if (isProtectedRoute) {
+    // No access token at all → force login
+    if (!accessToken) {
+      const loginUrl = new URL('/auth/login', request.url);
+      loginUrl.searchParams.set('redirect', encodeURIComponent(pathname));
+      return NextResponse.redirect(loginUrl);
     }
 
-    if (vendorAccess) {
-      const decoded = decodeJWT(vendorAccess);
-      const now = Math.floor(Date.now() / 1000);
+    const payload = decodeJWT(accessToken);
+    const now = Math.floor(Date.now() / 1000);
 
-      if (!decoded) {
-        const redirectUrl = new URL('/auth/login', request.url);
-        return NextResponse.redirect(redirectUrl);
-      }
-
-      if (decoded.exp && decoded.exp < now) {
-        if (!vendorRefresh) {
-          const redirectUrl = new URL('/auth/login', request.url);
-          redirectUrl.searchParams.set('expired', 'true');
-          return NextResponse.redirect(redirectUrl);
-        }
-      }
-
-      if (request.nextUrl.pathname.startsWith('/dashboard')) {
-        if (decoded.role !== 'vendor' || !decoded.is_verified_vendor) {
-          const redirectUrl = new URL('/not-verified', request.url);
-          return NextResponse.redirect(redirectUrl);
-        }
-      }
+    // Invalid token
+    if (!payload) {
+      const loginUrl = new URL('/auth/login', request.url);
+      loginUrl.searchParams.set('redirect', encodeURIComponent(pathname));
+      return NextResponse.redirect(loginUrl);
     }
 
-    if (!vendorAccess && vendorRefresh) {
-      return NextResponse.next();
+    // Expired token
+    if (payload.exp && payload.exp < now) {
+      const loginUrl = new URL('/auth/login', request.url);
+      loginUrl.searchParams.set('expired', 'true');
+      loginUrl.searchParams.set('redirect', encodeURIComponent(pathname));
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Additional vendor verification for dashboard
+    if (pathname.startsWith('/dashboard')) {
+      if (payload.role !== 'vendor' || payload.is_verified_vendor !== true) {
+        return NextResponse.redirect(new URL('/not-verified', request.url));
+      }
     }
   }
 
@@ -72,5 +72,15 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard', '/orders', '/payment', '/products', '/profile', '/reviews', '/working-hours', '/help', '/about'],
+  matcher: [
+    '/dashboard/:path*',
+    '/orders/:path*',
+    '/payment/:path*',
+    '/products/:path*',
+    '/profile/:path*',
+    '/reviews/:path*',
+    '/working-hours/:path*',
+    '/help/:path*',
+    '/about/:path*',
+  ],
 };
