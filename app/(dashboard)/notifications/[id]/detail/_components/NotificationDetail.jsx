@@ -38,6 +38,7 @@ export default function NotificationDetail() {
   const [loading, setLoading] = useState(true);
   const [ws, setWs] = useState(null);
   const WS_BASE = process.env.NEXT_PUBLIC_WS_URL;
+  const [error, setError] = useState(false);
 
 
   // WebSocket connection (reconnectable)
