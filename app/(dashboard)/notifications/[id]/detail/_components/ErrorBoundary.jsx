@@ -1,3 +1,5 @@
+'use client';
+
 import * as React from 'react';
 
 class ErrorBoundary extends React.Component {
@@ -23,3 +25,5 @@ class ErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
+
+export default ErrorBoundary;
