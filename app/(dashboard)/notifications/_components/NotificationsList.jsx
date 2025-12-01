@@ -19,11 +19,10 @@ export default function NotificationsList() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [ws, setWs] = useState(null);
 
+  const WS_BASE = process.env.NEXT_PUBLIC_WS_URL;
+
   
   useEffect(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const host = window.location.host;
-    
     let socket = null;
 
     const connect = async () => {
@@ -35,7 +34,7 @@ export default function NotificationsList() {
         if (socket) socket.close();
 
         // CONNECT WITH TOKEN
-        socket = new WebSocket(`${protocol}://${host}/ws/notifications/?token=${token}`);
+        socket = new WebSocket(`${WS_BASE}/ws/notifications/?token=${token}`);
 
         socket.onmessage = (e) => {
           const data = JSON.parse(e.data);
@@ -60,9 +59,7 @@ export default function NotificationsList() {
         socket.onclose = () => {
           setTimeout(connect, 3000); // Auto-reconnect
         };
-        // socket.onerror = (err) => {
-        //   console.error("WebSocket error", err);
-        // };
+
         setWs(socket);
       } catch (err) {
         console.warning("Failed to get token", err);

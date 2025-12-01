@@ -37,19 +37,18 @@ export default function NotificationDetail() {
   const [notification, setNotification] = useState(null);
   const [loading, setLoading] = useState(true);
   const [ws, setWs] = useState(null);
+  const WS_BASE = process.env.NEXT_PUBLIC_WS_URL;
+
 
   // WebSocket connection (reconnectable)
   useEffect(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const host = window.location.host;
-
     let socket = null;
 
     const connect = async () => {
       try {
         const res = await axiosClient.get('/api/v1/notification/ws-token/', { withCredentials: true });
         const token = res.data.token;
-        socket = new WebSocket(`${protocol}://${host}/ws/notifications/?token=${token}`);
+        socket = new WebSocket(`${WS_BASE}/ws/notifications/?token=${token}`);
 
         socket.onopen = () => {
           setWs(socket);

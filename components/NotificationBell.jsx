@@ -12,18 +12,18 @@ export default function NotificationBell() {
   const axiosClient = createAxiosClient();
   const [unreadCount, setUnreadCount] = useState(0);
   const [ws, setWs] = useState(null);
+  const WS_BASE = process.env.NEXT_PUBLIC_WS_URL;
+
 
   
   useEffect(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const host = window.location.host;
-    
+
     let socket = null;
     const connectWebSocket = async () => {
       try {
         const res = await axiosClient.get('/api/v1/notification/ws-token/', { withCredentials: true });
         const token = res.data.token;
-        socket = new WebSocket(`${protocol}://${host}/ws/notifications/count/?token=${token}`);
+        socket = new WebSocket(`${WS_BASE}/ws/notifications/count/?token=${token}`);
         
         socket.onopen = () => {
           console.log('Bell WebSocket connected');
