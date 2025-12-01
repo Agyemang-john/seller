@@ -19,7 +19,11 @@ export default function NotificationsList() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [ws, setWs] = useState(null);
 
+  
   useEffect(() => {
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const host = window.location.host;
+    
     let socket = null;
 
     const connect = async () => {
@@ -31,10 +35,8 @@ export default function NotificationsList() {
         if (socket) socket.close();
 
         // CONNECT WITH TOKEN
-        socket = new WebSocket(`ws://localhost:8000/ws/notifications/?token=${token}`);
-        // socket.onopen = () => {
-        //   console.log("LIVE NOTIFICATIONS CONNECTED");
-        // };
+        socket = new WebSocket(`${protocol}://${host}/ws/notifications/?token=${token}`);
+
         socket.onmessage = (e) => {
           const data = JSON.parse(e.data);
 

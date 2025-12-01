@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { createAxiosClient } from '@/utils/clientFetch';
 import {
-  Card, CardContent, Typography, Avatar, IconButton, Divider, Tooltip, Chip, Stack, Skeleton
+  Card, CardContent, Typography, Avatar, Divider, Chip, Stack, Skeleton
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -40,16 +40,18 @@ export default function NotificationDetail() {
 
   // WebSocket connection (reconnectable)
   useEffect(() => {
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const host = window.location.host;
+
     let socket = null;
 
     const connect = async () => {
       try {
         const res = await axiosClient.get('/api/v1/notification/ws-token/', { withCredentials: true });
         const token = res.data.token;
-        socket = new WebSocket(`ws://localhost:8000/ws/notifications/?token=${token}`);
+        socket = new WebSocket(`${protocol}://${host}/ws/notifications/?token=${token}`);
 
         socket.onopen = () => {
-          console.log('Detail WS connected');
           setWs(socket);
 
           // AS SOON AS SOCKET IS OPEN → SEND MARK AS READ
@@ -78,11 +80,15 @@ export default function NotificationDetail() {
 
     const fetchNotification = async () => {
       setLoading(true);
+      setError(false);
+
       try {
         const res = await axiosClient.get(`/api/v1/notification/${id}/`);
         setNotification(res.data);
       } catch (err) {
         console.error("Failed to load notification", err);
+        setError(true);
+        toast.error("Notification not found or failed to load");
       } finally {
         setLoading(false);
       }
@@ -114,6 +120,23 @@ export default function NotificationDetail() {
               <Skeleton variant="rectangular" width="100%" height={80} className="rounded-lg" />
               <Skeleton variant="rectangular" width="60%" height={40} className="rounded-lg mt-4" />
               <Skeleton variant="rectangular" width="50%" height={32} className="rounded-lg mt-4" />
+            </div>
+          ) : error || !notification ? (
+            // Proper error UI instead of crashing
+            <div className="text-center py-12">
+              <InfoIcon className="text-6xl text-red-400 mx-auto mb-4" />
+              <Typography variant="h6" color="error">
+                Notification not found
+              </Typography>
+              <Typography variant="body2" className="text-gray-500 mt-2">
+                It may have been deleted or the link is invalid.
+              </Typography>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-4 px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              >
+                Refresh Page
+              </button>
             </div>
           ) : (
             <>

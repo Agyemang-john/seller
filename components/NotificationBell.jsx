@@ -1,4 +1,5 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import Badge from '@mui/material/Badge';
@@ -12,13 +13,17 @@ export default function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [ws, setWs] = useState(null);
 
+  
   useEffect(() => {
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const host = window.location.host;
+    
     let socket = null;
     const connectWebSocket = async () => {
       try {
         const res = await axiosClient.get('/api/v1/notification/ws-token/', { withCredentials: true });
         const token = res.data.token;
-        socket = new WebSocket(`ws://localhost:8000/ws/notifications/count/?token=${token}`);
+        socket = new WebSocket(`${protocol}://${host}/ws/notifications/count/?token=${token}`);
         
         socket.onopen = () => {
           console.log('Bell WebSocket connected');

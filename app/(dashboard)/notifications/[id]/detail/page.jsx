@@ -3,6 +3,8 @@
 import { useParams } from 'next/navigation';
 import NotificationDetail from './_components/NotificationDetail';
 import PageContainer from '@/components/PageContainer';
+import ErrorBoundary from './_components/ErrorBoundary';
+
 
 export default function Page() {
     const { id } = useParams();
@@ -18,7 +20,9 @@ export default function Page() {
           { title: pageTitle },
         ]}
       >
-      <NotificationDetail/>
+        <ErrorBoundary>
+          <NotificationDetail/>
+        </ErrorBoundary>
     </PageContainer>
   );
 }
