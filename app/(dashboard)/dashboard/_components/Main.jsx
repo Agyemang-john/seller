@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import * as React from 'react';
+import { useState, useCallback } from 'react';
+import { Component } from 'react';
 import { Box, Button, CircularProgress } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import useSWR from 'swr';
@@ -34,7 +36,7 @@ const fetcher = async (url) => {
 // ----------------------------
 // REAL ERROR BOUNDARY
 // ----------------------------
-class ErrorBoundary extends React.Component {
+class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false, error: null };
