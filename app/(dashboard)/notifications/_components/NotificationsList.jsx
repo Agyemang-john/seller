@@ -62,7 +62,7 @@ export default function NotificationsList() {
 
         setWs(socket);
       } catch (err) {
-        console.warning("Failed to get token", err);
+        console.warn("Failed to get token", err);
         setTimeout(connect, 5000);
       }
     };
