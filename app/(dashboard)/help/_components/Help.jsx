@@ -7,7 +7,6 @@ import {
   List,
   ListItem,
   ListItemText,
-  Divider,
   Accordion,
   AccordionSummary,
   AccordionDetails,

@@ -1,14 +1,14 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { Suspense, Component, ReactNode } from 'react';
 import { Box, CircularProgress, Typography } from '@mui/material';
 
 import ClientProviders from '@/hooks/ClientProviders';
 
 
 // Error Boundary Component
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
+class ErrorBoundary extends Component<
+  { children: ReactNode },
   { hasError: boolean; error: Error | null }
 > {
   state: { hasError: boolean; error: Error | null } = { hasError: false, error: null };
@@ -34,7 +34,7 @@ class ErrorBoundary extends React.Component<
 }
 
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <Suspense
       fallback={
