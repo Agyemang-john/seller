@@ -66,13 +66,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <meta name="msvalidate.01" content="5DA71870689BE44E8BBAC87A7BF7461A" />
-        
-        {/* Bing */}
-        <meta name="msvalidate.01" content="C0B1BE8D62E65099CC0EC26BC04B076E" />
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

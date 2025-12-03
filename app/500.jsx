@@ -27,12 +27,6 @@ export default function Custom500() {
         >
           Back to Home
         </Link>
-        <Link
-          href="/"
-          className="px-5 py-3 rounded-2xl border border-gray-400 text-gray-800 font-medium hover:bg-gray-100 transition"
-        >
-          Shop Now
-        </Link>
       </div>
     </div>
   );
