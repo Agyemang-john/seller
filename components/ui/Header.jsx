@@ -28,7 +28,7 @@ export default function Header() {
         <div className="hidden sm:flex items-center space-x-4">
           <Link href="/register" className="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition duration-300">Start</Link>
           <Link href="/" className="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition duration-300">Grow</Link>
-          <Link href="/" className="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition duration-300">Services</Link>
+          <Link href="https://corporate.negromart.com/services" target="_blank" rel="noopener noreferrer" className="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition duration-300">Services</Link>
           <Link href="/" className="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition duration-300">Resources</Link>
           <Link href="/" className="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition duration-300">Pricing</Link>
         </div>
