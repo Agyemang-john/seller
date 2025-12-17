@@ -25,7 +25,7 @@ function decodeJWT(token: string) {
   }
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const accessToken = request.cookies.get('vendor_access')?.value;
   const { pathname } = request.nextUrl;
 

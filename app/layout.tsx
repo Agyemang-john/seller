@@ -7,6 +7,8 @@ import Provider from '@/redux/provider';
 import { Setup } from '@/utils';
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
+import ThemeRegistry from "./ThemeRegistry";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,7 +23,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://seller.negromart.com'),
-  title: "Seller | Wherever You Are, Sell With Ease",
+  title: "Negromart Seller Center",
   description: "Connecting you to global buyers. Sell millions of affordable products from around the world on NegroMart",
   keywords: [
     "Negromart",
@@ -41,7 +43,7 @@ export const metadata: Metadata = {
     icon: "/favicon.ico",
   },
   openGraph: {
-    title: "Seller | Wherever You Are, Sell With Ease",
+    title: "Negromart Seller Center",
     description: "Connecting you to global buyers. Sell millions of affordable products from around the world on NegroMart.",
     url: "https://seller.negromart.com", // change to your actual domain
     siteName: "Negromart Seller",
@@ -69,11 +71,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Provider>
-          <Setup />
-            <Toaster position="top-right" reverseOrder={false} />
-            {children}
-        </Provider>
+        <ThemeRegistry>
+          <Provider>
+            <Setup />
+              <Toaster position="top-right" reverseOrder={false} />
+              {children}
+          </Provider>
+        </ThemeRegistry>
       </body>
     </html>
   );

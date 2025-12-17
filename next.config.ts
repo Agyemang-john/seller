@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'negromart-space.sfo3.cdn.digitaloceanspaces.com',
+        hostname: 'negromart-spaces.nyc3.cdn.digitaloceanspaces.com',
         pathname: '/**',
       },
     ],
