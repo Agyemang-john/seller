@@ -8,7 +8,7 @@ export default function Page() {
 
   return (
     <PageContainer
-      title={pageTitle}
+      title={''}
       breadcrumbs={[
         { title: 'Home', path: '/dashboard' },
         { title: pageTitle },

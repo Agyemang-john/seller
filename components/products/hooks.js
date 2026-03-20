@@ -34,7 +34,7 @@ export const useProductForm = (id = null) => {
     title: "",
     slug: "",
     sub_category: "",
-    variant: "",
+    variant: "None",
     brand: "",
     price: "1.99",
     old_price: "2.99",

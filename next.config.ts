@@ -1,8 +1,7 @@
 import type { NextConfig } from 'next';
-import withPWA from 'next-pwa';
+import withPWA from '@ducanh2912/next-pwa';
 
 const nextConfig: NextConfig = {
-  // Moved metadataBase to the metadata export in your layout files
   images: {
     remotePatterns: [
       {
@@ -21,13 +20,14 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // Updated for Next.js 15.5.2
   typedRoutes: true,
-
-}
+  turbopack: {
+    root: __dirname,
+  },
+};
 
 export default withPWA({
   dest: 'public',
   register: true,
-  skipWaiting: true,
+  disable: process.env.NODE_ENV === 'development',
 })(nextConfig);

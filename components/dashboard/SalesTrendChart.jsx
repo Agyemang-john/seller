@@ -2,58 +2,122 @@
 
 import React from 'react';
 import { LineChart } from '@mui/x-charts/LineChart';
-import { Box, Typography, FormControl, Select, MenuItem } from '@mui/material';
+import {
+  Box, Typography, Stack, ToggleButtonGroup, ToggleButton, useTheme,
+} from '@mui/material';
 
-const SalesTrendChart = ({ data, isLoading, error, period, setPeriod }) => {
-  if (isLoading) return <Typography>Loading...</Typography>;
-  if (error) return <Typography color="error">{error}</Typography>;
-  if (!data || data.length === 0) return <Typography>No data available</Typography>;
+export default function SalesTrendChart({ data, period, setPeriod }) {
+  const theme = useTheme();
 
-  // Validate and filter data
-  const validData = data.filter(
-    item =>
+  if (!data || data.length === 0) {
+    return (
+      <EmptyState label="Sales Trends" message="No trend data for the selected period." />
+    );
+  }
+
+  const valid = data.filter(
+    (item) =>
       item.date &&
-      !isNaN(new Date(item.date).getTime()) && // Ensure valid date
-      typeof item.revenue === 'number' && // Ensure revenue is a number
-      typeof item.orders === 'number' // Ensure orders is a number
+      !isNaN(new Date(item.date).getTime()) &&
+      typeof item.revenue === 'number' &&
+      typeof item.orders === 'number',
   );
 
-  if (validData.length === 0) return <Typography>No valid data available</Typography>;
+  if (valid.length === 0) {
+    return <EmptyState label="Sales Trends" message="No valid data points found." />;
+  }
 
-  const xAxis = validData.map(item => new Date(item.date));
-  const revenueSeries = validData.map(item => item.revenue);
-  const ordersSeries = validData.map(item => item.orders);
+  const xAxis     = valid.map((item) => new Date(item.date));
+  const revenues  = valid.map((item) => item.revenue);
+  const orders    = valid.map((item) => item.orders);
 
   return (
-    <Box className="p-4 rounded-md mb-2 border border-gray-200">
-      <Box className="flex justify-between items-center mb-4">
-        <Typography variant="h5" className="text-2xl font-bold">
-          Sales Trends
-        </Typography>
-        <FormControl size="small">
-          <Select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value)}
-            className="text-black"
+    <Box
+      sx={{
+        p: { xs: 2.5, md: 3 },
+        borderRadius: '20px',
+        border: '1px solid',
+        borderColor: 'divider',
+        bgcolor: 'background.paper',
+      }}
+    >
+      <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" spacing={1.5} sx={{ mb: 2.5 }}>
+        <Box>
+          <Typography
+            sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px' }}
+            color="text.primary"
           >
-            <MenuItem value="day">Daily</MenuItem>
-            <MenuItem value="week">Weekly</MenuItem>
-            <MenuItem value="month">Monthly</MenuItem>
-          </Select>
-        </FormControl>
-      </Box>
+            Sales Trends
+          </Typography>
+          <Typography variant="caption" color="text.disabled" sx={{ letterSpacing: '0.06em' }}>
+            REVENUE &amp; ORDER VOLUME
+          </Typography>
+        </Box>
+
+        <ToggleButtonGroup
+          value={period}
+          exclusive
+          onChange={(_, v) => v && setPeriod(v)}
+          size="small"
+          sx={{
+            '& .MuiToggleButton-root': {
+              px: 2, py: 0.6, fontSize: 12, fontWeight: 600, borderRadius: '8px !important',
+              border: '1px solid', borderColor: 'divider', color: 'text.secondary',
+              '&.Mui-selected': { bgcolor: 'text.primary', color: 'background.paper', borderColor: 'text.primary' },
+            },
+            '& .MuiToggleButtonGroup-grouped': { mx: 0.25 },
+          }}
+        >
+          <ToggleButton value="day">Daily</ToggleButton>
+          <ToggleButton value="week">Weekly</ToggleButton>
+          <ToggleButton value="month">Monthly</ToggleButton>
+        </ToggleButtonGroup>
+      </Stack>
+
       <LineChart
-        xAxis={[{ data: xAxis, scaleType: 'time', label: 'Date' }]}
-        series={[
-          { data: revenueSeries, label: 'Revenue (GHS)', color: '#3540daff' },
-          { data: ordersSeries, label: 'Orders', color: '#bae02fff', yAxisId: 'rightAxis' },
+        xAxis={[{ data: xAxis, scaleType: 'time', tickMinStep: 3600 * 1000 * 24 }]}
+        yAxis={[
+          { id: 'revenue', label: 'Revenue (GHS)' },
+          { id: 'orders',  label: 'Orders' },
         ]}
-        height={400}
-        yAxis={[{ id: 'leftAxis', label: 'Revenue (GHS)' }, { id: 'rightAxis', label: 'Orders' }]}
-        margin={{ top: 20, right: 30, bottom: 50, left: 60 }}
+        series={[
+          {
+            data: revenues,
+            label: 'Revenue (GHS)',
+            color: theme.palette.text.primary,
+            yAxisId: 'revenue',
+            curve: 'monotoneX',
+            area: true,
+          },
+          {
+            data: orders,
+            label: 'Orders',
+            color: theme.palette.text.disabled,
+            yAxisId: 'orders',
+            curve: 'monotoneX',
+          },
+        ]}
+        height={320}
+        margin={{ top: 16, right: 24, bottom: 48, left: 60 }}
+        sx={{
+          '& .MuiAreaElement-root': { opacity: 0.06 },
+          '& .MuiLineElement-root': { strokeWidth: 2 },
+          '& .MuiChartsAxis-tickLabel': { fill: theme.palette.text.secondary, fontSize: 11 },
+        }}
       />
     </Box>
   );
-};
+}
 
-export default SalesTrendChart;
+function EmptyState({ label, message }) {
+  return (
+    <Box sx={{
+      p: 3, borderRadius: '20px', border: '1px solid', borderColor: 'divider',
+      bgcolor: 'background.paper', minHeight: 200,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
+    }}>
+      <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700 }} color="text.primary">{label}</Typography>
+      <Typography variant="body2" color="text.disabled">{message}</Typography>
+    </Box>
+  );
+}

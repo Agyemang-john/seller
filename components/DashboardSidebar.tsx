@@ -34,6 +34,7 @@ import {
   getDrawerSxTransitionMixin,
   getDrawerWidthTransitionMixin,
 } from '../mixins';
+import { Money } from '@mui/icons-material';
 
 export interface DashboardSidebarProps {
   expanded?: boolean;
@@ -52,6 +53,11 @@ const mainListItems = [
   { id: 'profile', text: 'Profile', icon: <AccountCircleIcon />, path: '/profile' },
   { id: 'reviews', text: 'Reviews', icon: <ReviewsIcon />, path: '/reviews' },
   { id: 'help', text: 'Guide', icon: <HelpCenterIcon />, path: '/help' },
+];
+
+const subscribeListItems = [
+  { id: 'billing', text: 'Billing', icon: <Money />, path: '/billing' },
+  { id: 'subscribe', text: 'Subscription', icon: <Money />, path: '/subscribe' },
 ];
 
 const secondaryListItems = [
@@ -232,6 +238,88 @@ export default function DashboardSidebar({
                 </ListItem>
               );
             })}
+            <Box sx={{ px: 2, py: 1 }}>
+              <hr style={{ borderColor: theme.palette.divider }} />
+            </Box>
+            <Typography
+              variant="overline"
+              sx={{ px: 2, py: 1, display: 'block', fontWeight: 'bold' }}
+              >
+              Subscribe
+            </Typography>
+            
+              {subscribeListItems.map((item) => {
+                const hasExternalHref = item.path.startsWith('http://') || item.path.startsWith('https://');
+                const LinkComponent = hasExternalHref ? 'a' : Link;
+  
+                return (
+                  <ListItem key={item.id} disablePadding sx={{ display: 'block' }}>
+                    <ListItemButton
+                      component={LinkComponent}
+                      href={item.path}
+                      selected={pathname.startsWith(item.path)}
+                      onClick={handlePageItemClick}
+                      sx={{ height: mini ? 50 : 'auto' }}
+                      {...(hasExternalHref
+                        ? {
+                            target: '_blank',
+                            rel: 'noopener noreferrer',
+                          }
+                        : {})}
+                    >
+                      <Box
+                        sx={
+                          mini
+                            ? {
+                                position: 'absolute',
+                                left: '50%',
+                                top: 'calc(50% - 6px)',
+                                transform: 'translate(-50%, -50%)',
+                              }
+                            : {}
+                        }
+                      >
+                        <ListItemIcon
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: mini ? 'center' : 'auto',
+                          }}
+                        >
+                          {item.icon}
+                        </ListItemIcon>
+                        {mini ? (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              position: 'absolute',
+                              bottom: -18,
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              fontSize: 10,
+                              fontWeight: 500,
+                              textAlign: 'center',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              maxWidth: MINI_DRAWER_WIDTH - 28,
+                            }}
+                          >
+                            {item.text}
+                          </Typography>
+                        ) : null}
+                      </Box>
+                      {!mini ? (
+                        <ListItemText
+                          primary={item.text}
+                          sx={{ whiteSpace: 'nowrap', zIndex: 1 }}
+                        />
+                      ) : null}
+                    </ListItemButton>
+                  </ListItem>
+                );
+              })}
+
             <Box sx={{ px: 2, py: 1 }}>
               <hr style={{ borderColor: theme.palette.divider }} />
             </Box>

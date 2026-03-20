@@ -40,7 +40,7 @@
     "components/NotificationBell.jsx",
     "app/(dashboard)/notifications/[id]/detail/_components/ErrorBoundary.jsx",
     ".next/dev/types/**/*.ts"
-  ],
+, "components/dashboard/SalesSummaryCard.jsx", "components/dashboard/SalesTrendChart.jsx", "components/dashboard/Upgradelock.jsx", "app/(dashboard)/subscribe/_components/Checkoutpanel.jsx", "hooks/useSubscription.js", "app/(dashboard)/subscription/verify/page.jsx"  ],
   "exclude": [
     "node_modules"
   ]
