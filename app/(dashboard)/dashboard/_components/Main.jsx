@@ -192,8 +192,6 @@ export default function Dashboard() {
   const { data: engagement,   error: engagementError,   isLoading: loadingEngage   } = useSWR(`/api/v1/vendor/engagement/?${qs}`,           fetcher, SWR_CONFIG);
   const { data: delivery,     error: deliveryError,     isLoading: loadingDelivery } = useSWR(`/api/v1/vendor/delivery-performance/?${qs}`, fetcher, SWR_CONFIG);
 
-  console.log({ salesSummary, salesTrend, topProducts, orderStatus, engagement, delivery });
-
   const isAnyLoading = loadingSummary || loadingTrend || loadingProducts || loadingOrders || loadingEngage || loadingDelivery;
 
   const handleRefresh = useCallback(() => {

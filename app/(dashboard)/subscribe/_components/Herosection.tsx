@@ -37,17 +37,10 @@ export default function HeroSection({ billing, onBillingChange }: HeroSectionPro
         {/* Heading */}
         <Box sx={{ mb: 4 }}>
           <Typography
-            variant="overline"
-            color="text.secondary"
-            sx={{ letterSpacing: "0.18em", display: "block", mb: 1.5 }}
-          >
-            Vendor plans
-          </Typography>
-          <Typography
             component="h1"
             sx={{
               fontFamily: "serif", fontWeight: 700,
-              fontSize: { xs: "40px", md: "64px", lg: "72px" },
+              fontSize: { xs: "30px", md: "50px", lg: "50px" },
               lineHeight: 1.02, letterSpacing: "-2px",
               color: "text.primary", mb: 2,
             }}
