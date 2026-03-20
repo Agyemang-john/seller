@@ -80,11 +80,14 @@ function MomoCountdownRetry({ onRetryReady, seconds = 180 }) {
   );
 }
 
-// ── MoMo pending state — polls every 3s ───────────────────────────────────────
-function MomoPendingState({ reference, displayText, provider, maskedPhone, onSuccess, onFail }) {
-  const [status,  setStatus]  = useState('pending');
-  const [message, setMessage] = useState(displayText || 'Please approve the payment on your phone.');
-  const [dots,    setDots]    = useState('');
+// ── MoMo pending state — handles OTP (MTN) and polling (Vodafone/AirtelTigo) ──
+function MomoPendingState({ reference, displayText, provider, maskedPhone, requiresOtp, onSuccess, onFail }) {
+  const [status,      setStatus]      = useState(requiresOtp ? 'otp' : 'pending');
+  const [message,     setMessage]     = useState(displayText || 'Please approve the payment on your phone.');
+  const [dots,        setDots]        = useState('');
+  const [otp,         setOtp]         = useState('');
+  const [otpLoading,  setOtpLoading]  = useState(false);
+  const [otpError,    setOtpError]    = useState(null);
   const pollRef = useRef(null);
   const prov    = PROVIDERS.find((p) => p.value === provider) || PROVIDERS[0];
 
@@ -93,9 +96,9 @@ function MomoPendingState({ reference, displayText, provider, maskedPhone, onSuc
     return () => clearInterval(t);
   }, []);
 
+  // Poll once OTP is submitted (status moves from 'otp' to 'pending')
   useEffect(() => {
     if (status !== 'pending') return;
-    // Don't poll if there's no reference — null reference means USSD-locked / check-phone state
     if (!reference) return;
     pollRef.current = setInterval(async () => {
       try {
@@ -112,27 +115,97 @@ function MomoPendingState({ reference, displayText, provider, maskedPhone, onSuc
     return () => { clearInterval(pollRef.current); clearTimeout(timeout); };
   }, [reference, status]);
 
+  const handleOtpSubmit = async () => {
+    if (!otp || otp.length < 4) { setOtpError('Please enter the full OTP code.'); return; }
+    setOtpLoading(true); setOtpError(null);
+    try {
+      const res = await createAxiosClient().post('/api/v1/payments/momo/submit-otp/', { reference, otp });
+      if (res.data.status === 'success') {
+        setStatus('success'); setMessage('Payment confirmed!');
+        setTimeout(() => onSuccess?.(), 1500);
+      } else {
+        // OTP accepted — now wait for USSD approval (poll)
+        setStatus('pending');
+        setMessage(res.data.message || 'OTP accepted. Waiting for final confirmation…');
+      }
+    } catch (err) {
+      setOtpError(err?.response?.data?.error || 'Invalid OTP. Please check the SMS and try again.');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
   return (
     <Box sx={{ textAlign: 'center', py: 3 }}>
+      {/* Provider badge */}
       <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, px: 2, py: 0.75, borderRadius: '20px', bgcolor: prov.color, mb: 3 }}>
         <PhoneAndroidIcon sx={{ fontSize: 16, color: prov.text }} />
         <Typography sx={{ fontSize: 12, fontWeight: 700, color: prov.text }}>{prov.label}</Typography>
       </Box>
+
+      {/* Status icon */}
       <Box sx={{ width: 80, height: 80, borderRadius: '50%', border: '3px solid', borderColor: status === 'success' ? 'success.main' : status === 'failed' ? 'error.main' : 'divider', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 3, bgcolor: status === 'success' ? 'success.lighter' : status === 'failed' ? 'error.lighter' : 'action.hover' }}>
-        {status === 'pending' && <CircularProgress size={36} thickness={3} sx={{ color: prov.color }} />}
+        {(status === 'pending' || status === 'otp') && <CircularProgress size={36} thickness={3} sx={{ color: prov.color }} />}
         {status === 'success' && <CheckCircleIcon sx={{ fontSize: 40, color: 'success.main' }} />}
         {status === 'failed'  && <ErrorOutlineIcon sx={{ fontSize: 40, color: 'error.main' }} />}
       </Box>
+
       <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, mb: 1 }} color="text.primary">
-        {status === 'pending' && `Waiting${dots}`}{status === 'success' && 'Confirmed!'}{status === 'failed' && 'Failed'}
+        {status === 'otp'     && 'Enter your OTP'}
+        {status === 'pending' && `Waiting${dots}`}
+        {status === 'success' && 'Confirmed!'}
+        {status === 'failed'  && 'Failed'}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>{message}</Typography>
       <Typography variant="caption" color="text.disabled">{maskedPhone}</Typography>
+
+      {/* OTP input — shown for MTN send_otp flow */}
+      {status === 'otp' && (
+        <Box sx={{ mt: 3, maxWidth: 280, mx: 'auto', textAlign: 'left' }}>
+          <Box sx={{ p: 2, borderRadius: '10px', bgcolor: '#fffbeb', border: '1px solid #fbbf24', mb: 2 }}>
+            <Typography variant="caption" sx={{ color: '#92400e', fontWeight: 600, lineHeight: 1.6 }}>
+              📱 An OTP code was sent to your phone via SMS. Enter it below to authorise the payment.
+              <br />Do not share this code with anyone.
+            </Typography>
+          </Box>
+          {otpError && (
+            <Alert severity="error" sx={{ mb: 1.5, borderRadius: '8px' }} onClose={() => setOtpError(null)}>
+              {otpError}
+            </Alert>
+          )}
+          <TextField
+            fullWidth size="small" label="OTP Code" type="number"
+            value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 8))}
+            placeholder="e.g. 449085"
+            inputProps={{ inputMode: 'numeric', pattern: '[0-9]*', style: { fontFamily: 'monospace', fontSize: 20, letterSpacing: '0.2em', textAlign: 'center' } }}
+            onKeyDown={(e) => e.key === 'Enter' && handleOtpSubmit()}
+            sx={{ mb: 1.5, '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+            autoFocus
+          />
+          <Box component="button" onClick={handleOtpSubmit} disabled={otpLoading || otp.length < 4}
+            sx={{
+              width: '100%', py: 1.6, px: 2, borderRadius: '10px', border: 'none',
+              cursor: (otpLoading || otp.length < 4) ? 'not-allowed' : 'pointer',
+              bgcolor: otp.length < 4 ? 'action.disabledBackground' : '#080808',
+              color: otp.length < 4 ? 'text.disabled' : '#ffffff',
+              fontFamily: "'Cormorant Garamond', serif", fontSize: 16, fontWeight: 700,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1,
+              transition: 'all 0.18s',
+            }}>
+            {otpLoading ? <><CircularProgress size={14} sx={{ color: '#fff' }} /> Verifying…</> : 'Confirm payment'}
+          </Box>
+          <Typography variant="caption" color="text.disabled" sx={{ display: 'block', textAlign: 'center', mt: 1.5 }}>
+            Didn't receive the OTP? Check your SMS inbox or wait a moment.
+          </Typography>
+        </Box>
+      )}
+
+      {/* Polling state — Vodafone/AirtelTigo or after OTP submitted */}
       {status === 'pending' && (
         <Box sx={{ mt: 2.5, px: 2, py: 1.5, borderRadius: '10px', bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider', maxWidth: 320, mx: 'auto' }}>
           <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.7 }}>
             {reference
-              ? '📱 Enter your MoMo PIN on your phone to approve.'
+              ? '📱 Approve the payment on your phone. Keep this page open.'
               : '📱 A payment session is already open on this number. Check your phone for a USSD prompt or push notification and approve it.'}
           </Typography>
           {!reference && (
@@ -234,6 +307,7 @@ export default function CheckoutPanel({ plan, billing }) {
         maskedPhone: d.masked_phone || _maskPhone(phone),
         provider:    d.provider || provider,
         checkPhone:  d.status === 'check_phone',
+        requiresOtp: d.requires_otp || d.status === 'send_otp',
       });
     } catch (err) {
       const body = err?.response?.data;
@@ -272,7 +346,7 @@ export default function CheckoutPanel({ plan, billing }) {
       const handler = window.PaystackPop.setup({
         key:         process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
         access_code: result.access_code,
-        onSuccess: () => { window.location.href = `/vendor/subscription/verify?ref=${result.reference}`; },
+        onSuccess: () => { window.location.href = `/subscription/verify?ref=${result.reference}`; },
         onCancel:  () => { /* vendor closed popup — stay on page */ },
       });
       handler.openIframe();
@@ -347,7 +421,7 @@ export default function CheckoutPanel({ plan, billing }) {
             {activeTab === 'momo' && (
               <Box>
                 {momoPending ? (
-                  <MomoPendingState reference={momoPending.reference} displayText={momoPending.displayText} maskedPhone={momoPending.maskedPhone} provider={momoPending.provider} onSuccess={handleMomoSuccess} onFail={handleMomoFail} />
+                  <MomoPendingState reference={momoPending.reference} displayText={momoPending.displayText} maskedPhone={momoPending.maskedPhone} provider={momoPending.provider} requiresOtp={momoPending.requiresOtp} onSuccess={handleMomoSuccess} onFail={handleMomoFail} />
                 ) : (
                   <Box>
                     {momoError && <Alert severity="error" sx={{ mb: 2, borderRadius: '10px' }} onClose={() => setMomoError(null)}>{momoError}</Alert>}
