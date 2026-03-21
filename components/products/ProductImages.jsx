@@ -4,7 +4,7 @@ import { Box, Typography, Stack, IconButton, Button } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AddPhotoAlternateOutlinedIcon from '@mui/icons-material/AddPhotoAlternateOutlined';
-import { validateImage } from './fileValidators';
+import { validateImage, squareifyImage } from './fileValidators';
 import Swal from 'sweetalert2';
 
 // ── Single image slot ─────────────────────────────────────────────────────────
@@ -79,8 +79,11 @@ const ProductImages = ({ images, setImages }) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const validation = await validateImage(file, {
-      maxSizeMB: 2, minResolution: 700, maxResolution: 1200, mustBeSquare: true, checkBackground: true,
+    // Auto-correct to square before validating
+    const squaredFile = await squareifyImage(file, 'pad', '#FFFFFF');
+
+    const validation = await validateImage(squaredFile, {
+      maxSizeMB: 2, minResolution: 500, maxResolution: 1200, checkBackground: true,
     });
 
     if (!validation.valid) {
@@ -91,10 +94,10 @@ const ProductImages = ({ images, setImages }) => {
     const reader = new FileReader();
     reader.onloadend = () => {
       const updated = [...images];
-      updated[index] = { ...updated[index], file, previewUrl: reader.result, title: updated[index]?.title || '' };
+      updated[index] = { ...updated[index], file: squaredFile, previewUrl: reader.result, title: updated[index]?.title || '' };
       setImages(updated);
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(squaredFile); // preview the corrected file
   };
 
   const handleRemove = (index) => {

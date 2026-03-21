@@ -10,7 +10,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AddPhotoAlternateOutlinedIcon from '@mui/icons-material/AddPhotoAlternateOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined';
-import { validateImage } from './fileValidators';
+import { validateImage, squareifyImage } from './fileValidators';
 import Swal from 'sweetalert2';
 
 const fieldSx = {
@@ -199,7 +199,10 @@ const VariantRow = ({
 
   const handleImageChange = useCallback(async (index, file) => {
     if (!file) return;
-    const validation = await validateImage(file, { maxSizeMB: 2, minResolution: 700, maxResolution: 1200, mustBeSquare: true, checkBackground: true });
+
+    const squaredFile = await squareifyImage(file, 'pad', '#FFFFFF');
+
+    const validation = await validateImage(squaredFile, { maxSizeMB: 2, minResolution: 500, maxResolution: 1200, checkBackground: true });
     if (!validation.valid) {
       Swal.fire({ icon: 'error', title: 'Invalid image', html: validation.errors.join('<br/>') });
       return;
@@ -209,11 +212,11 @@ const VariantRow = ({
       setVariantImagePreviews((prev) => ({ ...prev, [index]: reader.result }));
       setLocalVariants((prev) => {
         const updated = [...prev];
-        updated[index] = { ...updated[index], image: file };
+        updated[index] = { ...updated[index], image: squaredFile }; // store corrected file
         return updated;
       });
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(squaredFile);
   }, [setVariantImagePreviews]);
 
   const handleAdd = () => {

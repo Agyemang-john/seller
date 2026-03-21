@@ -1,28 +1,17 @@
 // utils/fileValidators.js
 
 /**
- * Validate an image before upload
- * @param {File} file - The image file
- * @param {Object} options - Validation settings
- * @returns {Promise<{ valid: boolean, errors: string[] }>}
+ * Auto-corrects a non-square image to square by cropping or padding.
+ * Returns a new File object ready for upload.
+ *
+ * @param {File} file - The original image file
+ * @param {"crop" | "pad"} strategy
+ *   - "crop": center-crops to the shorter dimension (good for filled-frame products)
+ *   - "pad": adds neutral padding to reach the longer dimension (preserves full product)
+ * @param {string} padColor - CSS color for padding background (default: white)
+ * @returns {Promise<File>} - A new square image File
  */
-export async function validateImage(file, options = {}) {
-  const {
-    maxSizeMB = 2,
-    minResolution = 700,
-    maxResolution = 1200,
-    mustBeSquare = true,
-    checkBackground = false,
-  } = options;
-
-  let errors = [];
-
-  // ✅ Check file size
-  if (file.size > maxSizeMB * 1024 * 1024) {
-    errors.push(`File size exceeds ${maxSizeMB}MB`);
-  }
-
-  // ✅ Load image
+export async function squareifyImage(file, strategy = "pad", padColor = "#FFFFFF") {
   const imageDataUrl = await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = e => resolve(e.target.result);
@@ -39,7 +28,93 @@ export async function validateImage(file, options = {}) {
 
   const { width, height } = image;
 
-  // ✅ Resolution checks
+  // Already square — skip processing
+  if (width === height) return file;
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  if (strategy === "crop") {
+    // Center-crop to the shorter side
+    const size = Math.min(width, height);
+    canvas.width = size;
+    canvas.height = size;
+
+    const offsetX = (width - size) / 2;
+    const offsetY = (height - size) / 2;
+
+    ctx.drawImage(image, offsetX, offsetY, size, size, 0, 0, size, size);
+
+  } else {
+    // Pad to the longer side
+    const size = Math.max(width, height);
+    canvas.width = size;
+    canvas.height = size;
+
+    ctx.fillStyle = padColor;
+    ctx.fillRect(0, 0, size, size);
+
+    const offsetX = (size - width) / 2;
+    const offsetY = (size - height) / 2;
+
+    ctx.drawImage(image, offsetX, offsetY);
+  }
+
+  // Convert canvas back to a File
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      blob => {
+        if (!blob) return reject(new Error("Canvas toBlob failed"));
+        // Preserve original filename; mark it so you can track auto-corrections
+        const correctedFile = new File([blob], file.name, { type: file.type });
+        resolve(correctedFile);
+      },
+      file.type,
+      0.92 // Quality for JPEG; ignored for PNG
+    );
+  });
+}
+
+
+/**
+ * Validate an image before upload.
+ * Non-square images are no longer rejected — use squareifyImage() before calling this.
+ *
+ * @param {File} file - The image file
+ * @param {Object} options - Validation settings
+ * @returns {Promise<{ valid: boolean, errors: string[] }>}
+ */
+export async function validateImage(file, options = {}) {
+  const {
+    maxSizeMB = 2,
+    minResolution = 700,
+    maxResolution = 1200,
+    checkBackground = false,
+  } = options;
+  // NOTE: mustBeSquare removed — squareifyImage() handles this upstream
+
+  let errors = [];
+
+  if (file.size > maxSizeMB * 1024 * 1024) {
+    errors.push(`File size exceeds ${maxSizeMB}MB`);
+  }
+
+  const imageDataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  const image = await new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = imageDataUrl;
+  });
+
+  const { width, height } = image;
+
   if (width < minResolution || height < minResolution) {
     errors.push(`Image must be at least ${minResolution}px on each side`);
   }
@@ -47,12 +122,6 @@ export async function validateImage(file, options = {}) {
     errors.push(`Image must not exceed ${maxResolution}px on each side`);
   }
 
-  // ✅ Square check
-  if (mustBeSquare && width !== height) {
-    errors.push("Image must be square (equal width and height)");
-  }
-
-  // ✅ Background check (approximate - checks corner pixel colors)
   if (checkBackground) {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
@@ -67,9 +136,10 @@ export async function validateImage(file, options = {}) {
       ctx.getImageData(width - 1, height - 1, 1, 1).data,
     ];
 
-    const isPlainBackground = corners.every(([r, g, b]) =>
-      (r > 200 && g > 200 && b > 200) || // white-ish
-      (Math.abs(r - g) < 10 && Math.abs(g - b) < 10) // plain color-ish
+    const isPlainBackground = corners.every(
+      ([r, g, b]) =>
+        (r > 200 && g > 200 && b > 200) ||
+        (Math.abs(r - g) < 10 && Math.abs(g - b) < 10)
     );
 
     if (!isPlainBackground) {
@@ -90,12 +160,10 @@ export async function validateVideo(file, options = {}) {
 
   let errors = [];
 
-  // ✅ File size
   if (file.size > maxSizeMB * 1024 * 1024) {
     errors.push(`Video size exceeds ${maxSizeMB}MB`);
   }
 
-  // ✅ Load video metadata
   const videoMeta = await new Promise((resolve, reject) => {
     const video = document.createElement("video");
     video.preload = "metadata";

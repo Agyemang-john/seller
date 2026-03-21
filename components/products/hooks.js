@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import dayjs from "dayjs";
 import { createAxiosClient } from "@/utils/clientFetch";
 import { slugify } from "@/components/Functions";
-import { validateImage, validateVideo  } from "./fileValidators";
+import { validateImage, validateVideo, squareifyImage  } from "./fileValidators";
 import Swal from 'sweetalert2';
 
 
@@ -194,7 +194,7 @@ export const useProductForm = (id = null) => {
     }
   }, [product, categories, brands]);
 
-  const handleFileChange = async (event, field = "image") => {
+ const handleFileChange = async (event, field = "image") => {
     const file = event.target.files[0];
     if (!file) {
       setFormData((prev) => ({ ...prev, [field]: null }));
@@ -204,12 +204,16 @@ export const useProductForm = (id = null) => {
     }
 
     let validation;
+    let fileToStore = file; // ← will be replaced for images
+
     if (field === "image") {
-      validation = await validateImage(file, {
+      // ✅ Auto-correct to square before validating
+      fileToStore = await squareifyImage(file, "pad", "#FFFFFF");
+
+      validation = await validateImage(fileToStore, {
         maxSizeMB: 2,
         // minResolution: 700,
         // maxResolution: 1200,
-        mustBeSquare: false,
         checkBackground: true,
       });
     } else if (field === "video") {
@@ -230,17 +234,18 @@ export const useProductForm = (id = null) => {
       return;
     }
 
-    // ✅ If passed → update state
-    setFormData((prev) => ({ ...prev, [field]: file }));
+    // ✅ Store the corrected file (squared for images, original for video)
+    setFormData((prev) => ({ ...prev, [field]: fileToStore }));
 
-    // ✅ Preview
+    // ✅ Preview the corrected file
     const reader = new FileReader();
     reader.onloadend = () => {
       if (field === "image") setImagePreview(reader.result);
       if (field === "video") setVideoPreview(reader.result);
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(fileToStore);
   };
+
 
   const handleTabChange = (event, newValue) => setValue(newValue);
 
