@@ -27,10 +27,10 @@ export default function Header() {
         </div>
         <div className="hidden sm:flex items-center space-x-4">
           <Link href="/register" className="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition duration-300">Start</Link>
-          <Link href="/" className="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition duration-300">Grow</Link>
+          {/* <Link href="/" className="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition duration-300">Grow</Link> */}
           <Link href="https://corporate.negromart.com/services" target="_blank" rel="noopener noreferrer" className="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition duration-300">Services</Link>
-          <Link href="/" className="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition duration-300">Resources</Link>
-          <Link href="/" className="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition duration-300">Pricing</Link>
+          {/* <Link href="/" className="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition duration-300">Resources</Link> */}
+          {/* <Link href="/" className="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition duration-300">Pricing</Link> */}
         </div>
         <div className="flex items-center space-x-4">
           <AuthButtons />
@@ -52,10 +52,10 @@ export default function Header() {
           </button>
           <nav className="flex flex-col space-y-4">
             <Link href="/register" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Start</Link>
-            <Link href="/" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Grow</Link>
-            <Link href="/" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Services</Link>
-            <Link href="/" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Resources</Link>
-            <Link href="/" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Pricing</Link>
+            {/* <Link href="/" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Grow</Link> */}
+            <Link href="https://corporate.negromart.com/services" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Services</Link>
+            {/* <Link href="/" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Resources</Link> */}
+            {/* <Link href="/" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Pricing</Link> */}
           </nav>
         </div>
       </div>
