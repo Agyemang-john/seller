@@ -83,7 +83,7 @@ const ProductImages = ({ images, setImages }) => {
     const squaredFile = await squareifyImage(file, 'pad', '#FFFFFF');
 
     const validation = await validateImage(squaredFile, {
-      maxSizeMB: 2, minResolution: 500, maxResolution: 1200, checkBackground: true,
+      maxSizeMB: 2, minResolution: 400, maxResolution: 1800, checkBackground: true,
     });
 
     if (!validation.valid) {

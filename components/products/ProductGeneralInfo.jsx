@@ -74,7 +74,7 @@ function ImageUploadZone({ preview, onFileChange, label = 'Main product image', 
                   {label}
                 </Typography>
                 <Typography variant="caption" color="text.disabled">
-                  JPG, PNG · 500–1200px · max 2 MB · auto-cropped to square
+                  JPG, PNG · 400–1800px · max 2 MB · auto-cropped to square
                 </Typography>
               </Box>
             </Stack>

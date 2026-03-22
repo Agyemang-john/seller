@@ -87,8 +87,8 @@ export async function squareifyImage(file, strategy = "pad", padColor = "#FFFFFF
 export async function validateImage(file, options = {}) {
   const {
     maxSizeMB = 2,
-    minResolution = 700,
-    maxResolution = 1200,
+    minResolution = 400,
+    maxResolution = 1800,
     checkBackground = false,
   } = options;
   // NOTE: mustBeSquare removed — squareifyImage() handles this upstream

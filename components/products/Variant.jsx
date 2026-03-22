@@ -202,7 +202,7 @@ const VariantRow = ({
 
     const squaredFile = await squareifyImage(file, 'pad', '#FFFFFF');
 
-    const validation = await validateImage(squaredFile, { maxSizeMB: 2, minResolution: 500, maxResolution: 1200, checkBackground: true });
+    const validation = await validateImage(squaredFile, { maxSizeMB: 2, minResolution: 400, maxResolution: 1800, checkBackground: true });
     if (!validation.valid) {
       Swal.fire({ icon: 'error', title: 'Invalid image', html: validation.errors.join('<br/>') });
       return;
