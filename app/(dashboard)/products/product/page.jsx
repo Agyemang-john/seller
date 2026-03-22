@@ -250,12 +250,42 @@ export default function ProductForm({ id = null }) {
       router.push('/products');
     } catch (error) {
       const body = error?.response?.data;
-      const msg  = body?.detail || (typeof body === 'object' ? JSON.stringify(body) : null) || error.message || 'An error occurred';
+
       if (!error.response) {
         Swal.fire('Network Error', 'Check your internet connection and try again.', 'error');
-      } else {
-        Swal.fire('Save failed', msg, 'error');
+        return;
       }
+
+      // ── Parse field-level validation errors ──────────────────────────
+      if (body && typeof body === 'object' && !body.detail) {
+        const fieldErrors = Object.entries(body)
+          .map(([field, messages]) => {
+            const label = field
+              .replace(/_/g, ' ')
+              .replace(/\b\w/g, (c) => c.toUpperCase());
+            const msg = Array.isArray(messages) ? messages.join(' ') : messages;
+            return `<b>${label}:</b> ${msg}`;
+          })
+          .join('<br/>');
+
+        // Also push into formErrors so inline field highlights work
+        const newErrors = {};
+        Object.entries(body).forEach(([field, messages]) => {
+          newErrors[field] = Array.isArray(messages) ? messages[0] : messages;
+        });
+        setFormErrors(newErrors);
+
+        Swal.fire({
+          icon: 'error',
+          title: 'Please fix the following',
+          html: fieldErrors,
+        });
+        return;
+      }
+
+      // ── Generic error fallback ────────────────────────────────────────
+      const msg = body?.detail || error.message || 'An unexpected error occurred.';
+      Swal.fire('Save failed', msg, 'error');
     } finally {
       setIsLoading(false);
     }
