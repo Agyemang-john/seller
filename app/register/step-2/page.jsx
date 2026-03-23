@@ -1,17 +1,14 @@
-// app/register/step-2/page.jsx
 "use client";
 
 import { useRouter } from "next/navigation";
 import { useState, useCallback } from "react";
-// import { createAxiosClient } from '@/utils/clientFetch';
-import { Box, Button, Divider, Link } from "@mui/material";
 import ProfileSetupForm from "../_components/ProfileForm";
+import CardShell from "../_components/CardShell";
 import { useSellerForm } from "../SellerFormContext";
 import debounce from "lodash.debounce";
 import axios from "axios";
 
 export default function Step2() {
-  // const axiosClient = createAxiosClient();
   const { formData, setFormData } = useSellerForm();
   const router = useRouter();
   const [errors, setErrors] = useState({});
@@ -26,53 +23,37 @@ export default function Step2() {
         setError(null);
         return;
       }
-
       setIsLoading(true);
       setError(null);
-
       try {
         const response = await axios.get(
           "https://nominatim.openstreetmap.org/search",
           {
-            params: {
-              q: query,
-              format: "json",
-              addressdetails: 1,
-              limit: 10,      // Number of suggestions returned
-            },
-            headers: {
-              "Accept-Language": "en",       // Return results in English
-            }
+            params: { q: query, format: "json", addressdetails: 1, limit: 8 },
+            headers: { "Accept-Language": "en" },
           }
         );
-
-        const formatted = response.data.map(item => ({
-          display_name: item.display_name,
-          lat: item.lat,
-          lon: item.lon,
-        }));
-
-        setSuggestions(formatted);
-        setIsLoading(false);
-
-      } catch (error) {
-        console.error("Error fetching suggestions:", error);
-
+        setSuggestions(
+          response.data.map((item) => ({
+            display_name: item.display_name,
+            lat: item.lat,
+            lon: item.lon,
+            place_id: item.place_id,
+          }))
+        );
+      } catch (err) {
         if (retryCount < 3) {
-          const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
-          setTimeout(() => {
-            fetchSuggestions(query, retryCount + 1);
-          }, delay);
+          setTimeout(() => fetchSuggestions(query, retryCount + 1), Math.pow(2, retryCount) * 1000);
         } else {
-          setError("Unable to fetch location suggestions. Please try again later.");
+          setError("Unable to fetch location suggestions. Please try again.");
           setSuggestions([]);
-          setIsLoading(false);
         }
+      } finally {
+        setIsLoading(false);
       }
     }, 500),
     []
   );
-
 
   const handleSuggestionClick = (suggestion) => {
     setFormData((prev) => ({
@@ -92,8 +73,8 @@ export default function Step2() {
     if (!formData.about.profile_image?.file) newErrors.profile_image = "Business logo is required.";
     if (!formData.about.cover_image?.file) newErrors.cover_image = "Cover image is required.";
     if (!formData.about.address?.trim()) newErrors.address = "Store location is required.";
-    if (!formData.about.longitude?.trim()) newErrors.longitude = "Longitude is required.";
-    if (!formData.about.latitude?.trim()) newErrors.latitude = "Latitude is required.";
+    if (!formData.about.longitude) newErrors.longitude = "Please select a location from the suggestions.";
+    if (!formData.about.latitude) newErrors.latitude = "Please select a location from the suggestions.";
     if (!formData.about.about?.trim()) newErrors.about = "About section is required.";
     return newErrors;
   };
@@ -102,6 +83,7 @@ export default function Step2() {
     const validationErrors = validateStep2();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
       setErrors({});
       router.push("/register/step-3");
@@ -114,10 +96,7 @@ export default function Step2() {
     const { name, value } = e.target;
     if (name.startsWith("about.")) {
       const field = name.split(".")[1];
-      setFormData((prev) => ({
-        ...prev,
-        about: { ...prev.about, [field]: value },
-      }));
+      setFormData((prev) => ({ ...prev, about: { ...prev.about, [field]: value } }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
@@ -127,7 +106,6 @@ export default function Step2() {
     const { name, files } = e.target;
     const file = files[0];
     if (!file) return;
-
     if (file.size > 2 * 1024 * 1024) {
       alert("File too large. Please upload a file smaller than 2MB.");
       return;
@@ -136,7 +114,6 @@ export default function Step2() {
       alert("Invalid file type. Only PNG or JPEG files are allowed.");
       return;
     }
-
     const reader = new FileReader();
     reader.onloadend = () => {
       setFormData((prev) => ({
@@ -153,7 +130,13 @@ export default function Step2() {
   };
 
   return (
-    <Box sx={{ maxWidth: 600, mx: "auto", p: 3 }}>
+    <CardShell
+      stepLabel="Step 2 of 4"
+      title="Store Profile"
+      description="Set up your storefront — how customers will discover you"
+      onBack={handleBack}
+      onNext={handleNext}
+    >
       <ProfileSetupForm
         formData={formData}
         handleInputChange={handleInputChange}
@@ -163,12 +146,8 @@ export default function Step2() {
         suggestions={suggestions}
         handleSuggestionClick={handleSuggestionClick}
         isLoading={isLoading}
-        error={error} 
+        error={error}
       />
-      <Box display="flex" justifyContent="space-between" mt={3}>
-        <Button onClick={handleBack}>Back</Button>
-        <Button variant="contained" onClick={handleNext}>Next</Button>
-      </Box>
-    </Box>
+    </CardShell>
   );
 }

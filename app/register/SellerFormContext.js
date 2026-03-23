@@ -82,7 +82,6 @@ export const SellerFormProvider = ({ children }) => {
       };
       setFormData(newFormData);
 
-      // Check for missing files after refresh
       const missingFiles = [];
       if (parsed.student_id?.name && !newFormData.student_id.file) missingFiles.push("Student ID (Step 1)");
       if (parsed.government_issued_id?.name && !newFormData.government_issued_id.file) missingFiles.push("Government-Issued ID (Step 1)");
@@ -90,12 +89,13 @@ export const SellerFormProvider = ({ children }) => {
       if (parsed.license?.name && !newFormData.license.file) missingFiles.push("Business License (Step 1)");
       if (parsed.about?.profile_image?.name && !newFormData.about.profile_image.file) missingFiles.push("Business Logo (Step 2)");
       if (parsed.about?.cover_image?.name && !newFormData.about.cover_image.file) missingFiles.push("Cover Image (Step 2)");
-      
+
       if (missingFiles.length > 0) {
         Swal.fire({
           icon: "warning",
           title: "Files Missing",
-          text: `Please re-upload the following files: ${missingFiles.join(", ")}. They were lost due to a page refresh.`,
+          text: `Please re-upload: ${missingFiles.join(", ")}. Files are cleared on page refresh.`,
+          confirmButtonColor: "#1a56db",
         });
       }
     }

@@ -1,10 +1,9 @@
-// app/register/step-3/page.jsx
 "use client";
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Box, Button } from "@mui/material";
 import PaymentMethodForm from "../_components/PaymentMethodForm";
+import CardShell from "../_components/CardShell";
 import { useSellerForm } from "../SellerFormContext";
 
 export default function Step3() {
@@ -14,25 +13,26 @@ export default function Step3() {
 
   const validateStep3 = () => {
     const newErrors = {};
-    if (!formData.payment_method.payment_method) newErrors.payment_method = "Payment method is required.";
-    if (formData.payment_method.payment_method === "momo") {
-      if (!formData.payment_method.momo_number?.trim()) newErrors.momo_number = "Mobile money number is required.";
-      else if (!/^\+?\d{10,15}$/.test(formData.payment_method.momo_number))
-        newErrors.momo_number = "Invalid mobile money number.";
-      if (!formData.payment_method.momo_provider?.trim()) newErrors.momo_provider = "Mobile money provider is required.";
+    const pm = formData.payment_method;
+    if (!pm.payment_method) newErrors.payment_method = "Payment method is required.";
+    if (pm.payment_method === "momo") {
+      if (!pm.momo_number?.trim()) newErrors.momo_number = "Mobile money number is required.";
+      else if (!/^\+?\d{9,15}$/.test(pm.momo_number.replace(/\s/g, "")))
+        newErrors.momo_number = "Enter a valid mobile money number.";
+      if (!pm.momo_provider?.trim()) newErrors.momo_provider = "Please select a provider.";
     }
-    if (formData.payment_method.payment_method === "bank") {
-      if (!formData.payment_method.bank_name?.trim()) newErrors.bank_name = "Bank name is required.";
-      if (!formData.payment_method.bank_account_name?.trim()) newErrors.bank_account_name = "Account name is required.";
-      if (!formData.payment_method.bank_account_number?.trim()) newErrors.bank_account_number = "Account number is required.";
+    if (pm.payment_method === "bank") {
+      if (!pm.bank_name?.trim()) newErrors.bank_name = "Bank name is required.";
+      if (!pm.bank_account_name?.trim()) newErrors.bank_account_name = "Account name is required.";
+      if (!pm.bank_account_number?.trim()) newErrors.bank_account_number = "Account number is required.";
     }
-    if (formData.payment_method.payment_method === "paypal") {
-      if (!formData.payment_method.momo_number?.trim()) newErrors.momo_number = "PayPal email or phone is required.";
-      else if (!/^\S+@\S+\.\S+$|^\+?\d{10,15}$/.test(formData.payment_method.momo_number))
-        newErrors.momo_number = "Invalid PayPal email or phone.";
+    if (pm.payment_method === "paypal") {
+      if (!pm.momo_number?.trim()) newErrors.momo_number = "PayPal email or phone is required.";
+      else if (!/^\S+@\S+\.\S+$|^\+?\d{10,15}$/.test(pm.momo_number))
+        newErrors.momo_number = "Enter a valid PayPal email or phone number.";
     }
-    if (!formData.payment_method.country) newErrors.payment_method_country = "Country is required.";
-    if (!formData.payment_method.currency) newErrors.payment_method_currency = "Currency is required.";
+    if (!pm.country) newErrors.payment_method_country = "Payment country is required.";
+    if (!pm.currency) newErrors.payment_method_currency = "Currency is required.";
     return newErrors;
   };
 
@@ -40,6 +40,7 @@ export default function Step3() {
     const validationErrors = validateStep3();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
       setErrors({});
       router.push("/register/step-4");
@@ -58,7 +59,13 @@ export default function Step3() {
   };
 
   return (
-    <Box sx={{ maxWidth: 600, mx: "auto", p: 3 }}>
+    <CardShell
+      stepLabel="Step 3 of 4"
+      title="Payment Setup"
+      description="How you'll receive your earnings from sales"
+      onBack={handleBack}
+      onNext={handleNext}
+    >
       <PaymentMethodForm
         formData={formData}
         handleInputChange={handleInputChange}
@@ -66,10 +73,6 @@ export default function Step3() {
         currencyOptions={currencyOptions}
         countryOptions={countryOptions}
       />
-      <Box display="flex" justifyContent="space-between" mt={3}>
-        <Button onClick={handleBack}>Back</Button>
-        <Button variant="contained" onClick={handleNext}>Next</Button>
-      </Box>
-    </Box>
+    </CardShell>
   );
 }
