@@ -193,7 +193,7 @@ export default function SellerSignUpLayout({ children }) {
           {/* Footer */}
           <Box textAlign="center" sx={{ mt: 3 }}>
             <Typography sx={{ fontSize: 13, color: "#64748b" }}>
-              Already have an account?{" "}
+              Already have a seller account?{" "}
               <Link
                 href="/auth/login"
                 underline="hover"

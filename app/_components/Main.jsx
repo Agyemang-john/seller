@@ -2,10 +2,12 @@
 import React, { useState } from 'react';
 import Modal from '@/components/modals/Modal';
 import { useAppSelector } from '@/redux/hooks';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
     const [activeStep, setActiveStep] = useState(null);
+    const router = useRouter();
   return (
     <main className="container mx-auto px-4 py-8">
       <section className="flex flex-col md:flex-row items-center justify-between animate-fade-in">
@@ -15,7 +17,7 @@ export default function Home() {
             Find out what you need to register, get answers to common questions, and learn what to do after you’ve created an account. 
             You can also <span style={{ fontWeight: 'bold' }}>log in</span> if you have already created an account. Report any process/step issue(s) to <span style={{ fontWeight: 'bold' }}>support@negromart.com</span></p>
             {!isAuthenticated && (
-              <button className="bg-black text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full hover:bg-gray-600 transition duration-300 animate-bounce w-full sm:w-auto">Sign up*</button>
+              <button className="bg-black text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full hover:bg-gray-600 transition duration-300 animate-bounce w-full sm:w-auto" onClick={() => router.push('/register')}>Sign up*</button>
             )}
           {/* <p className="text-sm text-gray-500 mt-2 animate-slide-up delay-200">Get started with over ₵1,000 in incentives</p> */}
         </div>
