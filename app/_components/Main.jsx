@@ -6,11 +6,11 @@ import { useRouter } from 'next/navigation';
 
 // Step image paths — replace these with your actual image imports or URLs
 const STEP_IMAGES = {
-  step1: '/images/steps/step_1.jpg',
-  step2: '/images/steps/step_2.jpg',
-  step3: '/images/steps/step_3.jpg',
-  step4: '/images/steps/step_4.jpg',
-  step5: '/images/steps/step_5.jpg',
+  step1: '/steps/step_1.jpg',
+  step2: '/steps/step_2.jpg',
+  step3: '/steps/step_3.jpg',
+  step4: '/steps/step_4.jpg',
+  step5: '/steps/step_5.jpg',
 };
 
 function StepImage({ src, alt, stepLabel }) {
@@ -29,7 +29,7 @@ function StepImage({ src, alt, stepLabel }) {
       />
       {/* Fallback placeholder */}
       <div
-        className="w-full items-center justify-center bg-gray-100 text-gray-400 text-sm font-medium rounded-xl"
+        className="w-full items-center justify-center bg-gray-100 text-gray-400 text-sm font-medium"
         style={{ aspectRatio: '1080 / 618', display: 'none' }}
       >
         {stepLabel} — image coming soon
