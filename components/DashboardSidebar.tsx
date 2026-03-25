@@ -35,6 +35,7 @@ import {
   getDrawerWidthTransitionMixin,
 } from '../mixins';
 import { Money } from '@mui/icons-material';
+import { ReceiptCent } from 'lucide-react';
 
 export interface DashboardSidebarProps {
   expanded?: boolean;
@@ -56,7 +57,7 @@ const mainListItems = [
 ];
 
 const subscribeListItems = [
-  { id: 'billing', text: 'Billing', icon: <Money />, path: '/billing' },
+  { id: 'billing', text: 'Billing', icon: <ReceiptCent />, path: '/billing' },
   { id: 'subscribe', text: 'Subscription', icon: <Money />, path: '/subscribe' },
 ];
 

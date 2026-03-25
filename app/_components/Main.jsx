@@ -1,10 +1,9 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from '@/components/modals/Modal';
 import { useAppSelector } from '@/redux/hooks';
 import { useRouter } from 'next/navigation';
 
-// Step image paths — replace these with your actual image imports or URLs
 const STEP_IMAGES = {
   step1: '/steps/step_1.jpg',
   step2: '/steps/step_2.jpg',
@@ -15,19 +14,17 @@ const STEP_IMAGES = {
 
 function StepImage({ src, alt, stepLabel }) {
   return (
-    <div className="w-full overflow-hidden rounded-0 ">
+    <div className="w-full overflow-hidden">
       <img
         src={src}
         alt={alt}
         className="w-full h-auto object-cover"
         style={{ aspectRatio: '1080 / 618' }}
         onError={(e) => {
-          // Fallback placeholder if image not found
           e.currentTarget.style.display = 'none';
           e.currentTarget.nextSibling.style.display = 'flex';
         }}
       />
-      {/* Fallback placeholder */}
       <div
         className="w-full items-center justify-center bg-gray-100 text-gray-400 text-sm font-medium"
         style={{ aspectRatio: '1080 / 618', display: 'none' }}
@@ -42,6 +39,20 @@ export default function Home() {
   const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
   const [activeStep, setActiveStep] = useState(null);
   const router = useRouter();
+
+  // null = still checking, true = logged in, false = not logged in
+  const [isACustomer, setIsACustomer] = useState(null);
+
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_HOST}/api/v1/vendor/check`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'X-User-Type': 'customer' },
+    })
+      .then((res) => { if (!res.ok) throw new Error(); return res.json(); })
+      .then(() => setIsACustomer(true))
+      .catch(() => setIsACustomer(false));
+  }, []);
 
   return (
     <main className="container mx-auto px-4 py-8 bg-white">
@@ -135,12 +146,62 @@ export default function Home() {
           </div>
 
           {/* Step 1 */}
-          <div id="step1" className="animate-scale-up delay-100 ">
-            <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-3">Step 1: Provide Basic Information</h3>
-            <StepImage src={STEP_IMAGES.step1} alt="Step 1 – Provide basic information" stepLabel="Step 1" />
-            <a href="https://www.negromart.com/auth/login" target="_blank" rel="noopener noreferrer" className="inline-block mt-4 px-4 py-2 bg-black text-white rounded-full hover:bg-gray-600 transition duration-300 animate-bounce">
-              Go to Login
-            </a>
+          <div id="step1" className="animate-scale-up delay-100">
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-3">Step 1: Sign up and Login as a customer</h3>
+            <StepImage src={STEP_IMAGES.step1} alt="Step 1 – Sign up and login" stepLabel="Step 1" />
+
+            {/* Auth status banner */}
+            <div className="mt-4">
+              {/* Checking */}
+              {isACustomer === null && (
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-500 rounded-full text-sm">
+                  <svg className="animate-spin h-4 w-4 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                  </svg>
+                  Checking your login status...
+                </div>
+              )}
+
+              {/* Not logged in */}
+              {isACustomer === false && (
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                  <div className="flex items-center gap-2 px-4 py-2 bg-orange-50 border border-orange-200 rounded-full text-sm text-orange-700 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                    </svg>
+                    You are not logged in — please log in to proceed to Step 2.
+                  </div>
+                  <a
+                    href="https://www.negromart.com/auth/login"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block px-5 py-2 bg-black text-white text-sm rounded-full hover:bg-gray-700 transition duration-300 whitespace-nowrap"
+                  >
+                    Go to Login →
+                  </a>
+                </div>
+              )}
+
+              {/* Logged in */}
+              {isACustomer === true && (
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                  <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-full text-sm text-green-700 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    You're logged in! You're ready to continue to Step 2.
+                  </div>
+                  <a
+                    href="#step2"
+                    onClick={() => setActiveStep('step2')}
+                    className="inline-block px-5 py-2 bg-black text-white text-sm rounded-full hover:bg-gray-700 transition duration-300 whitespace-nowrap"
+                  >
+                    Continue to Step 2 →
+                  </a>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Step 2 */}
