@@ -138,6 +138,9 @@ export default function Home() {
           <div id="step1" className="animate-scale-up delay-100 ">
             <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-3">Step 1: Provide Basic Information</h3>
             <StepImage src={STEP_IMAGES.step1} alt="Step 1 – Provide basic information" stepLabel="Step 1" />
+            <a href="https://www.negromart.com/auth/login" target="_blank" rel="noopener noreferrer" className="inline-block mt-4 px-4 py-2 bg-black text-white rounded-full hover:bg-gray-600 transition duration-300 animate-bounce">
+              Go to Login
+            </a>
           </div>
 
           {/* Step 2 */}
@@ -169,7 +172,7 @@ export default function Home() {
             <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">Negromart seller on a laptop</h3>
             <p className="text-gray-600 mb-2">Configure your account—and start selling</p>
             <p className="text-gray-600 mb-4">
-              After completing seller registration, you'll receive an email or SMS within 2–3 business days confirming whether you are qualified or not.
+              After completing seller registration, you'll receive an email or SMS within 2–4 business days confirming whether you are qualified or not.
               That depends on the documents you provide.
             </p>
             <img
