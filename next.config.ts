@@ -1,7 +1,5 @@
-import type { NextConfig } from 'next';
-import withPWA from '@ducanh2912/next-pwa';
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   images: {
     remotePatterns: [
       {
@@ -21,13 +19,6 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   typedRoutes: true,
-  turbopack: {
-    root: __dirname,
-  },
 };
 
-export default withPWA({
-  dest: 'public',
-  register: true,
-  disable: process.env.NODE_ENV === 'development',
-})(nextConfig);
+module.exports = nextConfig;
