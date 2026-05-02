@@ -1,5 +1,18 @@
 'use client';
 
+/**
+ * ProductList.jsx  — updated to include Bulk Upload button in the header.
+ *
+ * Changes vs original:
+ *   1. Import BulkUploadButton
+ *   2. Accept `canBulkUpload` prop (from parent/subscription context)
+ *   3. Add BulkUploadButton beside "Add product" button
+ *   4. Footer upsell now links directly to bulk-upload page when the
+ *      vendor has access, otherwise still links to /vendor/subscription
+ *
+ * All other logic is unchanged.
+ */
+
 import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -17,6 +30,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import Swal from 'sweetalert2';
 import { createAxiosClient } from '@/utils/clientFetch';
 import DeleteConfirmDialog from './Deleteconfirmdialog';
+import BulkUploadButton from './BulkUploadButton';   // ← NEW
 
 // ── Status config ─────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
@@ -142,13 +156,14 @@ function EmptyState({ onAdd, filtered }) {
 }
 
 // ── Main ProductList ──────────────────────────────────────────────────────────
-export default function ProductList({ products = [], onProductDeleted }) {
+// NEW: accepts canBulkUpload prop (boolean)
+export default function ProductList({ products = [], onProductDeleted, canBulkUpload = false }) {
   const router = useRouter();
   const [search,       setSearch]       = useState('');
   const [statusFilter, setFilter]       = useState('all');
-  const [deleting,     setDeleting]     = useState(null);   // id of item fading out
+  const [deleting,     setDeleting]     = useState(null);
   const [dialogOpen,   setDialogOpen]   = useState(false);
-  const [pendingDelete, setPendingDelete] = useState(null); // { id, title }
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   const filtered = useMemo(() => products.filter((item) => {
     const p = item.product ?? item;
@@ -159,13 +174,11 @@ export default function ProductList({ products = [], onProductDeleted }) {
   const handleEdit = useCallback((id) => router.push(`/products/product/${id}`), [router]);
   const handleView = useCallback((id) => router.push(`/products/product/${id}/view`), [router]);
 
-  // Opens the dialog — does NOT delete yet
   const handleDeleteIntent = useCallback((id, title) => {
     setPendingDelete({ id, title });
     setDialogOpen(true);
   }, []);
 
-  // Called by the dialog when the user types the word and clicks confirm
   const handleDeleteConfirm = useCallback(async () => {
     if (!pendingDelete) return;
     const { id } = pendingDelete;
@@ -200,32 +213,68 @@ export default function ProductList({ products = [], onProductDeleted }) {
 
   return (
     <Box>
-      {/* Header */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'flex-end' }} sx={{ mb: 3.5 }} spacing={2}>
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between"
+        alignItems={{ sm: 'flex-end' }}
+        sx={{ mb: 3.5 }}
+        spacing={2}
+      >
         <Box>
-          <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 30, md: 36 }, fontWeight: 700, letterSpacing: '-1px', lineHeight: 1, mb: 0.5 }} color="text.primary">
+          <Typography sx={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: { xs: 30, md: 36 }, fontWeight: 700,
+            letterSpacing: '-1px', lineHeight: 1, mb: 0.5,
+          }} color="text.primary">
             My Products
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {products.length === 0 ? 'Your catalog is empty' : `${products.length} product${products.length !== 1 ? 's' : ''} in your catalog`}
+            {products.length === 0
+              ? 'Your catalog is empty'
+              : `${products.length} product${products.length !== 1 ? 's' : ''} in your catalog`}
           </Typography>
         </Box>
-        <Button variant="contained" disableElevation startIcon={<AddIcon />} onClick={() => router.push('/products/product')}
-          sx={{ bgcolor: 'text.primary', color: 'background.paper', borderRadius: '10px', fontWeight: 600, fontSize: 13, px: 2.5, py: 1.25, flexShrink: 0, '&:hover': { bgcolor: 'text.secondary' } }}>
-          Add product
-        </Button>
+
+        {/* ── Action buttons (Add + Bulk Upload) ────────────────────────── */}
+        <Stack direction="row" spacing={1} flexShrink={0} alignItems="center">
+          {/* Bulk upload — NEW */}
+          <BulkUploadButton canBulkUpload={canBulkUpload} />
+
+          <Button
+            variant="contained"
+            disableElevation
+            startIcon={<AddIcon />}
+            onClick={() => router.push('/products/product')}
+            sx={{
+              bgcolor: 'text.primary', color: 'background.paper',
+              borderRadius: '10px', fontWeight: 600, fontSize: 13, px: 2.5, py: 1.25,
+              '&:hover': { bgcolor: 'text.secondary' },
+            }}
+          >
+            Add product
+          </Button>
+        </Stack>
       </Stack>
 
       {/* Search + filter */}
       {products.length > 0 && (
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 3 }}>
-          <TextField placeholder="Search products…" value={search} onChange={(e) => setSearch(e.target.value)} size="small"
+          <TextField
+            placeholder="Search products…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            size="small"
             InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 18, color: 'text.disabled' }} /></InputAdornment> }}
-            sx={{ flex: 1, '& .MuiOutlinedInput-root': { borderRadius: '10px', '& fieldset': { borderColor: 'divider' }, '&:hover fieldset': { borderColor: 'text.disabled' } } }} />
+            sx={{ flex: 1, '& .MuiOutlinedInput-root': { borderRadius: '10px', '& fieldset': { borderColor: 'divider' }, '&:hover fieldset': { borderColor: 'text.disabled' } } }}
+          />
           <FormControl size="small" sx={{ minWidth: 148 }}>
-            <Select value={statusFilter} onChange={(e) => setFilter(e.target.value)}
+            <Select
+              value={statusFilter}
+              onChange={(e) => setFilter(e.target.value)}
               startAdornment={<FilterListIcon sx={{ fontSize: 16, mr: 0.75, color: 'text.disabled' }} />}
-              sx={{ borderRadius: '10px', '& fieldset': { borderColor: 'divider' } }}>
+              sx={{ borderRadius: '10px', '& fieldset': { borderColor: 'divider' } }}
+            >
               <MenuItem value="all">All status</MenuItem>
               {Object.entries(STATUS_CONFIG).map(([val, cfg]) => (
                 <MenuItem key={val} value={val}>
@@ -281,22 +330,27 @@ export default function ProductList({ products = [], onProductDeleted }) {
         </>
       )}
 
-      {/* Footer upsell */}
+      {/* Footer upsell — updated */}
       {products.length > 0 && (
         <Box sx={{ mt: 4, p: '16px 22px', borderRadius: '12px', bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
           <Typography variant="caption" color="text.secondary">
-            Need to add many products at once?{' '}
-            <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>Bulk upload</Box>{' '}
-            is available on the Pro plan.
+            {canBulkUpload
+              ? 'You have Bulk Upload access — add up to 500 products at once.'
+              : <>Need to add many products at once? <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>Bulk upload</Box> is available on the Pro plan.</>}
           </Typography>
-          <Button href="/vendor/subscription" size="small" variant="outlined" endIcon={<ArrowForwardIcon sx={{ fontSize: 12 }} />}
-            sx={{ fontSize: 11, fontWeight: 600, borderRadius: '8px', borderColor: 'divider', color: 'text.secondary', flexShrink: 0, '&:hover': { borderColor: 'text.primary', color: 'text.primary' } }}>
-            Upgrade
+          <Button
+            href={canBulkUpload ? '/products/bulk-upload' : '/vendor/subscription'}
+            size="small"
+            variant="outlined"
+            endIcon={<ArrowForwardIcon sx={{ fontSize: 12 }} />}
+            sx={{ fontSize: 11, fontWeight: 600, borderRadius: '8px', borderColor: 'divider', color: 'text.secondary', flexShrink: 0, '&:hover': { borderColor: 'text.primary', color: 'text.primary' } }}
+          >
+            {canBulkUpload ? 'Bulk upload' : 'Upgrade'}
           </Button>
         </Box>
       )}
 
-      {/* ── Delete confirmation dialog ──────────────────────────────── */}
+      {/* Delete dialog */}
       <DeleteConfirmDialog
         open={dialogOpen}
         productTitle={pendingDelete?.title ?? ''}

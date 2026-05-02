@@ -17,11 +17,404 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
+import TextField from '@mui/material/TextField';
+import Chip from '@mui/material/Chip';
+import Collapse from '@mui/material/Collapse';
+import Alert from '@mui/material/Alert';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
+import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
 import Swal from 'sweetalert2';
 import PageContainer from '@/components/PageContainer';
+
+// ─── Shipment status colours ──────────────────────────────────────────────────
+const SHIPMENT_STATUS_COLORS = {
+  pending:          { label: "Pending",           color: "#F57F17", bg: "#FFF8E1" },
+  label_created:    { label: "Label Created",     color: "#1565C0", bg: "#E3F2FD" },
+  in_transit:       { label: "In Transit",        color: "#6A1B9A", bg: "#F3E5F5" },
+  out_for_delivery: { label: "Out for Delivery",  color: "#E65100", bg: "#FFF3E0" },
+  delivered:        { label: "Delivered",         color: "#2E7D32", bg: "#E8F5E9" },
+  failed:           { label: "Failed",            color: "#C62828", bg: "#FFEBEE" },
+  canceled:         { label: "Canceled",          color: "#757575", bg: "#F5F5F5" },
+  returned:         { label: "Returned",          color: "#BF360C", bg: "#FBE9E7" },
+};
+
+const TRACKING_EVENT_STATUSES = [
+  { value: 'info',               label: 'Info Received'         },
+  { value: 'in_transit',         label: 'In Transit'            },
+  { value: 'out_for_delivery',   label: 'Out for Delivery'      },
+  { value: 'delivered',          label: 'Delivered'             },
+  { value: 'exception',          label: 'Delivery Exception'    },
+  { value: 'failed_attempt',     label: 'Failed Delivery Attempt'},
+  { value: 'returned_to_sender', label: 'Returned to Sender'    },
+];
+
+// ─── Progress steps (for visual stepper) ─────────────────────────────────────
+const PROGRESS_STEPS = [
+  { key: 'label_created',    label: 'Confirmed' },
+  { key: 'in_transit',       label: 'In Transit' },
+  { key: 'out_for_delivery', label: 'Out for Delivery' },
+  { key: 'delivered',        label: 'Delivered' },
+];
+const STEP_ORDER = { label_created: 1, in_transit: 2, out_for_delivery: 3, delivered: 4 };
+
+// ─── Shipment Panel ───────────────────────────────────────────────────────────
+function ShipmentPanel({ orderId, existingShipments, onShipmentUpdated }) {
+  const axiosClient = createAxiosClient();
+  const [shipments, setShipments] = useState(existingShipments || []);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [eventForms, setEventForms] = useState({});  // keyed by shipment_id
+  const [expandedShipment, setExpandedShipment] = useState(null);
+
+  const [form, setForm] = useState({
+    carrier: '',
+    carrier_code: '',
+    tracking_number: '',
+    tracking_url: '',
+    status: 'label_created',
+    estimated_delivery_date: '',
+    is_international: false,
+  });
+
+  const defaultEventForm = {
+    status: 'in_transit',
+    description: '',
+    location: '',
+    city: '',
+    country: '',
+    event_date: dayjs().format('YYYY-MM-DDTHH:mm'),
+  };
+
+  const handleCreateShipment = async () => {
+    if (!form.carrier) {
+      Swal.fire('Missing field', 'Carrier name is required.', 'warning');
+      return;
+    }
+    // Guard: each vendor can only have one shipment per order
+    if (shipments.length > 0) {
+      Swal.fire('Already Exists', 'You already have a shipment for this order. Update it instead of creating a new one.', 'info');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await axiosClient.post(`/api/v1/vendor/orders/${orderId}/shipment/`, form);
+      const created = res.data;
+      setShipments((prev) => [...prev, created]);
+      setShowCreateForm(false);
+      setForm({ carrier: '', carrier_code: '', tracking_number: '', tracking_url: '', status: 'label_created', estimated_delivery_date: '', is_international: false });
+      onShipmentUpdated && onShipmentUpdated();
+      Swal.fire({ title: 'Shipment Created', icon: 'success', timer: 1500, showConfirmButton: false });
+    } catch (err) {
+      // Handle 409 Conflict from backend duplicate check
+      if (err.response?.status === 409) {
+        Swal.fire('Already Exists', err.response.data?.error || 'Shipment already exists for this order.', 'info');
+      } else {
+        Swal.fire('Error', err.response?.data?.error || 'Could not create shipment.', 'error');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAddEvent = async (shipmentId) => {
+    const ef = eventForms[shipmentId] || defaultEventForm;
+    if (!ef.description || !ef.event_date) {
+      Swal.fire('Missing field', 'Description and event date are required.', 'warning');
+      return;
+    }
+    try {
+      const res = await axiosClient.post(
+        `/api/v1/vendor/orders/${orderId}/shipment/${shipmentId}/event/`,
+        ef
+      );
+      setShipments((prev) =>
+        prev.map((sh) =>
+          sh.shipment_id === shipmentId
+            ? { ...sh, tracking_events: [res.data, ...(sh.tracking_events || [])] }
+            : sh
+        )
+      );
+      setEventForms((prev) => ({ ...prev, [shipmentId]: defaultEventForm }));
+      onShipmentUpdated && onShipmentUpdated();
+      Swal.fire({ title: 'Event Added', icon: 'success', timer: 1200, showConfirmButton: false });
+    } catch (err) {
+      Swal.fire('Error', err.response?.data?.error || 'Could not add event.', 'error');
+    }
+  };
+
+  return (
+    <Box>
+      {/* Header row */}
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <LocalShippingIcon color="action" fontSize="small" />
+          <Typography variant="h6">Shipment & Tracking</Typography>
+        </Stack>
+        {shipments.length === 0 && (
+          <Button
+            size="small"
+            startIcon={<AddCircleOutlineIcon />}
+            onClick={() => setShowCreateForm((v) => !v)}
+            variant={showCreateForm ? 'outlined' : 'contained'}
+            disableElevation
+          >
+            {showCreateForm ? 'Cancel' : 'Create Shipment'}
+          </Button>
+        )}
+      </Stack>
+
+      {/* Create shipment form */}
+      <Collapse in={showCreateForm}>
+        <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+          <Typography variant="subtitle2" gutterBottom>New Shipment Details</Typography>
+          <Grid container spacing={2}>
+            {[
+              { field: 'carrier',          label: 'Carrier (e.g. DHL)',   required: true },
+              { field: 'carrier_code',     label: 'Carrier Code (e.g. dhl)' },
+              { field: 'tracking_number',  label: 'Tracking Number' },
+              { field: 'tracking_url',     label: 'Tracking URL' },
+            ].map(({ field, label, required }) => (
+              <Grid key={field} size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label={label}
+                  required={required}
+                  value={form[field]}
+                  onChange={(e) => setForm((p) => ({ ...p, [field]: e.target.value }))}
+                />
+              </Grid>
+            ))}
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Estimated Delivery Date"
+                type="date"
+                InputLabelProps={{ shrink: true }}
+                value={form.estimated_delivery_date}
+                onChange={(e) => setForm((p) => ({ ...p, estimated_delivery_date: e.target.value }))}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Select
+                fullWidth
+                size="small"
+                value={form.status}
+                onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
+              >
+                {Object.entries(SHIPMENT_STATUS_COLORS).map(([v, { label }]) => (
+                  <MenuItem key={v} value={v}>{label}</MenuItem>
+                ))}
+              </Select>
+            </Grid>
+          </Grid>
+          <Stack direction="row" justifyContent="flex-end" sx={{ mt: 2 }}>
+            <Button
+              variant="contained"
+              disableElevation
+              disabled={submitting}
+              onClick={handleCreateShipment}
+              startIcon={submitting ? <CircularProgress size={14} /> : null}
+            >
+              {submitting ? 'Creating…' : 'Create Shipment'}
+            </Button>
+          </Stack>
+        </Paper>
+      </Collapse>
+
+      {/* Shipment list */}
+      {shipments.length === 0 ? (
+        <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
+          <LocalShippingIcon sx={{ fontSize: 36, color: 'text.disabled', mb: 1 }} />
+          <Typography variant="body2" color="text.secondary">
+            No shipments yet. Click "Create Shipment" to add one.
+          </Typography>
+        </Paper>
+      ) : (
+        shipments.map((sh) => {
+          const cfg = SHIPMENT_STATUS_COLORS[sh.status] ?? SHIPMENT_STATUS_COLORS.pending;
+          const currentStep = STEP_ORDER[sh.status] || 0;
+          const isExpanded = expandedShipment === sh.shipment_id;
+          const ef = eventForms[sh.shipment_id] || defaultEventForm;
+
+          return (
+            <Paper key={sh.shipment_id} variant="outlined" sx={{ mb: 2, overflow: 'hidden' }}>
+              {/* Shipment header */}
+              <Box
+                sx={{ px: 2, py: 1.5, background: '#FAFAFA', borderBottom: '1px solid #E0E0E0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+                onClick={() => setExpandedShipment(isExpanded ? null : sh.shipment_id)}
+              >
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                  <LocalShippingIcon fontSize="small" color="action" />
+                  <Box>
+                    <Typography variant="body2" fontWeight={700} fontFamily="monospace">
+                      {sh.shipment_id}
+                    </Typography>
+                    {sh.tracking_number && (
+                      <Typography variant="caption" color="text.secondary">
+                        {sh.carrier} · #{sh.tracking_number}
+                      </Typography>
+                    )}
+                  </Box>
+                </Stack>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Chip
+                    label={cfg.label}
+                    size="small"
+                    sx={{ background: cfg.bg, color: cfg.color, fontWeight: 700, fontSize: 11, height: 22, borderRadius: '6px' }}
+                  />
+                  {isExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+                </Stack>
+              </Box>
+
+              <Collapse in={isExpanded}>
+                <Box sx={{ p: 2 }}>
+                  {/* Progress stepper */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    {PROGRESS_STEPS.map((step, idx) => {
+                      const done = currentStep > idx + 1;
+                      const active = currentStep === idx + 1;
+                      return (
+                        <Box key={step.key} sx={{ display: 'flex', alignItems: 'center', flex: idx < PROGRESS_STEPS.length - 1 ? 1 : 'initial' }}>
+                          <Stack alignItems="center" spacing={0.5}>
+                            {done ? (
+                              <CheckCircleIcon sx={{ fontSize: 20, color: '#2E7D32' }} />
+                            ) : active ? (
+                              <FiberManualRecordIcon sx={{ fontSize: 16, color: '#1565C0' }} />
+                            ) : (
+                              <RadioButtonUncheckedIcon sx={{ fontSize: 20, color: '#E0E0E0' }} />
+                            )}
+                            <Typography sx={{ fontSize: 10, fontWeight: active ? 700 : 500, color: done ? '#2E7D32' : active ? '#1565C0' : '#9E9E9E', whiteSpace: 'nowrap' }}>
+                              {step.label}
+                            </Typography>
+                          </Stack>
+                          {idx < PROGRESS_STEPS.length - 1 && (
+                            <Box sx={{ flex: 1, height: 2, background: done ? '#2E7D32' : '#E0E0E0', mx: 0.5, mb: 2.5 }} />
+                          )}
+                        </Box>
+                      );
+                    })}
+                  </Box>
+
+                  <Divider sx={{ mb: 2 }} />
+
+                  {/* Add tracking event form */}
+                  <Typography variant="subtitle2" gutterBottom>Add Tracking Event</Typography>
+                  <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Select
+                        fullWidth
+                        size="small"
+                        value={ef.status}
+                        onChange={(e) => setEventForms((p) => ({ ...p, [sh.shipment_id]: { ...ef, status: e.target.value } }))}
+                      >
+                        {TRACKING_EVENT_STATUSES.map((s) => (
+                          <MenuItem key={s.value} value={s.value}>{s.label}</MenuItem>
+                        ))}
+                      </Select>
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        label="Event Date & Time"
+                        type="datetime-local"
+                        InputLabelProps={{ shrink: true }}
+                        value={ef.event_date}
+                        onChange={(e) => setEventForms((p) => ({ ...p, [sh.shipment_id]: { ...ef, event_date: e.target.value } }))}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12 }}>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        label="Description (e.g. Package arrived at sorting facility)"
+                        required
+                        value={ef.description}
+                        onChange={(e) => setEventForms((p) => ({ ...p, [sh.shipment_id]: { ...ef, description: e.target.value } }))}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 4 }}>
+                      <TextField
+                        fullWidth size="small" label="Location"
+                        value={ef.location}
+                        onChange={(e) => setEventForms((p) => ({ ...p, [sh.shipment_id]: { ...ef, location: e.target.value } }))}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 4 }}>
+                      <TextField
+                        fullWidth size="small" label="City"
+                        value={ef.city}
+                        onChange={(e) => setEventForms((p) => ({ ...p, [sh.shipment_id]: { ...ef, city: e.target.value } }))}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 4 }}>
+                      <TextField
+                        fullWidth size="small" label="Country"
+                        value={ef.country}
+                        onChange={(e) => setEventForms((p) => ({ ...p, [sh.shipment_id]: { ...ef, country: e.target.value } }))}
+                      />
+                    </Grid>
+                  </Grid>
+                  <Stack direction="row" justifyContent="flex-end">
+                    <Button
+                      size="small"
+                      variant="contained"
+                      disableElevation
+                      onClick={() => handleAddEvent(sh.shipment_id)}
+                    >
+                      Add Event
+                    </Button>
+                  </Stack>
+
+                  {/* Existing events */}
+                  {sh.tracking_events?.length > 0 && (
+                    <>
+                      <Divider sx={{ my: 2 }} />
+                      <Typography variant="subtitle2" gutterBottom>Tracking History</Typography>
+                      <Box sx={{ position: 'relative', pl: 2 }}>
+                        <Box sx={{ position: 'absolute', left: 7, top: 8, bottom: 8, width: 2, background: '#E0E0E0' }} />
+                        {sh.tracking_events.map((ev, idx) => (
+                          <Box key={ev.id} sx={{ display: 'flex', gap: 2, mb: 1.5, position: 'relative' }}>
+                            <Box sx={{ mt: '3px', flexShrink: 0 }}>
+                              <Box sx={{ width: 12, height: 12, borderRadius: '50%', background: idx === 0 ? '#1565C0' : '#E0E0E0', border: `2px solid ${idx === 0 ? '#1565C0' : '#E0E0E0'}` }} />
+                            </Box>
+                            <Box>
+                              <Typography variant="body2" fontWeight={idx === 0 ? 700 : 500}>
+                                {ev.description}
+                              </Typography>
+                              {(ev.city || ev.location) && (
+                                <Typography variant="caption" color="text.secondary">
+                                  {[ev.location, ev.city, ev.country].filter(Boolean).join(', ')}
+                                </Typography>
+                              )}
+                              <Typography variant="caption" display="block" color="text.secondary">
+                                {dayjs(ev.event_date).format('MMM D, YYYY · h:mm A')}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        ))}
+                      </Box>
+                    </>
+                  )}
+                </Box>
+              </Collapse>
+            </Paper>
+          );
+        })
+      )}
+    </Box>
+  );
+}
 
 export default function OrderDetailPage({ id }) {
   const axiosClient = createAxiosClient();
@@ -30,6 +423,14 @@ export default function OrderDetailPage({ id }) {
   const [order, setOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [statusUpdating, setStatusUpdating] = useState(false);
+  const [shipments, setShipments] = useState([]);
+
+  const fetchShipments = useCallback(async () => {
+    try {
+      const res = await axiosClient.get(`/api/v1/vendor/orders/${id}/shipment/`);
+      setShipments(res.data ?? []);
+    } catch (_) {}
+  }, [id]);
 
   const fetchOrderDetails = useCallback(async () => {
     setIsLoading(true);
@@ -44,6 +445,7 @@ export default function OrderDetailPage({ id }) {
 
   useEffect(() => {
     fetchOrderDetails();
+    fetchShipments();
   }, []);
 
 
@@ -275,6 +677,15 @@ export default function OrderDetailPage({ id }) {
             </TableBody>
           </Table>
         </Box>
+        <Divider sx={{ my: 3 }} />
+
+        {/* ── Shipment & Tracking Panel ── */}
+        <ShipmentPanel
+          orderId={id}
+          existingShipments={shipments}
+          onShipmentUpdated={fetchShipments}
+        />
+
         <Divider sx={{ my: 3 }} />
         <Stack direction="row" spacing={2} justifyContent="space-between">
           <Button

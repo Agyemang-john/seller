@@ -1,4 +1,3 @@
-// app/employees/layout.tsx
 "use client";
 
 import * as React from 'react';
@@ -9,9 +8,11 @@ import Toolbar from '@mui/material/Toolbar';
 import DashboardHeader from '@/components/DashboardHeader';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import SitemarkIcon from '@/components/SitemarkIcon';
+import { useVendorProfile } from '@/hooks/useVendorProfile';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
+  const { profile, loading } = useVendorProfile();
 
   const [isDesktopNavigationExpanded, setIsDesktopNavigationExpanded] =
     React.useState(true);
@@ -32,17 +33,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setIsMobileNavigationExpanded(newExpanded);
       }
     },
-    [
-      isOverMdViewport,
-      setIsDesktopNavigationExpanded,
-      setIsMobileNavigationExpanded,
-    ],
+    [isOverMdViewport],
   );
 
   const handleToggleHeaderMenu = React.useCallback(
-    (isExpanded: boolean) => {
-      setIsNavigationExpanded(isExpanded);
-    },
+    (isExpanded: boolean) => setIsNavigationExpanded(isExpanded),
     [setIsNavigationExpanded],
   );
 
@@ -64,13 +59,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         title=""
         menuOpen={isNavigationExpanded}
         onToggleMenu={handleToggleHeaderMenu}
+        storeName={profile?.vendor_name}
+        storeAvatar={profile?.profile_image}
       />
-      
+
       <DashboardSidebar
         expanded={isNavigationExpanded}
         setExpanded={setIsNavigationExpanded}
         container={layoutRef?.current ?? undefined}
+        storeName={profile?.vendor_name}
+        storeAddress={profile?.address}
+        storeAvatar={profile?.profile_image}
+        storeLoading={loading}
       />
+
       <Box
         sx={{
           display: 'flex',
