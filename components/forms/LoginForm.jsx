@@ -38,7 +38,7 @@ export default function LoginForm() {
     setMessage({ type: null, text: '' });
 
     try {
-      const response = await login({ email: emailOrPhone, password }).unwrap();
+      const response = await login({ email: emailOrPhone.toLowerCase(), password }).unwrap();
       if (response.detail?.includes('OTP sent')) {
         // Set cookie for identifier (10-minute expiry)
         Cookies.set('otp_identifier', emailOrPhone);

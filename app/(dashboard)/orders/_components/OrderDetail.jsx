@@ -135,10 +135,11 @@ function ShipmentPanel({ orderId, existingShipments, onShipmentUpdated }) {
         `/api/v1/vendor/orders/${orderId}/shipment/${shipmentId}/event/`,
         ef
       );
+      const newEvent = res.data;  // ← now safe since backend returns the event
       setShipments((prev) =>
         prev.map((sh) =>
           sh.shipment_id === shipmentId
-            ? { ...sh, tracking_events: [res.data, ...(sh.tracking_events || [])] }
+            ? { ...sh, tracking_events: [newEvent, ...(sh.tracking_events || [])] }
             : sh
         )
       );

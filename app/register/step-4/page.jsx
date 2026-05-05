@@ -155,7 +155,7 @@ export default function Step4() {
     setLoading(true);
     const dataToSend = new FormData();
     dataToSend.append("name", formData.name);
-    dataToSend.append("email", formData.email);
+    dataToSend.append("email", formData.email.toLowerCase());
     dataToSend.append("contact", formData.contact);
     dataToSend.append("country", formData.country);
     dataToSend.append("vendor_type", formData.vendor_type);
