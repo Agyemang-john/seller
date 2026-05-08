@@ -1,23 +1,11 @@
 'use client';
 
-/**
- * ProductList.jsx  — updated to include Bulk Upload button in the header.
- *
- * Changes vs original:
- *   1. Import BulkUploadButton
- *   2. Accept `canBulkUpload` prop (from parent/subscription context)
- *   3. Add BulkUploadButton beside "Add product" button
- *   4. Footer upsell now links directly to bulk-upload page when the
- *      vendor has access, otherwise still links to /vendor/subscription
- *
- * All other logic is unchanged.
- */
-
-import { useState, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import {
   Box, Grid, Typography, Stack, Button, Chip, IconButton,
   InputAdornment, TextField, MenuItem, Select, FormControl, Tooltip,
+  Pagination,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
@@ -30,7 +18,9 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import Swal from 'sweetalert2';
 import { createAxiosClient } from '@/utils/clientFetch';
 import DeleteConfirmDialog from './Deleteconfirmdialog';
-import BulkUploadButton from './BulkUploadButton';   // ← NEW
+import BulkUploadButton from './BulkUploadButton';
+
+const PAGE_SIZE = 20;
 
 // ── Status config ─────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
@@ -156,20 +146,52 @@ function EmptyState({ onAdd, filtered }) {
 }
 
 // ── Main ProductList ──────────────────────────────────────────────────────────
-// NEW: accepts canBulkUpload prop (boolean)
 export default function ProductList({ products = [], onProductDeleted, canBulkUpload = false }) {
-  const router = useRouter();
-  const [search,       setSearch]       = useState('');
-  const [statusFilter, setFilter]       = useState('all');
-  const [deleting,     setDeleting]     = useState(null);
-  const [dialogOpen,   setDialogOpen]   = useState(false);
+  const router      = useRouter();
+  const pathname    = usePathname();
+  const searchParams = useSearchParams();
+
+  const [search,        setSearch]       = useState('');
+  const [statusFilter,  setFilter]       = useState('all');
+  const [deleting,      setDeleting]     = useState(null);
+  const [dialogOpen,    setDialogOpen]   = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
+
+  // Current page from URL — survives refresh
+  const currentPage = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+
+  // Navigate to a specific page without scrolling to top
+  const goToPage = useCallback((page) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('page', String(page));
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [router, pathname, searchParams]);
 
   const filtered = useMemo(() => products.filter((item) => {
     const p = item.product ?? item;
     return (!search || p.title?.toLowerCase().includes(search.toLowerCase()))
         && (statusFilter === 'all' || p.status === statusFilter);
   }), [products, search, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage   = Math.min(currentPage, totalPages);
+  const paginated  = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  // Reset to page 1 when search or filter changes (skip mount)
+  const isMount = useRef(true);
+  useEffect(() => {
+    if (isMount.current) { isMount.current = false; return; }
+    goToPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, statusFilter]);
+
+  // If a deletion empties the current page, go back one page
+  useEffect(() => {
+    if (paginated.length === 0 && filtered.length > 0 && currentPage > 1) {
+      goToPage(currentPage - 1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paginated.length, currentPage]);
 
   const handleEdit = useCallback((id) => router.push(`/products/product/${id}`), [router]);
   const handleView = useCallback((id) => router.push(`/products/product/${id}/view`), [router]);
@@ -211,6 +233,10 @@ export default function ProductList({ products = [], onProductDeleted, canBulkUp
 
   const isFiltered = search || statusFilter !== 'all';
 
+  // Range label for current page
+  const rangeStart = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const rangeEnd   = Math.min(safePage * PAGE_SIZE, filtered.length);
+
   return (
     <Box>
       {/* ── Header ──────────────────────────────────────────────────────── */}
@@ -236,11 +262,9 @@ export default function ProductList({ products = [], onProductDeleted, canBulkUp
           </Typography>
         </Box>
 
-        {/* ── Action buttons (Add + Bulk Upload) ────────────────────────── */}
+        {/* ── Action buttons ────────────────────────────────────────────── */}
         <Stack direction="row" spacing={1} flexShrink={0} alignItems="center">
-          {/* Bulk upload — NEW */}
           <BulkUploadButton canBulkUpload={canBulkUpload} />
-
           <Button
             variant="contained"
             disableElevation
@@ -293,30 +317,41 @@ export default function ProductList({ products = [], onProductDeleted, canBulkUp
       {/* Status chip quick-filters */}
       {products.length > 3 && (
         <Stack direction="row" spacing={0.75} sx={{ mb: 2.5, overflowX: 'auto', pb: 0.5, '&::-webkit-scrollbar': { display: 'none' } }}>
-          <Chip label={`All (${products.length})`} size="small" onClick={() => setFilter('all')}
-            sx={{ borderRadius: '8px', fontWeight: 600, fontSize: 11, flexShrink: 0, bgcolor: statusFilter === 'all' ? 'text.primary' : 'action.hover', color: statusFilter === 'all' ? 'background.paper' : 'text.secondary' }} />
+          <Chip
+            label={`All (${products.length})`}
+            size="small"
+            onClick={() => setFilter('all')}
+            sx={{ borderRadius: '8px', fontWeight: 600, fontSize: 11, flexShrink: 0, bgcolor: statusFilter === 'all' ? 'text.primary' : 'action.hover', color: statusFilter === 'all' ? 'background.paper' : 'text.secondary' }}
+          />
           {Object.entries(statusCounts).map(([s, count]) => {
             const cfg = getStatus(s);
             return (
-              <Chip key={s} label={`${cfg.label} (${count})`} size="small" onClick={() => setFilter(s === statusFilter ? 'all' : s)}
-                sx={{ borderRadius: '8px', fontWeight: 600, fontSize: 11, flexShrink: 0, bgcolor: statusFilter === s ? cfg.color : 'action.hover', color: statusFilter === s ? '#ffffff' : 'text.secondary' }} />
+              <Chip
+                key={s}
+                label={`${cfg.label} (${count})`}
+                size="small"
+                onClick={() => setFilter(s === statusFilter ? 'all' : s)}
+                sx={{ borderRadius: '8px', fontWeight: 600, fontSize: 11, flexShrink: 0, bgcolor: statusFilter === s ? cfg.color : 'action.hover', color: statusFilter === s ? '#ffffff' : 'text.secondary' }}
+              />
             );
           })}
         </Stack>
       )}
 
       {/* Grid */}
-      {filtered.length === 0 ? (
+      {paginated.length === 0 ? (
         <EmptyState onAdd={() => router.push('/products/product')} filtered={!!isFiltered} />
       ) : (
         <>
-          {isFiltered && (
-            <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mb: 1.5 }}>
-              Showing {filtered.length} of {products.length} products
-            </Typography>
-          )}
+          {/* Range counter */}
+          <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mb: 1.5 }}>
+            {isFiltered
+              ? `Showing ${rangeStart}–${rangeEnd} of ${filtered.length} matching products`
+              : `Showing ${rangeStart}–${rangeEnd} of ${products.length} products`}
+          </Typography>
+
           <Grid container spacing={{ xs: 1.5, sm: 2 }}>
-            {filtered.map((item, i) => {
+            {paginated.map((item, i) => {
               const p = item.product ?? item;
               return (
                 <Grid key={p.id} size={{ xs: 6, sm: 4, md: 3, lg: 3 }}>
@@ -327,10 +362,36 @@ export default function ProductList({ products = [], onProductDeleted, canBulkUp
               );
             })}
           </Grid>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <Stack alignItems="center" sx={{ mt: 4 }}>
+              <Pagination
+                count={totalPages}
+                page={safePage}
+                onChange={(_, page) => goToPage(page)}
+                shape="rounded"
+                siblingCount={1}
+                boundaryCount={1}
+                sx={{
+                  '& .MuiPaginationItem-root': {
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                    fontSize: 13,
+                  },
+                  '& .MuiPaginationItem-root.Mui-selected': {
+                    bgcolor: 'text.primary',
+                    color: 'background.paper',
+                    '&:hover': { bgcolor: 'text.secondary' },
+                  },
+                }}
+              />
+            </Stack>
+          )}
         </>
       )}
 
-      {/* Footer upsell — updated */}
+      {/* Footer upsell */}
       {products.length > 0 && (
         <Box sx={{ mt: 4, p: '16px 22px', borderRadius: '12px', bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
           <Typography variant="caption" color="text.secondary">

@@ -1,13 +1,14 @@
 // app/vendor/products/page.jsx
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import { Box } from '@mui/material';
 import PageContainer from '@/components/PageContainer';
 import ProductList from '@/components/products/ProductList';
 import ProductListSkeleton from '@/components/products/Productlistskeleton';
 import ProductListError from '@/components/products/Productlisterror';
 import { createAxiosClient } from '@/utils/clientFetch';
+import { useCurrentSubscription } from '@/hooks/useSubscription';
 
 const PAGE_TITLE = 'My Products';
 
@@ -15,6 +16,10 @@ export default function ProductsPage() {
   const [products, setProducts] = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState(null);
+
+  // Subscription data drives the BulkUploadButton visibility
+  const { subscription } = useCurrentSubscription();
+  const canBulkUpload = subscription?.plan?.can_access_bulk_upload ?? false;
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -48,7 +53,15 @@ export default function ProductsPage() {
       <Box sx={{ pb: 8 }}>
         {loading  && <ProductListSkeleton />}
         {error    && !loading && <ProductListError message={error} onRetry={fetchProducts} />}
-        {!loading && !error   && <ProductList products={products} onProductDeleted={handleProductDeleted} />}
+        {!loading && !error   && (
+          <Suspense fallback={<ProductListSkeleton />}>
+            <ProductList
+              products={products}
+              onProductDeleted={handleProductDeleted}
+              canBulkUpload={canBulkUpload}
+            />
+          </Suspense>
+        )}
       </Box>
     </PageContainer>
   );
