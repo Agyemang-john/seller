@@ -536,7 +536,7 @@ export default function OrderDetailPage({ id }) {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Amount</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                GHS{order.vendor_total.toFixed(2)}
+                GHS {order.vendor_total != null ? parseFloat(order.vendor_total).toFixed(2) : '—'}
               </Typography>
             </Paper>
           </Grid>
@@ -544,7 +544,9 @@ export default function OrderDetailPage({ id }) {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Delivery Cost</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                GHS{order.vendor_delivery_cost.toFixed(2) || 'Not available'}
+                {order.vendor_delivery_cost != null
+                  ? `GHS ${parseFloat(order.vendor_delivery_cost).toFixed(2)}`
+                  : 'Not available'}
               </Typography>
             </Paper>
           </Grid>
@@ -552,7 +554,7 @@ export default function OrderDetailPage({ id }) {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Payment Method</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {order.payment_method.replace('_', ' ').toUpperCase()}
+                {(order.payment_method || '').replace(/_/g, ' ').toUpperCase() || '—'}
               </Typography>
             </Paper>
           </Grid>
@@ -579,41 +581,48 @@ export default function OrderDetailPage({ id }) {
         <Typography variant="h6" gutterBottom>
           Shipping Information
         </Typography>
-        <Grid container spacing={2} sx={{ width: '100%' }}>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Paper sx={{ px: 2, py: 1 }}>
-              <Typography variant="overline">Name</Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
-                {order.address.full_name}
-              </Typography>
-            </Paper>
+        {!order.address ? (
+          <Paper variant="outlined" sx={{ px: 2, py: 1.5 }}>
+            <Typography variant="body2" color="text.secondary">No shipping address on record.</Typography>
+          </Paper>
+        ) : (
+          <Grid container spacing={2} sx={{ width: '100%' }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Paper sx={{ px: 2, py: 1 }}>
+                <Typography variant="overline">Name</Typography>
+                <Typography variant="body1" sx={{ mb: 1 }}>
+                  {order.address.full_name || '—'}
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Paper sx={{ px: 2, py: 1 }}>
+                <Typography variant="overline">Email</Typography>
+                <Typography variant="body1" sx={{ mb: 1 }}>
+                  {order.address.email || '—'}
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Paper sx={{ px: 2, py: 1 }}>
+                <Typography variant="overline">Mobile</Typography>
+                <Typography variant="body1" sx={{ mb: 1 }}>
+                  {order.address.mobile || '—'}
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Paper sx={{ px: 2, py: 1 }}>
+                <Typography variant="overline">Address</Typography>
+                <Typography variant="body1" sx={{ mb: 1 }}>
+                  {[order.address.country, order.address.region, order.address.town, order.address.address]
+                    .filter(Boolean).join(', ') || '—'}
+                  {order.address.gps_address && `, GPS: ${order.address.gps_address}`}
+                </Typography>
+              </Paper>
+            </Grid>
           </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Paper sx={{ px: 2, py: 1 }}>
-              <Typography variant="overline">Email</Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
-                {order.address.email}
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Paper sx={{ px: 2, py: 1 }}>
-              <Typography variant="overline">Mobile</Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
-                {order.address.mobile}
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Paper sx={{ px: 2, py: 1 }}>
-              <Typography variant="overline">Address</Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
-                {order.address.country}, {order.address.region}, {order.address.town}, {order.address.address}
-                {order.address.gps_address && `, GPS: ${order.address.gps_address}`}
-              </Typography>
-            </Paper>
-          </Grid>
-        </Grid>
+        )}
         <Divider sx={{ my: 3 }} />
         <Typography variant="h6" gutterBottom>
           Delivery Date Range

@@ -50,7 +50,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         position: 'relative',
         display: 'flex',
         overflow: 'hidden',
-        height: '100%',
+        height: '100dvh',
         width: '100%',
       }}
     >
