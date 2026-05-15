@@ -7,6 +7,7 @@ import { SalesTrendChart } from './SalesTrendChart';
 import { StockChart } from './StockChart';
 import { OrderStatusChart } from './OrderStatusDonut';
 import { EngagementTiles } from './EngagementTiles';
+import { ViewAnalytics } from './ViewAnalytics';
 import { RatingDistribution } from './RatingDistribution';
 import { DeliveryInfo } from './DeliveryInfo';
 import { ProductMeta } from './ProductMeta';
@@ -53,6 +54,11 @@ export default function ProductDetailView({ data }) {
         variantType={data.variant}
         totalStock={data.total_stock}
       />
+
+      <Divider sx={{ my: 4 }} />
+
+      <SectionLabel>Traffic &amp; views</SectionLabel>
+      <ViewAnalytics data={data} />
 
       <Divider sx={{ my: 4 }} />
 
