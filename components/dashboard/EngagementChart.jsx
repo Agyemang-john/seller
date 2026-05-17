@@ -1,10 +1,12 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { Box, Typography, Stack, Grid } from '@mui/material';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import FavoriteBorderRoundedIcon from '@mui/icons-material/FavoriteBorderRounded';
-import BookmarkBorderRoundedIcon from '@mui/icons-material/BookmarkBorderRounded';
+import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined';
 import StarBorderRoundedIcon from '@mui/icons-material/StarBorderRounded';
 
@@ -97,9 +99,9 @@ export default function EngagementChart({ data }) {
   const tiles = [
     {
       icon: VisibilityOutlinedIcon,
-      label: 'Profile Views',
+      label: 'Store Views',
       value: Number(data.total_views ?? 0).toLocaleString(),
-      subtext: 'All-time store visits',
+      subtext: 'Total store visits',
     },
     {
       icon: FavoriteBorderRoundedIcon,
@@ -108,10 +110,10 @@ export default function EngagementChart({ data }) {
       subtext: 'Products added to wishlists',
     },
     {
-      icon: BookmarkBorderRoundedIcon,
-      label: 'Saved',
-      value: Number(data.saved_count ?? 0).toLocaleString(),
-      subtext: 'Products saved by shoppers',
+      icon: ShoppingCartOutlinedIcon,
+      label: 'In Cart',
+      value: Number(data.cart_quantity ?? 0).toLocaleString(),
+      subtext: 'Items in shoppers\' carts',
     },
     {
       icon: RateReviewOutlinedIcon,
@@ -137,16 +139,27 @@ export default function EngagementChart({ data }) {
         bgcolor: 'background.paper',
       }}
     >
-      <Stack direction="row" alignItems="baseline" spacing={1} sx={{ mb: 3 }}>
-        <Typography
-          sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px' }}
-          color="text.primary"
+      <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mb: 3 }}>
+        <Stack direction="row" alignItems="baseline" spacing={1}>
+          <Typography
+            sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px' }}
+            color="text.primary"
+          >
+            Customer Engagement
+          </Typography>
+          <Typography variant="caption" color="text.disabled" sx={{ letterSpacing: '0.06em' }}>
+            HOW SHOPPERS INTERACT
+          </Typography>
+        </Stack>
+        <Link href="/store-analytics" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3, fontSize: 12, fontWeight: 600, color: 'inherit', opacity: 0.55, transition: 'opacity 0.15s' }}
+          onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+          onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.55')}
         >
-          Customer Engagement
-        </Typography>
-        <Typography variant="caption" color="text.disabled" sx={{ letterSpacing: '0.06em' }}>
-          HOW SHOPPERS INTERACT
-        </Typography>
+          <Typography variant="caption" sx={{ fontWeight: 600, letterSpacing: '0.02em', fontSize: 11 }} color="text.secondary">
+            Full traffic report
+          </Typography>
+          <ArrowForwardRoundedIcon sx={{ fontSize: 13, color: 'text.secondary' }} />
+        </Link>
       </Stack>
 
       <Grid container spacing={1.5}>

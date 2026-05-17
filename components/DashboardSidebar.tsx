@@ -20,6 +20,7 @@ import Divider from '@mui/material/Divider';
 import type {} from '@mui/material/themeCssVarsAugmentation';
 
 import DashboardRoundedIcon      from '@mui/icons-material/DashboardRounded';
+import TrendingUpRoundedIcon     from '@mui/icons-material/TrendingUpRounded';
 import LocalShippingRoundedIcon  from '@mui/icons-material/LocalShippingRounded';
 import Inventory2RoundedIcon     from '@mui/icons-material/Inventory2Rounded';
 import AccountBalanceWalletRoundedIcon from '@mui/icons-material/AccountBalanceWalletRounded';
@@ -63,8 +64,9 @@ interface NavItemDef {
 
 // ── Nav definitions ───────────────────────────────────────────────────────────
 const mainListItems: NavItemDef[] = [
-  { id: 'dashboard',     text: 'Dashboard',     icon: <DashboardRoundedIcon />,             path: '/dashboard' },
-  { id: 'orders',        text: 'Orders',        icon: <LocalShippingRoundedIcon />,          path: '/orders' },
+  { id: 'dashboard',       text: 'Dashboard',     icon: <DashboardRoundedIcon />,           path: '/dashboard' },
+  { id: 'store-analytics', text: 'Store Traffic', icon: <TrendingUpRoundedIcon />,           path: '/store-analytics' },
+  { id: 'orders',          text: 'Orders',        icon: <LocalShippingRoundedIcon />,        path: '/orders' },
   { id: 'products',      text: 'Products',      icon: <Inventory2RoundedIcon />,             path: '/products' },
   { id: 'payment',       text: 'Payment',       icon: <AccountBalanceWalletRoundedIcon />,   path: '/payment' },
   { id: 'payouts',       text: 'Payouts',       icon: <PaymentsRoundedIcon />,               path: '/payouts' },

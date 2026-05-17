@@ -22,7 +22,7 @@ export function ProductMeta({ data }) {
   const rows = [
     { label: 'SKU',           value: data.sku },
     { label: 'Listed on',     value: fmt(data.date) },
-    { label: 'Last updated',  value: fmt(data.updated) },
+    { label: 'Last updated',  value: fmt(data.last_activity) },
     { label: 'Variant type',  value: data.variant || 'None' },
     { label: 'Weight',        value: data.weight ? `${data.weight} kg` : '—' },
     { label: 'Return window', value: data.return_period_days ? `${data.return_period_days} days` : '—' },

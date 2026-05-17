@@ -20,17 +20,17 @@ export default function OtpForm() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  let redirect = searchParams.get('redirect');
-  if (redirect) {
+  const rawRedirect = searchParams.get('redirect');
+  const redirectPath = (() => {
+    if (!rawRedirect) return '/dashboard';
     try {
-      // Decode twice safely if needed
-      redirect = decodeURIComponent(decodeURIComponent(redirect));
-    } catch {
-      redirect = decodeURIComponent(redirect);
-    }
-  }
-
-  const redirectPath = redirect || '/dashboard';
+      const decoded = decodeURIComponent(rawRedirect);
+      if (decoded.startsWith('/') && !decoded.startsWith('//') && !decoded.includes('://')) {
+        return decoded;
+      }
+    } catch { /* ignore */ }
+    return '/dashboard';
+  })();
 
   // Guard: Redirect to login if no identifier cookie
   useEffect(() => {

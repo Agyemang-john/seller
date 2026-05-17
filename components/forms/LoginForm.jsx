@@ -22,8 +22,17 @@ export default function LoginForm() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect');
-  const redirectPath = redirect ? decodeURIComponent(redirect) : '/dashboard';
+  const rawRedirect = searchParams.get('redirect');
+  const redirectPath = (() => {
+    if (!rawRedirect) return '/dashboard';
+    try {
+      const decoded = decodeURIComponent(rawRedirect);
+      if (decoded.startsWith('/') && !decoded.startsWith('//') && !decoded.includes('://')) {
+        return decoded;
+      }
+    } catch { /* ignore */ }
+    return '/dashboard';
+  })();
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);

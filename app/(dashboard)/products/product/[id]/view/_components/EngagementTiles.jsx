@@ -7,7 +7,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import FavoriteBorderRoundedIcon from '@mui/icons-material/FavoriteBorderRounded';
-import BookmarkBorderRoundedIcon from '@mui/icons-material/BookmarkBorderRounded';
+import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import StarBorderRoundedIcon from '@mui/icons-material/StarBorderRounded';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined';
@@ -34,11 +34,11 @@ const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 
 export function EngagementTiles({ data }) {
   const tiles = [
-    { label: 'Profile Views',  value: (data.views || 0).toLocaleString(),         icon: VisibilityOutlinedIcon  },
-    { label: 'Wishlisted',     value: (data.wishlist_count || 0).toLocaleString(), icon: FavoriteBorderRoundedIcon },
-    { label: 'Saved',          value: (data.saved_count || 0).toLocaleString(),   icon: BookmarkBorderRoundedIcon },
-    { label: 'Reviews',        value: (data.review_count || 0).toLocaleString(),  icon: StarBorderRoundedIcon  },
-    { label: 'Average Rating', value: `${(data.avg_rating || 0).toFixed(1)} / 5`, icon: StarBorderRoundedIcon  },
+    { label: 'Product Views',  value: (data.views || 0).toLocaleString(),              icon: VisibilityOutlinedIcon    },
+    { label: 'Wishlisted',     value: (data.wishlist_count || 0).toLocaleString(),      icon: FavoriteBorderRoundedIcon },
+    { label: 'In Cart',        value: (data.total_in_carts || 0).toLocaleString(),      icon: ShoppingCartOutlinedIcon  },
+    { label: 'Reviews',        value: (data.review_count || 0).toLocaleString(),        icon: StarBorderRoundedIcon     },
+    { label: 'Average Rating', value: `${(data.avg_rating || 0).toFixed(1)} / 5`,      icon: StarBorderRoundedIcon     },
   ];
   return (
     <Grid container spacing={1.5}>
