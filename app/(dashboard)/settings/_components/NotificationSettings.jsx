@@ -1,17 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createAxiosClient } from '@/utils/clientFetch';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
+import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
+import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Switch from '@mui/material/Switch';
 import Typography from '@mui/material/Typography';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import toast from 'react-hot-toast';
-
-const PREFS_KEY = 'seller_notification_prefs';
 
 const GROUPS = [
   {
@@ -25,15 +25,15 @@ const GROUPS = [
   {
     heading: 'Store Activity',
     items: [
-      { key: 'new_review',  label: 'New Review',       desc: 'A customer leaves a review on one of your products.' },
-      { key: 'low_stock',   label: 'Low Stock Alert',  desc: 'A product\'s inventory drops below 5 units.' },
+      { key: 'new_review', label: 'New Review',      desc: 'A customer leaves a review on one of your products.' },
+      { key: 'low_stock',  label: 'Low Stock Alert', desc: "A product's inventory drops below 5 units." },
     ],
   },
   {
     heading: 'Platform',
     items: [
-      { key: 'system_alerts', label: 'System Alerts',         desc: 'Important platform-wide announcements.' },
-      { key: 'marketing',     label: 'Marketing & Tips',      desc: 'Promotions, seller tips, and feature announcements.' },
+      { key: 'system_alerts', label: 'System Alerts',    desc: 'Important platform-wide announcements.' },
+      { key: 'marketing',     label: 'Marketing & Tips', desc: 'Promotions, seller tips, and feature announcements.' },
     ],
   },
 ];
@@ -50,21 +50,53 @@ const DEFAULTS = {
 
 export default function NotificationSettings() {
   const [prefs, setPrefs] = useState(DEFAULTS);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(null); // key being saved
+
+  // Debounce refs so rapid toggling batches into one PATCH
+  const pendingRef = useRef({});
+  const timerRef   = useRef(null);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(PREFS_KEY);
-      if (raw) setPrefs(prev => ({ ...prev, ...JSON.parse(raw) }));
-    } catch {}
+    const axiosClient = createAxiosClient();
+    axiosClient.get('/api/v1/vendor/notification-preferences/')
+      .then(res => setPrefs(prev => ({ ...prev, ...res.data })))
+      .catch(() => toast.error('Could not load notification preferences.'))
+      .finally(() => setLoading(false));
   }, []);
 
+  const flush = async () => {
+    const updates = { ...pendingRef.current };
+    pendingRef.current = {};
+    timerRef.current = null;
+    if (!Object.keys(updates).length) return;
+
+    try {
+      const axiosClient = createAxiosClient();
+      const res = await axiosClient.patch('/api/v1/vendor/notification-preferences/', updates);
+      setPrefs(prev => ({ ...prev, ...res.data }));
+    } catch {
+      // Roll back optimistic update
+      setPrefs(prev => {
+        const rolled = { ...prev };
+        for (const k of Object.keys(updates)) rolled[k] = !updates[k];
+        return rolled;
+      });
+      toast.error('Could not save preference. Try again.');
+    } finally {
+      setSaving(null);
+    }
+  };
+
   const toggle = (key) => {
-    setPrefs(prev => {
-      const next = { ...prev, [key]: !prev[key] };
-      try { localStorage.setItem(PREFS_KEY, JSON.stringify(next)); } catch {}
-      toast.success('Preference saved.');
-      return next;
-    });
+    const next = !prefs[key];
+    // Optimistic update
+    setPrefs(prev => ({ ...prev, [key]: next }));
+    setSaving(key);
+
+    pendingRef.current[key] = next;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(flush, 600);
   };
 
   return (
@@ -98,12 +130,25 @@ export default function NotificationSettings() {
                     <Typography variant="body2" fontWeight={500}>{item.label}</Typography>
                     <Typography variant="caption" color="text.secondary">{item.desc}</Typography>
                   </Box>
-                  <Switch
-                    checked={prefs[item.key] ?? DEFAULTS[item.key]}
-                    onChange={() => toggle(item.key)}
-                    color="primary"
-                    size="small"
-                  />
+                  {loading ? (
+                    <Skeleton variant="rounded" width={36} height={20} sx={{ flexShrink: 0 }} />
+                  ) : (
+                    <Box sx={{ position: 'relative', flexShrink: 0 }}>
+                      <Switch
+                        checked={prefs[item.key] ?? DEFAULTS[item.key]}
+                        onChange={() => toggle(item.key)}
+                        color="primary"
+                        size="small"
+                        disabled={saving === item.key}
+                      />
+                      {saving === item.key && (
+                        <CircularProgress
+                          size={12}
+                          sx={{ position: 'absolute', top: '50%', left: '50%', mt: '-6px', ml: '-6px', pointerEvents: 'none' }}
+                        />
+                      )}
+                    </Box>
+                  )}
                 </Stack>
                 {idx < arr.length - 1 && <Divider />}
               </Box>
@@ -112,8 +157,8 @@ export default function NotificationSettings() {
         ))}
       </Stack>
 
-      <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5, display: 'block' }}>
-        Preferences are saved locally on this device and apply to in-app notifications.
+      <Typography variant="caption" color="text.disabled" sx={{ mt: 1.5, display: 'block' }}>
+        Preferences are synced to your account and apply across all devices.
       </Typography>
     </Box>
   );

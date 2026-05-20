@@ -3,9 +3,12 @@
 import * as React from 'react';
 import { useState, useCallback, useMemo } from 'react';
 import {
-  Box, Button, CircularProgress, Typography, Stack,
+  Box, Button, Chip, CircularProgress, Typography, Stack,
   Divider, Alert,
 } from '@mui/material';
+import ActivityHeartbeat from '@/components/dashboard/ActivityHeartbeat';
+import InactivityBanner from '@/components/dashboard/InactivityBanner';
+import Link from 'next/link';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -33,6 +36,10 @@ export default function Dashboard() {
   const [endDate,    setEndDate]    = useState(null);
   const [period,     setPeriod]     = useState('day');
   const [refreshKey, setRefreshKey] = useState(0);
+
+  const { data: vendorStatus } = useSWR('/api/v1/vendor/my-status/', fetcher, {
+    revalidateOnFocus: false,
+  });
 
   const toISO        = (d) => (d && d.isValid?.() ? d.toISOString() : null);
   const startISO     = toISO(startDate);
@@ -64,6 +71,9 @@ export default function Dashboard() {
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Box sx={{ pb: 10 }}>
+        {/* ── Activity heartbeat (invisible) + inactivity banner ────── */}
+        <ActivityHeartbeat />
+        <InactivityBanner />
 
         {/* ── Page header ──────────────────────────────────────────────── */}
         <Box sx={{ display: 'flex', alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 4 }}>
@@ -75,6 +85,18 @@ export default function Dashboard() {
           </Box>
 
           <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+            {vendorStatus && (
+              <Chip
+                component={Link}
+                href="/settings"
+                clickable
+                size="small"
+                label={vendorStatus.shop_paused ? 'Shop Paused' : 'Shop Live'}
+                color={vendorStatus.shop_paused ? 'warning' : 'success'}
+                variant="outlined"
+                sx={{ fontWeight: 600, fontSize: 12 }}
+              />
+            )}
             <DatePicker label="From" value={startDate} onChange={setStartDate} slotProps={{ textField: { size: 'small', sx: { width: 148 } } }} />
             <DatePicker label="To"   value={endDate}   onChange={setEndDate}   slotProps={{ textField: { size: 'small', sx: { width: 148 } } }} />
             <Button variant="outlined" size="small" onClick={handleRefresh} disabled={isAnyLoading || !!invalidRange}

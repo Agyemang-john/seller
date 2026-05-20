@@ -8,6 +8,7 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
 import Collapse from '@mui/material/Collapse';
+import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import Skeleton from '@mui/material/Skeleton';
@@ -20,14 +21,18 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import EditIcon from '@mui/icons-material/Edit';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import StoreOutlinedIcon from '@mui/icons-material/StoreOutlined';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import toast from 'react-hot-toast';
+import ShopStatusToggle from '@/components/dashboard/ShopStatusToggle';
 
 export default function AccountSettings() {
   const [userInfo, setUserInfo] = useState(null);
   const [vendorInfo, setVendorInfo] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [shopPaused, setShopPaused] = useState(null);
 
   const [emailOpen, setEmailOpen] = useState(false);
   const [emailForm, setEmailForm] = useState({ current_password: '', new_email: '' });
@@ -41,17 +46,19 @@ export default function AccountSettings() {
     Promise.all([
       axiosClient.get('/api/users/me/'),
       axiosClient.get('/api/v1/vendor/account/'),
+      axiosClient.get('/api/v1/vendor/my-status/'),
     ])
-      .then(([userRes, vendorRes]) => {
+      .then(([userRes, vendorRes, statusRes]) => {
         setUserInfo(userRes.data);
         setVendorInfo(vendorRes.data);
+        setShopPaused(statusRes.data.shop_paused ?? false);
       })
       .catch(() => toast.error('Could not load account info.'))
       .finally(() => setLoading(false));
   }, []);
 
-  const storeUrl = vendorInfo?.slug ? `negromart.com/store/${vendorInfo.slug}` : null;
-  const fullStoreUrl = vendorInfo?.slug ? `https://negromart.com/store/${vendorInfo.slug}` : null;
+  const storeUrl = vendorInfo?.slug ? `negromart.com/seller/${vendorInfo.slug}` : null;
+  const fullStoreUrl = vendorInfo?.slug ? `https://negromart.com/seller/${vendorInfo.slug}` : null;
 
   const copySlug = () => {
     if (!fullStoreUrl) return;
@@ -261,6 +268,53 @@ export default function AccountSettings() {
                     </IconButton>
                   </Tooltip>
                 </Stack>
+              )}
+            </Stack>
+          </CardContent>
+        </Card>
+
+        {/* Shop visibility */}
+        <Card variant="outlined" sx={{ borderRadius: 2 }}>
+          <CardContent sx={{ p: { xs: 2, sm: 2.5 }, '&:last-child': { pb: { xs: 2, sm: 2.5 } } }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'flex-start' }} justifyContent="space-between">
+              <Box sx={{ flex: 1 }}>
+                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
+                  {shopPaused
+                    ? <StoreOutlinedIcon sx={{ fontSize: 18, color: 'warning.main' }} />
+                    : <StorefrontIcon sx={{ fontSize: 18, color: 'success.main' }} />
+                  }
+                  <Typography variant="subtitle2" fontWeight={600}>Shop Visibility</Typography>
+                  {loading ? (
+                    <Skeleton width={56} height={22} sx={{ borderRadius: 4 }} />
+                  ) : (
+                    <Chip
+                      label={shopPaused ? 'Paused' : 'Live'}
+                      color={shopPaused ? 'warning' : 'success'}
+                      size="small"
+                      sx={{ fontWeight: 700, fontSize: 11, height: 20 }}
+                    />
+                  )}
+                </Stack>
+                <Typography variant="body2" color="text.secondary">
+                  {shopPaused
+                    ? 'Your shop is paused. Products are hidden from search, listings, and cart.'
+                    : 'Your shop is live. Customers can browse, add to cart, and place orders.'}
+                </Typography>
+                {shopPaused && (
+                  <Typography variant="caption" color="warning.main" sx={{ mt: 0.5, display: 'block' }}>
+                    Toggle back on to make your products visible again.
+                  </Typography>
+                )}
+              </Box>
+
+              {!loading && shopPaused !== null && (
+                <Box sx={{ flexShrink: 0 }}>
+                  <ShopStatusToggle
+                    compact
+                    initialPaused={shopPaused}
+                    onToggle={(newPaused) => setShopPaused(newPaused)}
+                  />
+                </Box>
               )}
             </Stack>
           </CardContent>

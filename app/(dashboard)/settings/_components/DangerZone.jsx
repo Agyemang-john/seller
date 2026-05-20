@@ -18,6 +18,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import LogoutIcon from '@mui/icons-material/Logout';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
+import { createAxiosClient } from '@/utils/clientFetch';
 
 export default function DangerZone() {
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -34,14 +35,15 @@ export default function DangerZone() {
     }
     setSubmitting(true);
     try {
-      // Placeholder — wire to a real endpoint when available
-      await new Promise(r => setTimeout(r, 1000));
+      const axiosClient = createAxiosClient();
+      await axiosClient.post('/api/v1/vendor/deletion-request/');
       setSubmitted(true);
-      toast.success('Account deletion request submitted. You will hear from us within 48 hours.');
       setDeleteOpen(false);
       setConfirmText('');
-    } catch {
-      toast.error('Failed to submit deletion request. Please contact support.');
+      toast.success('Deletion request submitted. We will process it within 30 days.');
+    } catch (err) {
+      const msg = err?.response?.data?.detail || 'Failed to submit request. Please contact support@negromart.com.';
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
