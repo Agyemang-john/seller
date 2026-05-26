@@ -4,16 +4,15 @@ import { Suspense } from 'react';
 import LoginForm from "@/components/forms/LoginForm";
 import useRedirectIfAuthenticated from '@/hooks/useRedirectIfAuthenticated';
 
-
-const Login = () => {
+function LoginContent() {
   useRedirectIfAuthenticated();
+  return <LoginForm />;
+}
 
+export default function Login() {
   return (
     <Suspense fallback={<div>...</div>}>
-      <LoginForm />
+      <LoginContent />
     </Suspense>
-  )
-  
-};
-
-export default Login;
+  );
+}
