@@ -249,7 +249,7 @@ export default function OrderList() {
         <Box>
           <Typography sx={{
             fontFamily: "'Cormorant Garamond', serif",
-            fontSize: { xs: 30, md: 36 }, fontWeight: 700,
+            fontSize: { xs: 22, sm: 28, md: 36 }, fontWeight: 700,
             letterSpacing: '-1px', lineHeight: 1, mb: 0.5,
           }} color="text.primary">
             Orders

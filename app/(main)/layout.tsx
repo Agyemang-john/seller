@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import Header from '@/components/ui/Header';
 import Footer from '@/components/ui/Footer';
+import '@/styles/marketplace.css';
 
 
 export const metadata: Metadata = {
@@ -51,11 +52,11 @@ export default function RootLayout({
 }>) {
   return (
     <>
-      <div className="min-h-screen bg-gray-100">
+      <div style={{ minHeight: '100vh', background: '#fff' }}>
         <Header />
         {children}
         <Footer />
-      </div> 
+      </div>
     </>
   );
 }

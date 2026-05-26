@@ -112,12 +112,22 @@ const ProductGeneralInfo = ({
 
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <Autocomplete options={categories} getOptionLabel={(o) => o.title || ''} value={selectedCategory}
+            <Autocomplete
+              options={[...categories].sort((a, b) => {
+                const ga = `${a.category?.main_category?.title ?? ''} › ${a.category?.title ?? ''}`;
+                const gb = `${b.category?.main_category?.title ?? ''} › ${b.category?.title ?? ''}`;
+                return ga.localeCompare(gb);
+              })}
+              groupBy={(o) => `${o.category?.main_category?.title ?? 'Other'} › ${o.category?.title ?? 'Other'}`}
+              getOptionLabel={(o) => o.title || ''}
+              isOptionEqualToValue={(o, v) => o.id === v?.id}
+              value={selectedCategory}
               onChange={handleCategoryChange}
               renderInput={(params) => (
                 <TextField {...params} label="Category" size="small" sx={fieldSx}
                   error={!!formErrors.category} helperText={formErrors.category} />
-              )} />
+              )}
+            />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Autocomplete options={brands} getOptionLabel={(o) => o.title || ''} value={selectedBrand}

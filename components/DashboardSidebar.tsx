@@ -29,6 +29,7 @@ import ScheduleRoundedIcon       from '@mui/icons-material/ScheduleRounded';
 import StoreRoundedIcon          from '@mui/icons-material/StoreRounded';
 import StarRoundedIcon           from '@mui/icons-material/StarRounded';
 import HelpOutlineRoundedIcon    from '@mui/icons-material/HelpOutlineRounded';
+import GroupsRoundedIcon         from '@mui/icons-material/GroupsRounded';
 import ReceiptLongRoundedIcon    from '@mui/icons-material/ReceiptLongRounded';
 import CardMembershipRoundedIcon from '@mui/icons-material/CardMembershipRounded';
 import SettingsRoundedIcon       from '@mui/icons-material/SettingsRounded';
@@ -74,6 +75,7 @@ const mainListItems: NavItemDef[] = [
   { id: 'profile',       text: 'Store Profile', icon: <StoreRoundedIcon />,                  path: '/profile' },
   { id: 'reviews',       text: 'Reviews',       icon: <StarRoundedIcon />,                   path: '/reviews' },
   { id: 'help',          text: 'Help & Guide',  icon: <HelpOutlineRoundedIcon />,            path: '/help' },
+  { id: 'connect',      text: 'Community',     icon: <GroupsRoundedIcon />,                 path: '/connect' },
 ];
 
 const subscribeListItems: NavItemDef[] = [

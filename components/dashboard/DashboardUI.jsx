@@ -113,7 +113,7 @@ export function ChartSection({ error, isLoading, skeletonHeight = 260, featureNa
 export function SectionHeader({ title, subtitle }) {
   return (
     <Stack direction="row" alignItems="baseline" spacing={1.25} sx={{ mb: 2.5 }}>
-      <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, letterSpacing: '-0.5px' }} color="text.primary">
+      <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 16, md: 20 }, fontWeight: 700, letterSpacing: '-0.5px' }} color="text.primary">
         {title}
       </Typography>
       {subtitle && (
@@ -128,7 +128,7 @@ export function SectionHeader({ title, subtitle }) {
 // ── Pro teaser ─────────────────────────────────────────────────────────────────
 export function ProTeaser({ features, href = '/subscribe' }) {
   return (
-    <Box sx={{ p: '18px 22px', borderRadius: '14px', border: '1px dashed', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+    <Box sx={{ p: { xs: '14px 16px', md: '18px 22px' }, borderRadius: '14px', border: '1px dashed', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
       <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: 'action.selected', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         <TrendingUpIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
       </Box>

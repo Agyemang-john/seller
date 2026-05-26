@@ -65,12 +65,18 @@ export default function OtpForm() {
     } catch (err) {
       const status = err?.status;
       const data = err?.data || {};
-      let errorMsg = 'Invalid or expired OTP.';
+      let errorMsg;
 
       if (status === 400 || status === 401) {
-        if (data.detail) {
-          errorMsg = data.detail;
-        }
+        errorMsg = data.detail || 'Invalid or expired OTP.';
+      } else if (status === 429) {
+        errorMsg = 'Too many attempts. Please wait a moment and try again.';
+      } else if (status === 500) {
+        errorMsg = 'Server error. Your OTP is still valid — please try again.';
+      } else if (status === 'FETCH_ERROR' || !status) {
+        errorMsg = 'Connection failed. Please check your internet connection.';
+      } else {
+        errorMsg = 'Something went wrong. Please try again.';
       }
 
       setMessage({ type: 'error', text: errorMsg });
@@ -130,7 +136,7 @@ export default function OtpForm() {
             <img
               src="/favicon.png"
               alt="Negromart Vendor Logo"
-              className="mx-auto h-25 w-25 cursor-pointer"
+              className="mx-auto h-16 w-16 cursor-pointer"
               height="400"
             />
           </Link>

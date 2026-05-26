@@ -38,11 +38,13 @@ export default function OrderStatusChart({ data }) {
         border: '1px solid',
         borderColor: 'divider',
         bgcolor: 'background.paper',
+        overflow: 'hidden',
+        minWidth: 0,
       }}
     >
       <Stack direction="row" alignItems="baseline" spacing={1} sx={{ mb: 2 }}>
         <Typography
-          sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px' }}
+          sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 16, md: 22 }, fontWeight: 700, letterSpacing: '-0.5px' }}
           color="text.primary"
         >
           Order Status
@@ -78,7 +80,7 @@ export default function OrderStatusChart({ data }) {
           }}
         >
           <Typography
-            sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, lineHeight: 1 }}
+            sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 18, md: 24 }, fontWeight: 700, lineHeight: 1 }}
             color="text.primary"
           >
             {total.toLocaleString()}

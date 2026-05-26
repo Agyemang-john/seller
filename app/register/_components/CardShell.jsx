@@ -1,133 +1,169 @@
 import React from "react";
-import { Box, Typography, Button, CircularProgress } from "@mui/material";
+import { CircularProgress } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
-// ─── Card Shell wraps each step with a header, scrollable body, and footer nav ─
 const CardShell = ({
-  stepLabel,        // e.g. "Step 1 of 4"
-  title,            // e.g. "Business Information"
-  description,      // subtitle text
-  children,         // form content
-  onBack,           // undefined hides Back button
-  onNext,           // undefined hides Next button
+  stepLabel,
+  title,
+  description,
+  children,
+  onBack,
+  onNext,
   nextLabel = "Continue",
   loading = false,
-  footerNote,       // optional left-side note in footer
+  footerNote,
 }) => {
   return (
-    <Box>
-      {/* Header */}
-      <Box
-        sx={{
-          px: { xs: 2.5, sm: 3.5 },
-          pt: 3,
-          pb: 2.5,
+    <div>
+      {/* ── Card header ── */}
+      <div
+        style={{
+          padding: "24px 32px 20px",
           borderBottom: "1px solid rgba(0,0,0,0.07)",
         }}
       >
-        <Typography
-          sx={{
+        {/* Step badge */}
+        <span
+          style={{
             display: "inline-block",
             fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: "0.06em",
-            color: "#1a56db",
-            bgcolor: "#e8f0fe",
-            px: 1.25,
-            py: 0.4,
-            borderRadius: 10,
-            mb: 1,
+            fontWeight: 700,
+            letterSpacing: "0.07em",
+            textTransform: "uppercase",
+            color: "var(--nm-blue)",
+            background: "#e8f2ff",
+            padding: "3px 12px",
+            borderRadius: "999px",
+            marginBottom: 10,
           }}
         >
           {stepLabel}
-        </Typography>
-        <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1.1rem", lineHeight: 1.3 }}>
+        </span>
+
+        <div
+          style={{
+            fontSize: "1.1rem",
+            fontWeight: 700,
+            lineHeight: 1.3,
+            color: "var(--nm-text-dark)",
+          }}
+        >
           {title}
-        </Typography>
+        </div>
+
         {description && (
-          <Typography sx={{ fontSize: 13, color: "text.secondary", mt: 0.5 }}>
+          <div
+            style={{
+              fontSize: 13,
+              color: "var(--nm-text-mid)",
+              marginTop: 4,
+              lineHeight: 1.5,
+            }}
+          >
             {description}
-          </Typography>
+          </div>
         )}
-      </Box>
+      </div>
 
-      {/* Body */}
-      <Box sx={{ px: { xs: 2.5, sm: 3.5 }, py: 3 }}>
+      {/* ── Card body ── */}
+      <div style={{ padding: "24px 32px" }}>
         {children}
-      </Box>
+      </div>
 
-      {/* Footer */}
-      <Box
-        sx={{
-          px: { xs: 2.5, sm: 3.5 },
-          py: 2,
+      {/* ── Card footer ── */}
+      <div
+        style={{
+          padding: "14px 32px",
           borderTop: "1px solid rgba(0,0,0,0.07)",
-          bgcolor: "#f8fafc",
+          background: "#f8fafc",
+          borderRadius: "0 0 14px 14px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          borderRadius: "0 0 12px 12px",
+          gap: 12,
         }}
       >
-        <Box>
+        {/* Left side */}
+        <div>
           {footerNote ? (
-            <Typography sx={{ fontSize: 12, color: "text.disabled" }}>
+            <span style={{ fontSize: 12, color: "var(--nm-text-mid)" }}>
               {footerNote}
-            </Typography>
+            </span>
           ) : onBack ? (
-            <Button
+            <button
               onClick={onBack}
-              startIcon={<ArrowBackIcon sx={{ fontSize: 15 }} />}
-              sx={{
-                textTransform: "none",
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
                 fontSize: 13,
                 fontWeight: 500,
-                color: "text.secondary",
-                "&:hover": { bgcolor: "rgba(0,0,0,0.05)" },
+                color: "var(--nm-text-mid)",
+                padding: "6px 10px",
+                borderRadius: 8,
+                transition: "background 0.15s",
+                fontFamily: "inherit",
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#f0f0f0")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
             >
+              <ArrowBackIcon style={{ fontSize: 15 }} />
               Back
-            </Button>
+            </button>
           ) : (
-            <Typography sx={{ fontSize: 12, color: "text.disabled" }}>
-              <Typography component="span" sx={{ color: "error.main" }}>*</Typography> Required fields
-            </Typography>
+            <span style={{ fontSize: 12, color: "var(--nm-text-mid)" }}>
+              <span style={{ color: "#e53e3e" }}>*</span> Required fields
+            </span>
           )}
-        </Box>
+        </div>
 
+        {/* Right: Next/Submit button */}
         {onNext && (
-          <Button
-            variant="contained"
+          <button
             onClick={onNext}
             disabled={loading}
-            endIcon={
-              loading ? (
-                <CircularProgress size={15} sx={{ color: "white" }} />
-              ) : (
-                <ArrowForwardIcon sx={{ fontSize: 15 }} />
-              )
-            }
-            sx={{
-              textTransform: "none",
-              fontWeight: 600,
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              background: loading ? "#93c5fd" : "var(--nm-blue)",
+              color: "var(--nm-white)",
+              border: "none",
+              borderRadius: "var(--nm-radius-pill)",
+              padding: "10px 28px",
               fontSize: 14,
-              px: 3,
-              py: 1,
-              bgcolor: "#1a56db",
-              borderRadius: 2,
-              boxShadow: "0 1px 4px rgba(26,86,219,0.3)",
-              "&:hover": {
-                bgcolor: "#1240a8",
-                boxShadow: "0 4px 12px rgba(26,86,219,0.35)",
-              },
+              fontWeight: 700,
+              cursor: loading ? "not-allowed" : "pointer",
+              fontFamily: "inherit",
+              transition: "background 0.18s, transform 0.1s",
+              boxShadow: "0 2px 8px rgba(0,113,206,0.3)",
+            }}
+            onMouseEnter={(e) => {
+              if (!loading) e.currentTarget.style.background = "var(--nm-blue-hover)";
+            }}
+            onMouseLeave={(e) => {
+              if (!loading) e.currentTarget.style.background = "var(--nm-blue)";
             }}
           >
-            {loading ? "Submitting..." : nextLabel}
-          </Button>
+            {loading ? (
+              <>
+                <CircularProgress size={14} style={{ color: "white" }} />
+                Submitting…
+              </>
+            ) : (
+              <>
+                {nextLabel}
+                <ArrowForwardIcon style={{ fontSize: 15 }} />
+              </>
+            )}
+          </button>
         )}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 };
 

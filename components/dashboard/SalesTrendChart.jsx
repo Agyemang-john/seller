@@ -39,12 +39,14 @@ export default function SalesTrendChart({ data, period, setPeriod }) {
         border: '1px solid',
         borderColor: 'divider',
         bgcolor: 'background.paper',
+        overflow: 'hidden',
+        minWidth: 0,
       }}
     >
       <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" spacing={1.5} sx={{ mb: 2.5 }}>
         <Box>
           <Typography
-            sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px' }}
+            sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 16, md: 22 }, fontWeight: 700, letterSpacing: '-0.5px' }}
             color="text.primary"
           >
             Sales Trends
@@ -61,7 +63,7 @@ export default function SalesTrendChart({ data, period, setPeriod }) {
           size="small"
           sx={{
             '& .MuiToggleButton-root': {
-              px: 2, py: 0.6, fontSize: 12, fontWeight: 600, borderRadius: '8px !important',
+              px: { xs: 1.25, md: 2 }, py: 0.6, fontSize: 12, fontWeight: 600, borderRadius: '8px !important',
               border: '1px solid', borderColor: 'divider', color: 'text.secondary',
               '&.Mui-selected': { bgcolor: 'text.primary', color: 'background.paper', borderColor: 'text.primary' },
             },

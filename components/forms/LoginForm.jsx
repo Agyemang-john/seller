@@ -99,7 +99,7 @@ export default function LoginForm() {
             <img
               src="/favicon.png"
               alt="Negromart Vendor Logo"
-              className="mx-auto h-25 w-25 cursor-pointer"
+              className="mx-auto h-16 w-16 cursor-pointer"
               height="400"
             />
           </Link>

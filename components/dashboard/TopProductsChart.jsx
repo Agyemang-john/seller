@@ -26,8 +26,9 @@ function HorizontalBar({ label, value, maxValue, rank }) {
       <Typography
         variant="body2"
         sx={{
-          width: 140, flexShrink: 0, fontWeight: isTop ? 600 : 400,
+          width: { xs: 90, sm: 120, md: 140 }, flexShrink: 0, fontWeight: isTop ? 600 : 400,
           color: 'text.primary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          fontSize: { xs: 12, md: 14 },
         }}
         title={label}
       >
@@ -51,7 +52,7 @@ function HorizontalBar({ label, value, maxValue, rank }) {
       {/* Value */}
       <Typography
         variant="caption"
-        sx={{ width: 80, flexShrink: 0, textAlign: 'right', fontWeight: 600, color: 'text.secondary', fontSize: 11 }}
+        sx={{ width: { xs: 58, sm: 70, md: 80 }, flexShrink: 0, textAlign: 'right', fontWeight: 600, color: 'text.secondary', fontSize: { xs: 10, md: 11 } }}
       >
         GHS {Number(value).toLocaleString('en-GH', { maximumFractionDigits: 0 })}
       </Typography>
@@ -83,11 +84,13 @@ export default function TopProductsChart({ data }) {
         border: '1px solid',
         borderColor: 'divider',
         bgcolor: 'background.paper',
+        overflow: 'hidden',
+        minWidth: 0,
       }}
     >
       <Stack direction="row" alignItems="baseline" spacing={1} sx={{ mb: 3 }}>
         <Typography
-          sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px' }}
+          sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 16, md: 22 }, fontWeight: 700, letterSpacing: '-0.5px' }}
           color="text.primary"
         >
           Top Products

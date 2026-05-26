@@ -40,7 +40,7 @@ function ViewTile({ label, data, accent = false }) {
 
   return (
     <Box sx={{
-      p: '22px 24px', borderRadius: '16px', border: '1px solid',
+      p: { xs: '14px 16px', md: '22px 24px' }, borderRadius: '16px', border: '1px solid',
       borderColor: accent ? 'text.primary' : 'divider',
       bgcolor:     accent ? 'text.primary' : 'background.paper',
       display: 'flex', flexDirection: 'column', gap: 1.25, height: '100%',
@@ -56,7 +56,7 @@ function ViewTile({ label, data, accent = false }) {
       </Typography>
       <Typography sx={{
         fontFamily: "'Cormorant Garamond', serif",
-        fontSize: 44, fontWeight: 700, lineHeight: 1,
+        fontSize: { xs: 28, md: 44 }, fontWeight: 700, lineHeight: 1,
         color: accent ? '#fff' : 'text.primary',
       }}>
         {fmt(headline)}
@@ -279,7 +279,7 @@ function InsightCard({ icon: Icon, label, value, subtext }) {
         <Typography variant="caption" sx={{ display: 'block', fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'text.disabled', mb: 0.3 }}>
           {label}
         </Typography>
-        <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, lineHeight: 1 }} color="text.primary">
+        <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 18, md: 24 }, fontWeight: 700, lineHeight: 1 }} color="text.primary">
           {value ?? '—'}
         </Typography>
         {subtext && (
@@ -433,7 +433,7 @@ export default function StoreAnalyticsPage() {
         gap: 2, mb: 4,
       }}>
         <Box>
-          <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 30, md: 38 }, fontWeight: 700, letterSpacing: '-1.5px', lineHeight: 1, mb: 0.5 }} color="text.primary">
+          <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 22, sm: 28, md: 38 }, fontWeight: 700, letterSpacing: '-1.5px', lineHeight: 1, mb: 0.5 }} color="text.primary">
             Store Traffic
           </Typography>
           <Typography variant="body2" color="text.secondary">

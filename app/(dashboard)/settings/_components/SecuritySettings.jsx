@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createAxiosClient } from '@/utils/clientFetch';
+import { useAppDispatch } from '@/redux/hooks';
+import { logout } from '@/redux/features/authSlice';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -332,6 +334,7 @@ function PasswordSection() {
 
 export default function SecuritySettings() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
 
   const [sessions, setSessions] = useState([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
@@ -387,6 +390,7 @@ export default function SecuritySettings() {
     try {
       const axiosClient = createAxiosClient();
       await axiosClient.post('/api/vendor/logout-all/');
+      dispatch(logout());
       toast.success('Logged out from all devices.');
       router.push('/auth/login');
     } catch (err) {

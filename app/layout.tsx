@@ -8,6 +8,7 @@ import { Setup } from '@/utils';
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
 import ThemeRegistry from "./ThemeRegistry";
+import '@/styles/marketplace.css';
 
 
 const geistSans = Geist({

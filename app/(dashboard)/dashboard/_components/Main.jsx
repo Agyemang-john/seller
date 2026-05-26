@@ -70,7 +70,7 @@ export default function Dashboard() {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Box sx={{ pb: 10 }}>
+      <Box sx={{ pb: 10, minWidth: 0, maxWidth: '100%' }}>
         {/* ── Activity heartbeat (invisible) + inactivity banner ────── */}
         <ActivityHeartbeat />
         <InactivityBanner />
@@ -78,13 +78,13 @@ export default function Dashboard() {
         {/* ── Page header ──────────────────────────────────────────────── */}
         <Box sx={{ display: 'flex', alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 4 }}>
           <Box>
-            <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 30, md: 38 }, fontWeight: 700, letterSpacing: '-1.5px', lineHeight: 1, mb: 0.5 }} color="text.primary">
+            <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 22, sm: 28, md: 38 }, fontWeight: 700, letterSpacing: '-1.5px', lineHeight: 1, mb: 0.5 }} color="text.primary">
               Store Analytics
             </Typography>
             <Typography variant="body2" color="text.secondary">Everything about your store, in one place</Typography>
           </Box>
 
-          <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ xs: 'flex-start', sm: 'center' }} flexWrap="wrap">
             {vendorStatus && (
               <Chip
                 component={Link}
@@ -97,11 +97,26 @@ export default function Dashboard() {
                 sx={{ fontWeight: 600, fontSize: 12 }}
               />
             )}
-            <DatePicker label="From" value={startDate} onChange={setStartDate} slotProps={{ textField: { size: 'small', sx: { width: 148 } } }} />
-            <DatePicker label="To"   value={endDate}   onChange={setEndDate}   slotProps={{ textField: { size: 'small', sx: { width: 148 } } }} />
+            <Stack direction="row" spacing={1} sx={{ width: { xs: '70%', sm: 'auto' } }}>
+              <DatePicker label="From" value={startDate} onChange={setStartDate} slotProps={{ textField: { size: 'small', sx: { flex: { xs: 1, sm: '0 0 148px' } } } }} />
+              <DatePicker label="To"   value={endDate}   onChange={setEndDate}   slotProps={{ textField: { size: 'small', sx: { flex: { xs: 1, sm: '0 0 148px' } } } }} />
+              <Button variant="outlined" size="small" onClick={handleRefresh} disabled={isAnyLoading || !!invalidRange}
+                startIcon={isAnyLoading ? <CircularProgress size={13} thickness={5} /> : <RefreshIcon />}
+                sx={{
+                  display: { xs: 'inline-flex', sm: 'none' },
+                  borderRadius: '10px', borderColor: 'divider', color: 'text.primary',
+                  height: 40, minWidth: 0, width: 40, px: 0, flexShrink: 0,
+                  '& .MuiButton-startIcon': { mx: 0 },
+                  '&:hover': { borderColor: 'text.primary', bgcolor: 'action.hover' },
+                }} />
+            </Stack>
             <Button variant="outlined" size="small" onClick={handleRefresh} disabled={isAnyLoading || !!invalidRange}
               startIcon={isAnyLoading ? <CircularProgress size={13} thickness={5} /> : <RefreshIcon />}
-              sx={{ borderRadius: '10px', borderColor: 'divider', color: 'text.primary', fontWeight: 600, height: 40, '&:hover': { borderColor: 'text.primary', bgcolor: 'action.hover' } }}>
+              sx={{
+                display: { xs: 'none', sm: 'inline-flex' },
+                borderRadius: '10px', borderColor: 'divider', color: 'text.primary', fontWeight: 600, height: 40,
+                '&:hover': { borderColor: 'text.primary', bgcolor: 'action.hover' },
+              }}>
               Refresh
             </Button>
           </Stack>
@@ -160,7 +175,7 @@ export default function Dashboard() {
         <Divider sx={{ mb: 3.5 }} />
 
         {/* ── SECTION 4 — Store Traffic entry point ───────────────────── */}
-        <Box sx={{ mb: 3.5, p: '20px 24px', borderRadius: '16px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+        <Box sx={{ mb: 3.5, p: { xs: '14px 16px', md: '20px 24px' }, borderRadius: '16px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
           <Stack direction="row" alignItems="center" spacing={2}>
             <Box sx={{ width: 42, height: 42, borderRadius: '11px', bgcolor: 'action.selected', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <TrendingUpIcon sx={{ fontSize: 20, color: 'text.secondary' }} />

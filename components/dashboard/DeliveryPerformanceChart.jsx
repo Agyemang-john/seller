@@ -37,11 +37,13 @@ export default function DeliveryPerformanceChart({ data }) {
         border: '1px solid',
         borderColor: 'divider',
         bgcolor: 'background.paper',
+        overflow: 'hidden',
+        minWidth: 0,
       }}
     >
       <Stack direction="row" alignItems="baseline" spacing={1} sx={{ mb: 2 }}>
         <Typography
-          sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px' }}
+          sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 16, md: 22 }, fontWeight: 700, letterSpacing: '-0.5px' }}
           color="text.primary"
         >
           Delivery
@@ -71,7 +73,7 @@ export default function DeliveryPerformanceChart({ data }) {
           transform: 'translate(-50%, -50%)', textAlign: 'center', pointerEvents: 'none',
         }}>
           <Typography
-            sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 700, lineHeight: 1 }}
+            sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 20, md: 26 }, fontWeight: 700, lineHeight: 1 }}
             color="text.primary"
           >
             {onTimeRate.toFixed(0)}%
@@ -110,7 +112,7 @@ function StatBadge({ icon, label, value, color }) {
     <Box
       sx={{
         flex: 1,
-        p: '10px 12px',
+        p: { xs: '8px 10px', md: '10px 12px' },
         borderRadius: '10px',
         bgcolor: 'action.hover',
         border: '1px solid',
@@ -123,7 +125,7 @@ function StatBadge({ icon, label, value, color }) {
           {label}
         </Typography>
       </Stack>
-      <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, lineHeight: 1 }} color="text.primary">
+      <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 15, md: 18 }, fontWeight: 700, lineHeight: 1 }} color="text.primary">
         {value}
       </Typography>
     </Box>

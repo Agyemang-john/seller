@@ -42,7 +42,7 @@ function Logout() {
   <Typography
     variant="h4"
     gutterBottom
-    sx={{ fontWeight: 'bold', color: '#333' }}
+    sx={{ fontWeight: 'bold', color: '#333', fontSize: { xs: '1.35rem', sm: '1.75rem', md: '2.125rem' } }}
   >
     Are you sure you want to logout?
   </Typography>

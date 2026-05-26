@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import dayjs from "dayjs";
 import {
   Box, Button, Typography, Stack, CircularProgress,
@@ -107,6 +107,11 @@ function ProductSidebar({ formData, isLoading, isEdit, onSubmit, activeStep, id 
   const price    = parseFloat(formData.price || 0);
   const oldPrice = parseFloat(formData.old_price || 0);
   const hasDiscount = oldPrice > price && price > 0;
+  const router = useRouter();
+
+  const handleBack = useCallback(() => {
+        router.back();
+      }, [router]);
 
   return (
     <Box sx={{ position: { lg: 'sticky' }, top: { lg: 24 } }}>
@@ -188,12 +193,21 @@ function ProductSidebar({ formData, isLoading, isEdit, onSubmit, activeStep, id 
         }
         sx={{
           bgcolor: 'text.primary', color: 'background.paper',
-          borderRadius: '12px', fontWeight: 700, fontSize: 14, py: 1.6,
+          borderRadius: '12px', fontWeight: 700, fontSize: 14, py: 1.6, mb: 1,
           '&:hover': { bgcolor: 'text.secondary' },
           '&.Mui-disabled': { bgcolor: 'action.disabledBackground' },
         }}
       >
         {isLoading ? 'Saving…' : isEdit ? 'Update product' : 'Save product'}
+      </Button>
+
+      <Button
+          variant="contained"
+          fullWidth
+          startIcon={<ArrowBackIcon />}
+          onClick={handleBack}
+        >
+          Back
       </Button>
 
       <Typography variant="caption" color="text.disabled" sx={{ display: 'block', textAlign: 'center', mt: 1 }}>

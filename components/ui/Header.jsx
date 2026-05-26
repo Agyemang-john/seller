@@ -1,72 +1,178 @@
 'use client';
 
-import Link from 'next/link';
 import { useState } from 'react';
-// import { useRouter } from 'next/navigation';
-import AuthButtons from './AuthButtons';
-
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAppSelector } from '@/redux/hooks';
+const NAV_ITEMS = [
+  {
+    label: 'Launch',
+    links: [
+      { label: 'How to Apply', href: '/register' },
+      { label: 'Getting Started', href: '/register' },
+      { label: 'Seller Eligibility', href: '/register' },
+      { label: 'Pricing & Fees', href: '/billing' },
+    ],
+  },
+  {
+    label: 'Ship',
+    links: [
+      { label: 'Shipping Solutions', href: '/shipping' },
+      { label: 'Fulfillment Services', href: '/fulfillment' },
+      { label: 'Returns Management', href: '/returns' },
+      { label: 'Shipping API', href: '/shipping-api' },
+    ],
+  },
+  {
+    label: 'Grow',
+    links: [
+      { label: 'Advertising Tools', href: '/advertising' },
+      { label: 'Analytics Dashboard', href: '/store-analytics' },
+      { label: 'Promotions', href: '/dashboard' },
+      { label: 'Brand Management', href: '/community' },
+    ],
+  },
+];
 
 export default function Header() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  // const router = useRouter()
-
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const { isAuthenticated, isLoading } = useAppSelector(state => state.auth);
 
   return (
-    <header className="bg-white shadow-sm relative">
-      <nav className="container mx-auto px-4 py-4 flex justify-between items-center">
-        <div className="flex items-center space-x-4">
-          <button
-            className="sm:hidden text-gray-600 hover:text-gray-900 focus:outline-none"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
-            </svg>
-          </button>
-          <Link href="/" className="text-xl sm:text-2xl font-bold text-gray-900 animate-pulse">Negromart</Link>
-        </div>
-        <div className="hidden sm:flex items-center space-x-4">
-          <Link href="/register" className="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition duration-300">Start</Link>
-          {/* <Link href="/" className="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition duration-300">Grow</Link> */}
-          <Link href="https://corporate.negromart.com/services" target="_blank" rel="noopener noreferrer" className="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition duration-300">Services</Link>
-          {/* <Link href="/" className="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition duration-300">Resources</Link> */}
-          {/* <Link href="/" className="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition duration-300">Pricing</Link> */}
-        </div>
-        <div className="flex items-center space-x-4">
-          <AuthButtons />
-        </div>
-      </nav>
+    <>
+      <header className="nm-header">
+        <nav className="nm-nav">
+          {/* Logo */}
+          <Link href="/" className="nm-logo">
+            <span className="nm-logo-brand">Negromart</span>
+            <span className="nm-logo-suffix">Marketplace</span>
+          </Link>
 
-      {/* Sidebar for small devices */}
-      <div
-        className={`fixed top-0 left-0 h-full w-64 bg-white shadow-lg transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out z-50 sm:hidden`}
-      >
-        <div className="p-4">
+          {/* Desktop nav links */}
+          <div className="nm-nav-links">
+            {NAV_ITEMS.map((item) => (
+              <div key={item.label} className="nm-nav-item">
+                <button className="nm-nav-trigger">
+                  {item.label}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M7 10l5 5 5-5z" />
+                  </svg>
+                </button>
+                <div className="nm-dropdown">
+                  {item.links.map((l) => (
+                    <Link key={l.label} href={l.href}>{l.label}</Link>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <Link href="/blog" className="nm-nav-plain">Sell Better Blog</Link>
+            <Link href="/tutorials" className="nm-nav-plain">Marketplace Learn</Link>
+          </div>
+
+          {/* Desktop CTAs — hidden on mobile */}
+          {!isLoading && (
+            <div className="nm-header-cta">
+              {isAuthenticated ? (
+                <Link href="/dashboard" className="nm-join-btn nm-join-btn-dashboard">
+                  Go to Dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link href="/auth/login" className="nm-signin-btn">Sign In</Link>
+                  <Link href="/register" className="nm-join-btn">Join Marketplace</Link>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Mobile: hamburger only — visible on mobile */}
           <button
-            className="text-gray-600 hover:text-gray-900 focus:outline-none mb-4"
-            onClick={() => setIsSidebarOpen(false)}
+            className="nm-mobile-menu-btn"
+            onClick={() => setDrawerOpen(true)}
+            aria-label="Open menu"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="4" y1="6" x2="20" y2="6" />
+              <line x1="4" y1="12" x2="20" y2="12" />
+              <line x1="4" y1="18" x2="20" y2="18" />
             </svg>
           </button>
-          <nav className="flex flex-col space-y-4">
-            <Link href="/register" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Start</Link>
-            {/* <Link href="/" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Grow</Link> */}
-            <Link href="https://corporate.negromart.com/services" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Services</Link>
-            {/* <Link href="/" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Resources</Link> */}
-            {/* <Link href="/" className="text-sm text-gray-600 hover:text-gray-900 transition duration-300" onClick={() => setIsSidebarOpen(false)}>Pricing</Link> */}
-          </nav>
+        </nav>
+      </header>
+
+      {/* Mobile overlay */}
+      <div
+        className={`nm-overlay${drawerOpen ? ' nm-open' : ''}`}
+        onClick={() => setDrawerOpen(false)}
+      />
+
+      {/* Mobile drawer */}
+      <div className={`nm-mobile-drawer${drawerOpen ? ' nm-open' : ''}`}>
+
+        {/* Drawer header row: close button */}
+        <div className="nm-drawer-header">
+          <Link href="/" className="nm-logo">
+            <span className="nm-logo-brand">Negromart</span>
+            <span className="nm-logo-suffix">Marketplace</span>
+          </Link>
+          <button
+            className="nm-mobile-close"
+            onClick={() => setDrawerOpen(false)}
+            aria-label="Close menu"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="6" y1="6" x2="18" y2="18" />
+              <line x1="18" y1="6" x2="6" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Auth CTA — top of drawer, most prominent */}
+        {!isLoading && (
+          <div className="nm-drawer-auth">
+            {isAuthenticated ? (
+              <Link
+                href="/dashboard"
+                className="nm-drawer-cta nm-drawer-cta--dashboard"
+                onClick={() => setDrawerOpen(false)}
+              >
+                <span className="nm-online-dot" />
+                Go to Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/auth/login"
+                  className="nm-drawer-cta nm-drawer-cta--outline"
+                  onClick={() => setDrawerOpen(false)}
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/register"
+                  className="nm-drawer-cta nm-drawer-cta--primary"
+                  onClick={() => setDrawerOpen(false)}
+                >
+                  Join Marketplace
+                </Link>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Nav links */}
+        <div className="nm-mobile-nav">
+          {NAV_ITEMS.map((item) =>
+            item.links.map((l) => (
+              <Link key={l.label} href={l.href} onClick={() => setDrawerOpen(false)}>
+                {item.label}: {l.label}
+              </Link>
+            ))
+          )}
+          <Link href="/blog" onClick={() => setDrawerOpen(false)}>Sell Better Blog</Link>
+          <Link href="/tutorials" onClick={() => setDrawerOpen(false)}>Marketplace Learn</Link>
         </div>
       </div>
-
-      {/* Overlay to close sidebar when clicking outside */}
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-transparent bg-opacity-50 shadow-md z-50 sm:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        ></div>
-      )}
-    </header>
+    </>
   );
 }

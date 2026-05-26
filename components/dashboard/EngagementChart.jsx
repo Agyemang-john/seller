@@ -14,28 +14,28 @@ function EngagementTile({ icon: Icon, label, value, subtext }) {
   return (
     <Box
       sx={{
-        p: '20px 22px',
+        p: { xs: '12px 14px', md: '20px 22px' },
         borderRadius: '14px',
         border: '1px solid',
         borderColor: 'divider',
         bgcolor: 'background.paper',
         display: 'flex',
         alignItems: 'flex-start',
-        gap: 2,
+        gap: { xs: 1.25, md: 2 },
         transition: 'box-shadow 0.18s, transform 0.18s',
         '&:hover': { boxShadow: '0 8px 32px rgba(0,0,0,0.07)', transform: 'translateY(-2px)' },
       }}
     >
       <Box
         sx={{
-          width: 40, height: 40, borderRadius: '10px', bgcolor: 'action.selected',
+          width: { xs: 32, md: 40 }, height: { xs: 32, md: 40 }, borderRadius: '10px', bgcolor: 'action.selected',
           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, mt: 0.25,
         }}
       >
-        <Icon sx={{ fontSize: 18, color: 'text.secondary' }} />
+        <Icon sx={{ fontSize: { xs: 15, md: 18 }, color: 'text.secondary' }} />
       </Box>
 
-      <Box>
+      <Box sx={{ minWidth: 0, flex: 1 }}>
         <Typography variant="caption" sx={{
           display: 'block', letterSpacing: '0.06em', textTransform: 'uppercase',
           fontWeight: 600, color: 'text.disabled', mb: 0.3, fontSize: 10,
@@ -45,7 +45,7 @@ function EngagementTile({ icon: Icon, label, value, subtext }) {
         <Typography
           sx={{
             fontFamily: "'Cormorant Garamond', serif",
-            fontSize: 28, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1,
+            fontSize: { xs: 20, md: 28 }, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1,
           }}
           color="text.primary"
         >
@@ -137,17 +137,19 @@ export default function EngagementChart({ data }) {
         border: '1px solid',
         borderColor: 'divider',
         bgcolor: 'background.paper',
+        overflow: 'hidden',
+        minWidth: 0,
       }}
     >
-      <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mb: 3 }}>
-        <Stack direction="row" alignItems="baseline" spacing={1}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mb: 2.5 }} flexWrap="wrap">
+        <Stack direction="row" alignItems="baseline" spacing={1} sx={{ minWidth: 0 }}>
           <Typography
-            sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px' }}
+            sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 16, md: 22 }, fontWeight: 700, letterSpacing: '-0.5px' }}
             color="text.primary"
           >
             Customer Engagement
           </Typography>
-          <Typography variant="caption" color="text.disabled" sx={{ letterSpacing: '0.06em' }}>
+          <Typography variant="caption" color="text.disabled" sx={{ letterSpacing: '0.06em', display: { xs: 'none', sm: 'block' } }}>
             HOW SHOPPERS INTERACT
           </Typography>
         </Stack>
@@ -164,7 +166,7 @@ export default function EngagementChart({ data }) {
 
       <Grid container spacing={1.5}>
         {tiles.map((tile) => (
-          <Grid key={tile.label} size={{ xs: 12, sm: 6, md: 4, lg: 'auto' }} sx={{ flex: { lg: 1 } }}>
+          <Grid key={tile.label} size={{ xs: 6, sm: 6, md: 4, lg: 'auto' }} sx={{ flex: { lg: 1 } }}>
             <EngagementTile {...tile} />
           </Grid>
         ))}

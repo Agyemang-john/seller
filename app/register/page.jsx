@@ -2,101 +2,66 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Box, Container, Typography, Button, Grid } from "@mui/material";
-import StoreIcon from "@mui/icons-material/Store";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import PeopleIcon from "@mui/icons-material/People";
-import ShieldIcon from "@mui/icons-material/Shield";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import Link from "next/link";
 
-// ─── Design tokens (inline — keep in sync with theme.js) ────────────────────
-const T = {
-  bg:          "#f9f9f9",
-  surface:     "#ffffff",
-  border:      "#e5e7eb",
-  borderMid:   "#d1d5db",
-  accent:      "#111827",
-  accentHover: "#374151",
-  accentSoft:  "#f3f4f6",
-  text:        "#111827",
-  textSub:     "#4b5563",
-  textMuted:   "#9ca3af",
-  info:        "#2563eb",
-  infoBg:      "#eff6ff",
-  infoBorder:  "#bfdbfe",
-  warn:        "#92400e",
-  warnBg:      "#fffbeb",
-  warnBorder:  "#fde68a",
-  radius:      "8px",
-  radiusLg:    "12px",
-  shadowSm:    "0 1px 3px rgba(0,0,0,0.07)",
-  shadowMd:    "0 4px 12px rgba(0,0,0,0.08)",
-};
+const TRUST_BADGES = [
+  "Free to join",
+  "No monthly fees",
+  "Setup in 5 minutes",
+];
 
-// ─── Feature cards ───────────────────────────────────────────────────────────
-const features = [
+const HOW_IT_WORKS = [
+  { num: "1", name: "Business information", hint: "Store name, email, phone & legal documents" },
+  { num: "2", name: "Store profile",        hint: "Logo, banner and store description" },
+  { num: "3", name: "Payment setup",        hint: "Mobile Money, bank or PayPal — your choice" },
+  { num: "4", name: "Review & submit",      hint: "Confirm details and launch your storefront" },
+];
+
+const BENEFITS = [
   {
-    icon: <StoreIcon sx={{ fontSize: 22 }} />,
-    label: "Your own storefront",
-    desc: "Your own page with logo, cover photo, and business description — fully yours.",
+    title: "Your own storefront",
+    desc:  "A dedicated page with your logo, cover photo, and business description — fully yours.",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    ),
   },
   {
-    icon: <TrendingUpIcon sx={{ fontSize: 22 }} />,
-    label: "Grow your sales",
-    desc: "Reach thousands of active Negromart shoppers from day one.",
+    title: "Grow your sales",
+    desc:  "Reach thousands of active Negromart shoppers across Africa and the diaspora from day one.",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+        <polyline points="17 6 23 6 23 12"/>
+      </svg>
+    ),
   },
   {
-    icon: <PeopleIcon sx={{ fontSize: 22 }} />,
-    label: "Student-friendly",
-    desc: "Simplified verification for student vendors with a dedicated onboarding path.",
+    title: "Student-friendly",
+    desc:  "Simplified verification for student vendors with a dedicated onboarding path.",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+        <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+      </svg>
+    ),
   },
   {
-    icon: <ShieldIcon sx={{ fontSize: 22 }} />,
-    label: "Secure payouts",
-    desc: "Mobile Money, bank transfer, or PayPal — get paid your way, on time.",
+    title: "Secure payouts",
+    desc:  "Mobile Money, bank transfer or PayPal — get paid your way, on time, every time.",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+        <line x1="1" y1="10" x2="23" y2="10"/>
+      </svg>
+    ),
   },
 ];
 
-// ─── Registration steps ───────────────────────────────────────────────────────
-const steps = [
-  { num: "1", label: "Business info" },
-  { num: "2", label: "Store profile" },
-  { num: "3", label: "Payment setup" },
-  { num: "4", label: "Review & submit" },
-];
-
-// ─── Shared sub-components ────────────────────────────────────────────────────
-const Divider = () => (
-  <Box sx={{ borderTop: `1px solid ${T.border}`, my: 3 }} />
-);
-
-const Tag = ({ children }) => (
-  <Typography
-    component="span"
-    sx={{
-      display: "inline-block",
-      fontSize: "11px",
-      fontWeight: 600,
-      letterSpacing: "0.08em",
-      textTransform: "uppercase",
-      color: T.textMuted,
-      bgcolor: T.accentSoft,
-      // border: `1px solid ${T.border}`,
-      // borderRadius: "100px",
-      px: 1.5,
-      py: 0.4,
-    }}
-  >
-    {children}
-  </Typography>
-);
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function SellerRegisterPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(null);
+  const [authState, setAuthState] = useState(null); // null=checking, true=logged in, false=not
   const router = useRouter();
 
   useEffect(() => {
@@ -106,315 +71,166 @@ export default function SellerRegisterPage() {
       headers: { "X-User-Type": "customer" },
     })
       .then((res) => { if (!res.ok) throw new Error(); return res.json(); })
-      .then(() => setIsAuthenticated(true))
-      .catch(() => setIsAuthenticated(false));
+      .then(() => setAuthState(true))
+      .catch(() => setAuthState(false));
   }, []);
 
   const handleCTA = () => {
-    if (!isAuthenticated) {
+    if (!authState) {
       window.location.href = "https://www.negromart.com/auth/register";
     } else {
       router.push("/register/step-1");
     }
   };
 
-  return (
-    <Box sx={{ bgcolor: T.bg, minHeight: "100vh" }}>
+  const ctaLabel =
+    authState === null ? "Checking your account…" :
+    authState          ? "Continue to vendor setup →" :
+                         "Create account to continue →";
 
-      {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <Box sx={{ borderBottom: `1px solid ${T.border}` }}>
-        <Container maxWidth="md" sx={{ pt: { xs: 6, md: 9 }, pb: { xs: 5, md: 8 }, px: { xs: 2.5, md: 3 } }}>
-          <Box sx={{ maxWidth: 560 }}>
-            <Tag>Negromart · Vendor Programme</Tag>
-            <Typography
-              component="h1"
-              sx={{
-                mt: 2.5,
-                fontSize: { xs: "2rem", sm: "2.5rem", md: "3rem" },
-                fontWeight: 800,
-                letterSpacing: "-1.5px",
-                lineHeight: 1.1,
-                color: T.text,
-              }}
-            >
-              Ready to Grow<br />Your Business?
-            </Typography>
-            <Typography
-              sx={{
-                mt: 2,
-                fontSize: { xs: 15, md: 16 },
-                color: T.textSub,
-                lineHeight: 1.75,
-                maxWidth: 460,
-              }}
-            >
+  return (
+    <div>
+      {/* ── HERO ───────────────────────────────────────────── */}
+      <section className="nm-reg-hero">
+        <div className="nm-reg-hero-inner">
+
+          {/* Left: copy + CTA */}
+          <div>
+            <span className="nm-reg-hero-eyebrow">Negromart · Vendor Programme</span>
+            <h1 className="nm-reg-hero-title">
+              Ready to grow<br />your business?
+            </h1>
+            <p className="nm-reg-hero-subtitle">
               Join thousands of vendors on Negromart's trusted marketplace.
               Set up your storefront in under 5 minutes — free to join, no monthly fees.
-            </Typography>
+            </p>
 
             {/* Trust badges */}
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mt: 3, mb: 4 }}>
-              {["Free to join", "No monthly fees", "Setup in 5 min"].map((t) => (
-                <Box key={t} sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                  <CheckCircleIcon sx={{ fontSize: 15, color: T.textMuted }} />
-                  <Typography sx={{ fontSize: "13px", color: T.textSub, fontWeight: 500 }}>{t}</Typography>
-                </Box>
+            <div className="nm-reg-trust-row">
+              {TRUST_BADGES.map((badge) => (
+                <div key={badge} className="nm-reg-trust-item">
+                  <div className="nm-reg-trust-check">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  </div>
+                  {badge}
+                </div>
               ))}
-            </Box>
+            </div>
 
-            <Button
-              variant="contained"
-              size="large"
-              onClick={handleCTA}
-              disabled={isAuthenticated === null}
-              endIcon={
-                isAuthenticated
-                  ? <CheckCircleIcon sx={{ fontSize: 17 }} />
-                  : <ArrowForwardIcon sx={{ fontSize: 17 }} />
-              }
-              sx={{
-                bgcolor: T.accent,
-                color: "#fff",
-                fontWeight: 700,
-                fontSize: 14,
-                px: 3.5,
-                py: 1.4,
-                // borderRadius: T.radius,
-                textTransform: "none",
-                boxShadow: "none",
-                border: `1px solid ${T.accent}`,
-                "&:hover": {
-                  bgcolor: T.accentHover,
-                  boxShadow: "none",
-                },
-                "&.Mui-disabled": { bgcolor: T.borderMid, color: T.textMuted, border: "none" },
-                transition: "all 0.15s",
-              }}
-            >
-              {isAuthenticated === null
-                ? "Checking…"
-                : isAuthenticated
-                ? "Continue to vendor setup"
-                : "Create account to continue"}
-            </Button>
-          </Box>
-        </Container>
-      </Box>
-
-      {/* ── 4-step strip ─────────────────────────────────────────────────── */}
-      <Box sx={{ bgcolor: T.surface, borderBottom: `1px solid ${T.border}` }}>
-        <Container maxWidth="md" sx={{ px: { xs: 2.5, md: 3 } }}>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: { xs: "flex-start", sm: "center" },
-              overflowX: "auto",
-              py: 2,
-              gap: 0,
-            }}
-          >
-            {steps.map((s, i) => (
-              <React.Fragment key={s.num}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexShrink: 0, px: { xs: 1, md: 2 } }}>
-                  <Box
-                    sx={{
-                      width: 24,
-                      height: 24,
-                      // borderRadius: "50%",
-                      bgcolor: T.accent,
-                      color: "#fff",
-                      fontWeight: 700,
-                      fontSize: "11px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {s.num}
-                  </Box>
-                  <Typography sx={{ fontSize: "13px", fontWeight: 500, color: T.textSub, whiteSpace: "nowrap" }}>
-                    {s.label}
-                  </Typography>
-                </Box>
-                {i < steps.length - 1 && (
-                  <Box sx={{ color: T.borderMid, fontSize: 16, flexShrink: 0 }}>›</Box>
-                )}
-              </React.Fragment>
-            ))}
-          </Box>
-        </Container>
-      </Box>
-
-      <Container maxWidth="md" sx={{ py: { xs: 4, md: 5 }, px: { xs: 2.5, md: 3 } }}>
-
-        {/* ── Auth warning ──────────────────────────────────────────────── */}
-        {isAuthenticated === false && (
-          <Box
-            sx={{
-              bgcolor: T.warnBg,
-              border: `1px solid ${T.warnBorder}`,
-              borderLeft: `3px solid #d97706`,
-              borderRadius: T.radius,
-              p: 2,
-              display: "flex",
-              gap: 1.5,
-              alignItems: "flex-start",
-              mb: 3,
-            }}
-          >
-            <WarningAmberIcon sx={{ color: "#d97706", fontSize: 18, mt: "1px", flexShrink: 0 }} />
-            <Box>
-              <Typography sx={{ fontWeight: 600, fontSize: "13px", color: T.warn }}>
-                You need a Negromart account first
-              </Typography>
-              <Typography sx={{ fontSize: "13px", color: T.warn, mt: 0.5, lineHeight: 1.6 }}>
-                Log in or sign up at{" "}
-                <a href="https://www.negromart.com/auth/register" style={{ color: "#d97706", fontWeight: 600 }}>
-                  negromart.com
-                </a>{" "}
-                then return here to set up your vendor account.
-              </Typography>
-            </Box>
-          </Box>
-        )}
-
-        {/* ── Info notice ───────────────────────────────────────────────── */}
-        <Box
-          sx={{
-            bgcolor: T.infoBg,
-            border: `1px solid ${T.infoBorder}`,
-            borderLeft: `3px solid ${T.info}`,
-            borderRadius: T.radius,
-            p: 2,
-            display: "flex",
-            gap: 1.5,
-            alignItems: "flex-start",
-            mb: 4,
-          }}
-        >
-          <InfoOutlinedIcon sx={{ color: T.info, fontSize: 18, mt: "1px", flexShrink: 0 }} />
-          <Box>
-            <Typography sx={{ fontWeight: 600, fontSize: "13px", color: T.info }}>
-              You must be a registered Negromart user before selling
-            </Typography>
-            <Typography sx={{ fontSize: "13px", color: T.textSub, mt: 0.5, lineHeight: 1.6 }}>
-              If you don't have an account yet, sign up at{" "}
-              <a
-                href="https://www.negromart.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: T.info, fontWeight: 600 }}
+            {/* CTA */}
+            <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", alignItems: "center" }}>
+              <button
+                className="nm-reg-hero-btn"
+                onClick={handleCTA}
+                disabled={authState === null}
               >
+                {ctaLabel}
+              </button>
+              <Link href="/auth/login" className="nm-reg-hero-btn-outline">
+                Log in
+              </Link>
+            </div>
+          </div>
+
+          {/* Right: "How it works" card */}
+          <div className="nm-reg-steps-card">
+            <div className="nm-reg-steps-card-title">How it works</div>
+            <ul className="nm-reg-step-list">
+              {HOW_IT_WORKS.map((s) => (
+                <li key={s.num} className="nm-reg-step-row">
+                  <div className="nm-reg-step-num">{s.num}</div>
+                  <div className="nm-reg-step-text">
+                    <div className="nm-reg-step-name">{s.name}</div>
+                    <div className="nm-reg-step-hint">{s.hint}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ── NOTICES ─────────────────────────────────────────── */}
+      <div className="nm-reg-notices">
+        {/* Info: must be a registered user */}
+        <div className="nm-reg-notice nm-reg-notice-info">
+          <div className="nm-reg-notice-icon nm-reg-notice-icon-info">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          <div>
+            <div className="nm-reg-notice-title">You must be a registered Negromart user before selling</div>
+            <div className="nm-reg-notice-body">
+              If you don't have an account yet, sign up at{" "}
+              <a href="https://www.negromart.com" target="_blank" rel="noopener noreferrer" className="nm-reg-notice-link">
                 www.negromart.com
               </a>{" "}
               first, then return here to create your vendor account.
-            </Typography>
-          </Box>
-        </Box>
+            </div>
+          </div>
+        </div>
 
-        {/* ── Why sell section ─────────────────────────────────────────── */}
-        <Typography sx={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: T.textMuted, mb: 2 }}>
-          Why sell on Negromart
-        </Typography>
+        {/* Warning: not logged in */}
+        {authState === false && (
+          <div className="nm-reg-notice nm-reg-notice-warn">
+            <div className="nm-reg-notice-icon nm-reg-notice-icon-warn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div>
+              <div className="nm-reg-notice-title">You need a Negromart account first</div>
+              <div className="nm-reg-notice-body">
+                Log in or sign up at{" "}
+                <a href="https://www.negromart.com/auth/register" className="nm-reg-notice-link">
+                  negromart.com
+                </a>{" "}
+                then return here to set up your vendor account.
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
-        <Grid container spacing={2} sx={{ mb: 4 }}>
-          {features.map((f) => (
-            <Grid item xs={12} sm={6} key={f.label}>
-              <Box
-                sx={{
-                  bgcolor: T.surface,
-                  border: `1px solid ${T.border}`,
-                  borderRadius: T.radiusLg,
-                  p: 2.5,
-                  height: "100%",
-                  display: "flex",
-                  gap: 2,
-                  boxShadow: T.shadowSm,
-                  transition: "box-shadow 0.15s, transform 0.15s",
-                  "&:hover": {
-                    boxShadow: T.shadowMd,
-                    transform: "translateY(-1px)",
-                  },
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 40,
-                    height: 40,
-                    // borderRadius: T.radius,
-                    bgcolor: T.accentSoft,
-                    border: `1px solid ${T.border}`,
-                    color: T.textSub,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}
-                >
-                  {f.icon}
-                </Box>
-                <Box>
-                  <Typography sx={{ fontWeight: 600, fontSize: "14px", color: T.text, mb: 0.5 }}>
-                    {f.label}
-                  </Typography>
-                  <Typography sx={{ fontSize: "13px", color: T.textSub, lineHeight: 1.65 }}>
-                    {f.desc}
-                  </Typography>
-                </Box>
-              </Box>
-            </Grid>
-          ))}
-        </Grid>
+      {/* ── BENEFITS ─────────────────────────────────────────── */}
+      <section className="nm-reg-benefits">
+        <div className="nm-reg-benefits-inner">
+          <div className="nm-reg-benefits-eyebrow">Why sell on Negromart</div>
+          <h2 className="nm-reg-benefits-title">Everything you need to start and scale</h2>
+          <div className="nm-reg-benefits-grid">
+            {BENEFITS.map((b) => (
+              <div key={b.title} className="nm-reg-feature-card">
+                <div className="nm-reg-feature-icon">{b.icon}</div>
+                <div className="nm-reg-feature-title">{b.title}</div>
+                <div className="nm-reg-feature-desc">{b.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-        {/* ── Bottom CTA card ──────────────────────────────────────────── */}
-        <Box
-          sx={{
-            bgcolor: T.surface,
-            // border: `1px solid ${T.border}`,
-            // borderRadius: T.radiusLg,
-            p: { xs: 3, md: 4 },
-            display: "flex",
-            flexDirection: { xs: "column", sm: "row" },
-            alignItems: { xs: "flex-start", sm: "center" },
-            justifyContent: "space-between",
-            gap: 3,
-            boxShadow: T.shadowSm,
-          }}
+      {/* ── BOTTOM CTA ───────────────────────────────────────── */}
+      <section className="nm-reg-bottom-cta">
+        <h2 className="nm-reg-bottom-cta-title">Start your seller journey today</h2>
+        <p className="nm-reg-bottom-cta-sub">
+          Join Negromart's growing marketplace. Setup takes under 5 minutes — free forever.
+        </p>
+        <button
+          className="nm-reg-hero-btn"
+          onClick={handleCTA}
+          disabled={authState === null}
         >
-          <Box>
-            <Typography sx={{ fontWeight: 700, fontSize: "17px", color: T.text, mb: 0.5 }}>
-              Start your seller journey today
-            </Typography>
-            <Typography sx={{ fontSize: "13px", color: T.textSub, lineHeight: 1.6 }}>
-              Join Negromart's growing marketplace. Setup takes under 5 minutes.
-            </Typography>
-          </Box>
-          <Button
-            variant="outlined"
-            onClick={handleCTA}
-            disabled={isAuthenticated === null}
-            endIcon={<ArrowForwardIcon sx={{ fontSize: 16 }} />}
-            sx={{
-              color: T.text,
-              borderColor: T.borderMid,
-              fontWeight: 600,
-              fontSize: "13px",
-              px: 3,
-              py: 1.25,
-              // borderRadius: T.radius,
-              textTransform: "none",
-              bgcolor: T.surface,
-              flexShrink: 0,
-              "&:hover": { bgcolor: T.accentSoft, borderColor: T.accent },
-              transition: "all 0.15s",
-            }}
-          >
-            {isAuthenticated ? "Continue setup" : "Get started"}
-          </Button>
-        </Box>
-      </Container>
-    </Box>
+          {ctaLabel}
+        </button>
+      </section>
+    </div>
   );
 }

@@ -17,7 +17,7 @@ function MetricCard({ label, value, icon: Icon, accent = false }) {
   return (
     <Box
       sx={{
-        p: '20px 22px',
+        p: { xs: '12px 14px', md: '20px 22px' },
         borderRadius: '14px',
         border: '1px solid',
         borderColor: accent ? 'text.primary' : 'divider',
@@ -34,8 +34,8 @@ function MetricCard({ label, value, icon: Icon, accent = false }) {
     >
       <Box
         sx={{
-          width: 40,
-          height: 40,
+          width: { xs: 32, md: 40 },
+          height: { xs: 32, md: 40 },
           borderRadius: '10px',
           bgcolor: accent ? 'rgba(255,255,255,0.12)' : 'action.selected',
           display: 'flex',
@@ -44,7 +44,7 @@ function MetricCard({ label, value, icon: Icon, accent = false }) {
           flexShrink: 0,
         }}
       >
-        <Icon sx={{ fontSize: 18, color: accent ? 'text.secondary' : 'text.secondary' }} />
+        <Icon sx={{ fontSize: { xs: 15, md: 18 }, color: accent ? 'text.secondary' : 'text.secondary' }} />
       </Box>
 
       <Box sx={{ minWidth: 0 }}>
@@ -65,7 +65,7 @@ function MetricCard({ label, value, icon: Icon, accent = false }) {
         <Typography
           sx={{
             fontFamily: "'Cormorant Garamond', serif",
-            fontSize: 22,
+            fontSize: { xs: 17, md: 22 },
             fontWeight: 700,
             letterSpacing: '-0.5px',
             lineHeight: 1,
@@ -112,13 +112,15 @@ export default function SalesSummaryCard({ data }) {
         border: '1px solid',
         borderColor: 'divider',
         bgcolor: 'background.paper',
+        overflow: 'hidden',
+        minWidth: 0,
       }}
     >
       <Stack direction="row" alignItems="baseline" spacing={1} sx={{ mb: 3 }}>
         <Typography
           sx={{
             fontFamily: "'Cormorant Garamond', serif",
-            fontSize: 22,
+            fontSize: { xs: 17, md: 22 },
             fontWeight: 700,
             letterSpacing: '-0.5px',
           }}
@@ -133,7 +135,7 @@ export default function SalesSummaryCard({ data }) {
 
       <Grid container spacing={1.5}>
         {metrics.map((m) => (
-          <Grid key={m.label} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+          <Grid key={m.label} size={{ xs: m.accent ? 12 : 6, sm: 6, md: 4, lg: 3 }}>
             <MetricCard {...m} />
           </Grid>
         ))}
