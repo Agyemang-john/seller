@@ -1,8 +1,7 @@
-// middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const protectedRoutes = [
+const PROTECTED_PREFIXES = [
   '/dashboard',
   '/orders',
   '/payment',
@@ -11,10 +10,16 @@ const protectedRoutes = [
   '/reviews',
   '/working-hours',
   '/help',
-  '/about',
-] as const;
+  '/payouts',
+  '/notifications',
+  '/billing',
+  '/settings',
+  '/subscribe',
+  '/store-analytics',
+  '/subscription',
+  '/logout',
+];
 
-// Safe JWT payload decoder (only decodes, no crypto verification)
 function decodeJWT(token: string) {
   try {
     const payload = token.split('.')[1];
@@ -26,48 +31,55 @@ function decodeJWT(token: string) {
 }
 
 export function proxy(request: NextRequest) {
-  const accessToken = request.cookies.get('vendor_access')?.value;
   const { pathname } = request.nextUrl;
 
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
+  const isProtected = PROTECTED_PREFIXES.some((prefix) =>
+    pathname.startsWith(prefix)
   );
 
-  // If trying to access a protected route
-  if (isProtectedRoute) {
-    // No access token at all → force login
-    if (!accessToken) {
-      const loginUrl = new URL('/auth/login', request.url);
-      loginUrl.searchParams.set('redirect', encodeURIComponent(pathname));
-      return NextResponse.redirect(loginUrl);
-    }
+  if (!isProtected) return NextResponse.next();
 
+  const accessToken = request.cookies.get('vendor_access')?.value;
+  const refreshToken = request.cookies.get('vendor_refresh')?.value;
+
+  const redirectToLogin = (extra?: Record<string, string>) => {
+    const loginUrl = new URL('/auth/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    if (extra) {
+      for (const [k, v] of Object.entries(extra)) loginUrl.searchParams.set(k, v);
+    }
+    return NextResponse.redirect(loginUrl);
+  };
+
+  // No tokens at all → force login
+  if (!accessToken && !refreshToken) {
+    return redirectToLogin();
+  }
+
+  // If access token is present, validate it
+  if (accessToken) {
     const payload = decodeJWT(accessToken);
     const now = Math.floor(Date.now() / 1000);
 
-    // Invalid token
     if (!payload) {
-      const loginUrl = new URL('/auth/login', request.url);
-      loginUrl.searchParams.set('redirect', encodeURIComponent(pathname));
-      return NextResponse.redirect(loginUrl);
+      // Malformed token — fall back to refresh token if present
+      if (!refreshToken) return redirectToLogin();
+      return NextResponse.next();
     }
 
-    // Expired token
     if (payload.exp && payload.exp < now) {
-      const loginUrl = new URL('/auth/login', request.url);
-      loginUrl.searchParams.set('expired', 'true');
-      loginUrl.searchParams.set('redirect', encodeURIComponent(pathname));
-      return NextResponse.redirect(loginUrl);
+      // Access token expired — if refresh token exists, let the client refresh
+      if (refreshToken) return NextResponse.next();
+      return redirectToLogin({ expired: 'true' });
     }
 
-    // Additional vendor verification for dashboard
-    if (pathname.startsWith('/dashboard')) {
-      if (payload.role !== 'vendor' || payload.is_verified_vendor !== true) {
-        return NextResponse.redirect(new URL('/not-verified', request.url));
-      }
+    // Valid access token — enforce vendor role on all protected routes
+    if (payload.role !== 'vendor' || payload.is_verified_vendor !== true) {
+      return NextResponse.redirect(new URL('/not-verified', request.url));
     }
   }
 
+  // Refresh token exists (and access token is absent or expired) — let client handle refresh
   return NextResponse.next();
 }
 
@@ -81,6 +93,13 @@ export const config = {
     '/reviews/:path*',
     '/working-hours/:path*',
     '/help/:path*',
-    '/about/:path*',
+    '/payouts/:path*',
+    '/notifications/:path*',
+    '/billing/:path*',
+    '/settings/:path*',
+    '/subscribe/:path*',
+    '/store-analytics/:path*',
+    '/subscription/:path*',
+    '/logout/:path*',
   ],
 };
