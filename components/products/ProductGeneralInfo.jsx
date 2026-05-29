@@ -114,15 +114,37 @@ const ProductGeneralInfo = ({
           <Grid size={{ xs: 12, sm: 6 }}>
             <Autocomplete
               options={[...categories].sort((a, b) => {
-                const ga = `${a.category?.main_category?.title ?? ''} › ${a.category?.title ?? ''}`;
-                const gb = `${b.category?.main_category?.title ?? ''} › ${b.category?.title ?? ''}`;
+                const ga = `${a.category?.main_category?.title ?? ''}\x00${a.category?.title ?? ''}\x00${a.title ?? ''}`;
+                const gb = `${b.category?.main_category?.title ?? ''}\x00${b.category?.title ?? ''}\x00${b.title ?? ''}`;
                 return ga.localeCompare(gb);
               })}
-              groupBy={(o) => `${o.category?.main_category?.title ?? 'Other'} › ${o.category?.title ?? 'Other'}`}
+              groupBy={(o) => `${o.category?.main_category?.title ?? 'Other'}\x00${o.category?.title ?? 'Other'}`}
               getOptionLabel={(o) => o.title || ''}
               isOptionEqualToValue={(o, v) => o.id === v?.id}
               value={selectedCategory}
               onChange={handleCategoryChange}
+              renderGroup={(params) => {
+                const [mainCat, cat] = params.group.split('\x00');
+                return (
+                  <li key={params.key}>
+                    <Box sx={{ px: 2, pt: 1.25, pb: 0.5, bgcolor: 'action.hover', borderBottom: '1px solid', borderColor: 'divider', position: 'sticky', top: -8, zIndex: 1 }}>
+                      <Typography sx={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'text.disabled', lineHeight: 1.2 }}>
+                        {mainCat}
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
+                        <Typography sx={{ fontSize: 11, color: 'text.disabled', lineHeight: 1 }}>↳</Typography>
+                        <Typography sx={{ fontSize: 12, fontWeight: 600, color: 'text.secondary', lineHeight: 1.4 }}>{cat}</Typography>
+                      </Box>
+                    </Box>
+                    <ul style={{ padding: 0, margin: 0 }}>{params.children}</ul>
+                  </li>
+                );
+              }}
+              renderOption={({ key, ...props }, option) => (
+                <Box key={key} component="li" {...props} sx={{ pl: '28px !important', fontSize: 13 }}>
+                  {option.title}
+                </Box>
+              )}
               renderInput={(params) => (
                 <TextField {...params} label="Category" size="small" sx={fieldSx}
                   error={!!formErrors.category} helperText={formErrors.category} />
