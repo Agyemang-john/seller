@@ -3,10 +3,10 @@ import { apiSlice } from '../services/apiSlice';
 const authApiSlice = apiSlice.injectEndpoints({
   endpoints: builder => ({
     login: builder.mutation({
-      query: ({ email, password }) => ({
+      query: ({ email, password, cf_turnstile_response }) => ({
         url: '/jwt/create/vendor/',
         method: 'POST',
-        body: { email, password },
+        body: { email, password, cf_turnstile_response },
       }),
     }),
     otpVerify: builder.mutation({
