@@ -10,19 +10,21 @@ const authApiSlice = apiSlice.injectEndpoints({
       }),
     }),
     otpVerify: builder.mutation({
-      query: ({ email, otp }) => ({
+      // identifier is in the HttpOnly cookie — only send the OTP value
+      query: ({ otp }) => ({
         url: '/jwt/otp-verify/vendor/',
         method: 'POST',
-        body: { email, otp },
+        body: { otp },
       }),
     }),
-	otpResend: builder.mutation({
-	  query: (data) => ({
-		url: '/jwt/otp-resend/vendor/',
-		method: 'POST',
-		body: data,
-	  }),
-	}),
+    otpResend: builder.mutation({
+      // identifier is in the HttpOnly cookie — no body needed
+      query: () => ({
+        url: '/jwt/otp-resend/vendor/',
+        method: 'POST',
+        body: {},
+      }),
+    }),
     verify: builder.mutation({
       query: () => ({
         url: '/jwt/verify/vendor/',

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useLoginMutation } from '@/redux/features/authApiSlice';
 import { useAppDispatch } from '@/redux/hooks';
 import { setAuth } from '@/redux/features/authSlice';
@@ -10,7 +10,7 @@ import { Visibility, VisibilityOff } from '@mui/icons-material';
 import BlackButton from '@/components/BlackButton';
 import { Box, TextField, Typography, CircularProgress, IconButton, InputAdornment, Alert } from '@mui/material';
 import { toast } from 'react-toastify';
-import Cookies from 'js-cookie';
+import { Turnstile } from '@marsidev/react-turnstile';
 
 export default function LoginForm() {
   const dispatch = useAppDispatch();
@@ -19,6 +19,8 @@ export default function LoginForm() {
   const [password, setPassword] = useState('');
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [message, setMessage] = useState({ type: null, text: '' });
+  const [captchaToken, setCaptchaToken] = useState('');
+  const turnstileRef = useRef(null);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -46,12 +48,19 @@ export default function LoginForm() {
     e.preventDefault();
     setMessage({ type: null, text: '' });
 
+    if (!captchaToken) {
+      setMessage({ type: 'error', text: 'Please complete the CAPTCHA.' });
+      return;
+    }
+
     try {
-      const response = await login({ email: emailOrPhone.toLowerCase(), password }).unwrap();
+      const response = await login({ email: emailOrPhone.toLowerCase(), password, cf_turnstile_response: captchaToken }).unwrap();
       if (response.detail?.includes('OTP sent')) {
-        // Set cookie for identifier (10-minute expiry)
-        Cookies.set('otp_identifier', emailOrPhone);
-        toast.success(`An otp has been sent to ${emailOrPhone}`);
+        // The backend sets otp_identifier as an HttpOnly cookie — we only use the masked display value
+        const masked = response.masked_identifier || 'your registered contact';
+        toast.success(`An OTP has been sent to ${masked}`);
+        // Store masked value in sessionStorage for display on the OTP page (not sensitive)
+        sessionStorage.setItem('otp_masked_identifier', masked);
         router.push(`/auth/verify?redirect=${encodeURIComponent(redirectPath)}`);
       } else {
         dispatch(setAuth({}));
@@ -79,6 +88,8 @@ export default function LoginForm() {
 
       setMessage({ type: 'error', text: errorMsg });
       toast.error(errorMsg);
+      turnstileRef.current?.reset();
+      setCaptchaToken('');
     } finally {
       resetForm();
     }
@@ -176,6 +187,14 @@ export default function LoginForm() {
               }}
             />
           </div>
+
+          <Turnstile
+            ref={turnstileRef}
+            siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+            onSuccess={(token) => setCaptchaToken(token)}
+            onExpire={() => setCaptchaToken('')}
+            options={{ theme: 'light' }}
+          />
 
           <Box display="flex" justifyContent="flex-end" alignItems="center" mt={2}>
             <BlackButton

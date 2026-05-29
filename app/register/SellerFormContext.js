@@ -69,6 +69,9 @@ export const SellerFormProvider = ({ children }) => {
       const newFormData = {
         ...initialFormData,
         ...parsed,
+        // Never restore payment details or tax ID from sessionStorage
+        payment_method: initialFormData.payment_method,
+        tax_id: "",
         student_id: parsed.student_id ? { file: null, preview: null, name: parsed.student_id.name } : { file: null, preview: null, name: null },
         license: parsed.license ? { file: null, preview: null, name: parsed.license.name } : { file: null, preview: null, name: null },
         proof_of_address: parsed.proof_of_address ? { file: null, preview: null, name: parsed.proof_of_address.name } : { file: null, preview: null, name: null },
@@ -102,8 +105,12 @@ export const SellerFormProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
+    // payment_method and tax_id are never written to sessionStorage.
+    // If the user refreshes mid-flow they must re-enter payment details —
+    // this is the correct trade-off: convenience vs. financial data exposure.
+    const { payment_method, tax_id, ...safeData } = formData;
     const dataToStore = {
-      ...formData,
+      ...safeData,
       student_id: formData.student_id.file ? { name: formData.student_id.file.name } : formData.student_id.name ? { name: formData.student_id.name } : null,
       license: formData.license.file ? { name: formData.license.file.name } : formData.license.name ? { name: formData.license.name } : null,
       proof_of_address: formData.proof_of_address.file ? { name: formData.proof_of_address.file.name } : formData.proof_of_address.name ? { name: formData.proof_of_address.name } : null,

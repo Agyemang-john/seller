@@ -9,7 +9,6 @@ import Link from 'next/link';
 import BlackButton from '@/components/BlackButton';
 import { Box, TextField, Typography, CircularProgress, Alert } from '@mui/material';
 import { toast } from 'react-toastify';
-import Cookies from 'js-cookie';
 
 export default function OtpForm() {
   const dispatch = useAppDispatch();
@@ -17,6 +16,8 @@ export default function OtpForm() {
   const [otpResend, { isLoading: isResendLoading }] = useOtpResendMutation();
   const [otp, setOtp] = useState('');
   const [message, setMessage] = useState({ type: null, text: '' });
+  // Masked identifier is display-only; the real identifier is in an HttpOnly cookie on the backend
+  const [maskedIdentifier, setMaskedIdentifier] = useState('');
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -32,13 +33,13 @@ export default function OtpForm() {
     return '/dashboard';
   })();
 
-  // Guard: Redirect to login if no identifier cookie
   useEffect(() => {
-    if (!Cookies.get('otp_identifier')) {
-      router.push('/auth/login');
+    const masked = sessionStorage.getItem('otp_masked_identifier');
+    if (masked) {
+      setMaskedIdentifier(masked);
     }
-  }, [router]);
-
+    // No redirect guard needed here — the backend will reject OTP verify if the cookie is missing
+  }, []);
 
   const resetForm = () => {
     setOtp('');
@@ -48,17 +49,12 @@ export default function OtpForm() {
     e.preventDefault();
     setMessage({ type: null, text: '' });
 
-    const identifier = Cookies.get('otp_identifier');
-    if (!identifier) {
-      setMessage({ type: 'error', text: 'Session expired. Please log in again.' });
-      router.push('/auth/login');
-      return;
-    }
     try {
-      await otpVerify({ email: identifier, otp }).unwrap();
+      // The identifier is sent via the HttpOnly cookie automatically (withCredentials)
+      // We only send the OTP value in the request body
+      await otpVerify({ otp }).unwrap();
       dispatch(setAuth({}));
-      // Clear cookie on success
-      Cookies.remove('otp_identifier');
+      sessionStorage.removeItem('otp_masked_identifier');
       setMessage({ type: 'success', text: 'Logged in successfully!' });
       toast.success('Logged in successfully!');
       window.location.href = redirectPath || '/dashboard';
@@ -87,16 +83,11 @@ export default function OtpForm() {
   };
 
   const handleResendOtp = async () => {
-    const identifier = Cookies.get('otp_identifier');
-    if (!identifier) {
-      setMessage({ type: 'error', text: 'Session expired. Please log in again.' });
-      router.push('/auth/login');
-      return;
-    }
     setMessage({ type: null, text: '' });
 
     try {
-      const response = await otpResend({ email: identifier }).unwrap();
+      // The backend reads the identifier from the HttpOnly cookie — no need to send it here
+      const response = await otpResend({}).unwrap();
       if (response.detail?.includes('OTP sent')) {
         setMessage({ type: 'success', text: 'New OTP sent to your email or phone.' });
         toast.success('New OTP sent to your email or phone.');
@@ -143,6 +134,11 @@ export default function OtpForm() {
           <Typography variant="h5" className="font-bold">
             Verify OTP
           </Typography>
+          {maskedIdentifier && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Code sent to {maskedIdentifier}
+            </Typography>
+          )}
         </div>
 
         <form
