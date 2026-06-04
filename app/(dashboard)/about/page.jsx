@@ -19,13 +19,15 @@ import RocketLaunchOutlinedIcon from '@mui/icons-material/RocketLaunchOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import PageContainer from '@/components/PageContainer';
+import { alpha } from '@mui/material/styles';
+import { brand, brandGradients } from '@/theme/designTokens';
 
-// ── brand tokens ──────────────────────────────────────────────────────────────
-const navy  = '#041f41';
-const blue  = '#0071ce';
-const gold  = '#ffc220';
-const light = '#edf2f7';
-const mid   = '#4a4a4a';
+// ── brand tokens (single source: theme/designTokens) ───────────────────────────
+const navy  = brand.navy;
+const blue  = brand.blue;
+const gold  = brand.gold;
+const light = 'action.hover';   // theme-aware surface  (sx palette path)
+const mid   = 'text.secondary'; // theme-aware muted text (sx palette path)
 
 // ── data ──────────────────────────────────────────────────────────────────────
 const PILLARS = [
@@ -109,7 +111,7 @@ export default function AboutPage() {
         {/* ── Hero ───────────────────────────────────────────────────────── */}
         <Box
           sx={{
-            background: `linear-gradient(135deg, ${navy} 0%, #0a3466 100%)`,
+            background: brandGradients.hero,
             borderRadius: 3,
             px: { xs: 3, sm: 5, md: 7 },
             py: { xs: 5, sm: 6.5 },
@@ -131,7 +133,7 @@ export default function AboutPage() {
           <Typography
             variant="h4"
             fontWeight={300}
-            color="#fff"
+            color="common.white"
             sx={{ lineHeight: 1.2, mb: 2, letterSpacing: -0.5, maxWidth: 620, fontSize: { xs: '1.6rem', sm: '2rem', md: '2.4rem' } }}
           >
             Where sellers and buyers trade{' '}
@@ -154,11 +156,11 @@ export default function AboutPage() {
                 sx={{
                   display: 'inline-flex', alignItems: 'center', gap: 1,
                   px: 3.5, py: 1.4,
-                  bgcolor: blue, color: '#fff',
+                  bgcolor: blue, color: 'common.white',
                   borderRadius: 8, fontWeight: 700, fontSize: 14,
                   cursor: 'pointer',
                   transition: 'background 0.2s',
-                  '&:hover': { bgcolor: '#0058a3' },
+                  '&:hover': { bgcolor: brand.blueDark },
                 }}
               >
                 Go to Dashboard <ArrowForwardIcon sx={{ fontSize: 16 }} />
@@ -170,11 +172,11 @@ export default function AboutPage() {
                 sx={{
                   display: 'inline-flex', alignItems: 'center', gap: 1,
                   px: 3.5, py: 1.4,
-                  border: '1.5px solid rgba(255,255,255,0.35)', color: '#fff',
+                  border: '1.5px solid rgba(255,255,255,0.35)', color: 'common.white',
                   borderRadius: 8, fontWeight: 600, fontSize: 14,
                   cursor: 'pointer',
                   transition: 'border-color 0.2s, background 0.2s',
-                  '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.08)' },
+                  '&:hover': { borderColor: 'common.white', bgcolor: 'rgba(255,255,255,0.08)' },
                 }}
               >
                 Help Centre
@@ -186,7 +188,7 @@ export default function AboutPage() {
         {/* ── Stats bar ──────────────────────────────────────────────────── */}
         <Grid container spacing={2} sx={{ mb: 4 }}>
           {STATS.map(s => (
-            <Grid item xs={6} md={3} key={s.label}>
+            <Grid size={{ xs: 6, sm: 3 }} key={s.label}>
               <Card variant="outlined" sx={{ borderRadius: 2.5, height: '100%' }}>
                 <CardContent sx={{ p: { xs: 2, sm: 2.5 }, '&:last-child': { pb: { xs: 2, sm: 2.5 } } }}>
                   <Typography sx={{ fontSize: { xs: 28, sm: 34 }, fontWeight: 300, color: blue, letterSpacing: -1, lineHeight: 1 }}>
@@ -202,7 +204,7 @@ export default function AboutPage() {
 
         {/* ── Mission & Vision ───────────────────────────────────────────── */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, sm: 6 , md: 6 }}>
             <Box sx={{ p: { xs: 3, sm: 3.5 }, border: '1px solid', borderColor: 'divider', borderRadius: 3, height: '100%', borderLeft: `4px solid ${blue}` }}>
               <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1.5 }}>
                 <TrackChangesOutlinedIcon sx={{ color: blue, fontSize: 22 }} />
@@ -217,7 +219,7 @@ export default function AboutPage() {
             </Box>
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, sm: 6 , md: 6 }}>
             <Box sx={{ p: { xs: 3, sm: 3.5 }, border: '1px solid', borderColor: 'divider', borderRadius: 3, height: '100%', borderLeft: `4px solid ${gold}` }}>
               <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1.5 }}>
                 <RocketLaunchOutlinedIcon sx={{ color: gold, fontSize: 22 }} />
@@ -242,13 +244,13 @@ export default function AboutPage() {
             </Typography>
           </Box>
 
-          <Grid container spacing={3}>
+          <Grid container spacing={2}>
             {/* Sellers */}
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, sm: 6 , md: 6 }}>
               <Card variant="outlined" sx={{ borderRadius: 3, height: '100%' }}>
                 <CardContent sx={{ p: { xs: 3, sm: 3.5 }, '&:last-child': { pb: { xs: 3, sm: 3.5 } } }}>
                   <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2.5 }}>
-                    <Box sx={{ p: 1.25, bgcolor: '#eef4ff', borderRadius: 2 }}>
+                    <Box sx={{ p: 1.25, bgcolor: (t) => alpha(t.palette.brand.blue, 0.12), borderRadius: 2 }}>
                       <StorefrontOutlinedIcon sx={{ color: blue, fontSize: 24 }} />
                     </Box>
                     <Box>
@@ -270,11 +272,11 @@ export default function AboutPage() {
             </Grid>
 
             {/* Buyers */}
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, sm: 6 , md: 6 }}>
               <Card variant="outlined" sx={{ borderRadius: 3, height: '100%' }}>
                 <CardContent sx={{ p: { xs: 3, sm: 3.5 }, '&:last-child': { pb: { xs: 3, sm: 3.5 } } }}>
                   <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2.5 }}>
-                    <Box sx={{ p: 1.25, bgcolor: '#eef4ff', borderRadius: 2 }}>
+                    <Box sx={{ p: 1.25, bgcolor: (t) => alpha(t.palette.brand.blue, 0.12), borderRadius: 2 }}>
                       <ShoppingBagOutlinedIcon sx={{ color: blue, fontSize: 24 }} />
                     </Box>
                     <Box>
@@ -311,18 +313,18 @@ export default function AboutPage() {
 
           <Grid container spacing={2}>
             {PILLARS.map(p => (
-              <Grid item xs={12} sm={6} lg={4} key={p.title}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={p.title}>
                 <Card
                   variant="outlined"
                   sx={{
                     borderRadius: 2.5,
                     height: '100%',
-                    transition: 'box-shadow 0.2s, transform 0.2s',
-                    '&:hover': { boxShadow: 4, transform: 'translateY(-2px)', borderColor: blue },
+                    transition: 'box-shadow 0.1s, transform 0.1s',
+                    '&:hover': { boxShadow: 0, transform: 'translateY(0px)', borderColor: blue },
                   }}
                 >
                   <CardContent sx={{ p: { xs: 2.5, sm: 3 }, '&:last-child': { pb: { xs: 2.5, sm: 3 } } }}>
-                    <Box sx={{ p: 1.25, bgcolor: '#eef4ff', borderRadius: 2, display: 'inline-flex', mb: 2 }}>
+                    <Box sx={{ p: 1.25, bgcolor: (t) => alpha(t.palette.brand.blue, 0.12), borderRadius: 2, display: 'inline-flex', mb: 2 }}>
                       {p.icon}
                     </Box>
                     <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.75 }}>{p.title}</Typography>
@@ -346,7 +348,7 @@ export default function AboutPage() {
           }}
         >
           <Grid container spacing={4} alignItems="center">
-            <Grid item xs={12} md={7}>
+            <Grid size={{ xs: 12, md: 7 }}>
               <SectionLabel>Who we are</SectionLabel>
               <Typography variant="h5" fontWeight={700} sx={{ mb: 2, lineHeight: 1.3, fontSize: { xs: '1.2rem', sm: '1.4rem' } }}>
                 A team obsessed with making commerce fair.
@@ -358,7 +360,7 @@ export default function AboutPage() {
                 We built every feature — from escrow payments and delivery tracking to seller verification and dispute resolution — to solve that exact problem. We take inspiration from the world&apos;s best marketplaces (Amazon, Walmart, Etsy) but build specifically for our sellers and the communities they serve.
               </Typography>
             </Grid>
-            <Grid item xs={12} md={5}>
+            <Grid size={{ xs: 12, md: 5 }}>
               <Stack spacing={2}>
                 {[
                   { icon: <GroupsOutlinedIcon sx={{ color: blue, fontSize: 20 }} />, title: 'Community-first', body: 'Every policy, feature, and process is reviewed for its impact on real sellers and buyers — not just metrics.' },
@@ -366,7 +368,7 @@ export default function AboutPage() {
                   { icon: <RocketLaunchOutlinedIcon sx={{ color: blue, fontSize: 20 }} />, title: 'Always improving', body: 'We ship new tools, fix edge cases, and listen to seller feedback every single week.' },
                 ].map(v => (
                   <Stack key={v.title} direction="row" spacing={2} alignItems="flex-start">
-                    <Box sx={{ p: 1, bgcolor: '#fff', border: '1px solid', borderColor: 'divider', borderRadius: 1.5, flexShrink: 0, mt: 0.25 }}>
+                    <Box sx={{ p: 1, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: 1.5, flexShrink: 0, mt: 0.25 }}>
                       {v.icon}
                     </Box>
                     <Box>
@@ -385,7 +387,7 @@ export default function AboutPage() {
           sx={{
             p: { xs: 3, sm: 4 },
             borderRadius: 3,
-            background: `linear-gradient(135deg, ${navy} 0%, #0a3466 100%)`,
+            background: brandGradients.hero,
             display: 'flex',
             flexDirection: { xs: 'column', sm: 'row' },
             alignItems: { sm: 'center' },
@@ -394,7 +396,7 @@ export default function AboutPage() {
           }}
         >
           <Box>
-            <Typography variant="h6" fontWeight={700} color="#fff" sx={{ mb: 0.5 }}>
+            <Typography variant="h6" fontWeight={700} color="common.white" sx={{ mb: 0.5 }}>
               Ready to grow your store?
             </Typography>
             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.65)' }}>
@@ -408,12 +410,12 @@ export default function AboutPage() {
                 sx={{
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 1,
                   px: 3.5, py: 1.4,
-                  bgcolor: blue, color: '#fff',
+                  bgcolor: blue, color: 'common.white',
                   borderRadius: 8, fontWeight: 700, fontSize: 14,
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
                   transition: 'background 0.2s',
-                  '&:hover': { bgcolor: '#0058a3' },
+                  '&:hover': { bgcolor: brand.blueDark },
                 }}
               >
                 Go to Dashboard <ArrowForwardIcon sx={{ fontSize: 16 }} />
@@ -425,12 +427,12 @@ export default function AboutPage() {
                 sx={{
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                   px: 3.5, py: 1.4,
-                  border: '1.5px solid rgba(255,255,255,0.35)', color: '#fff',
+                  border: '1.5px solid rgba(255,255,255,0.35)', color: 'common.white',
                   borderRadius: 8, fontWeight: 600, fontSize: 14,
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
                   transition: 'border-color 0.2s, background 0.2s',
-                  '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.08)' },
+                  '&:hover': { borderColor: 'common.white', bgcolor: 'rgba(255,255,255,0.08)' },
                 }}
               >
                 Help Centre

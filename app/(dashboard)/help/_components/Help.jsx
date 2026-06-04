@@ -24,13 +24,15 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined';
 import StarOutlineIcon from '@mui/icons-material/StarOutline';
 import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
+import { alpha } from '@mui/material/styles';
+import { brand, brandGradients } from '@/theme/designTokens';
 
-// ── colour tokens ─────────────────────────────────────────────────────────────
-const navy  = '#041f41';
-const blue  = '#0071ce';
-const gold  = '#ffc220';
-const light = '#edf2f7';
-const mid   = '#4a4a4a';
+// ── colour tokens (single source: theme/designTokens) ──────────────────────────
+const navy  = brand.navy;
+const blue  = brand.blue;
+const gold  = brand.gold;
+const light = 'action.hover';   // theme-aware surface  (sx palette path)
+const mid   = 'text.secondary'; // theme-aware muted text (sx palette path)
 
 // ── social links ──────────────────────────────────────────────────────────────
 const SOCIALS = [
@@ -351,7 +353,7 @@ function StepList({ steps }) {
         <ListItem key={i} disableGutters sx={{ alignItems: 'flex-start', py: 0.4 }}>
           <ListItemIcon sx={{ minWidth: 32, mt: 0.3 }}>
             <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: blue, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>{i + 1}</Typography>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'common.white' }}>{i + 1}</Typography>
             </Box>
           </ListItemIcon>
           <ListItemText primary={s} primaryTypographyProps={{ variant: 'body2', color: 'text.secondary', lineHeight: 1.6 }} />
@@ -395,7 +397,7 @@ export default function Help() {
       {/* ── Hero banner ─────────────────────────────────────────────────── */}
       <Box
         sx={{
-          background: `linear-gradient(135deg, ${navy} 0%, #0a3466 100%)`,
+          background: brandGradients.hero,
           borderRadius: 3,
           px: { xs: 3, sm: 5 },
           py: { xs: 4, sm: 5.5 },
@@ -414,7 +416,7 @@ export default function Help() {
           </Typography>
         </Stack>
 
-        <Typography variant="h5" fontWeight={700} color="#fff" sx={{ mb: 0.75, lineHeight: 1.2 }}>
+        <Typography variant="h5" fontWeight={700} color="common.white" sx={{ mb: 0.75, lineHeight: 1.2 }}>
           How can we help you today?
         </Typography>
         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.68)', mb: 3, maxWidth: 500 }}>
@@ -430,7 +432,7 @@ export default function Help() {
           InputProps={{
             startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: 'text.disabled' }} /></InputAdornment>,
             sx: {
-              bgcolor: '#fff',
+              bgcolor: 'common.white',
               borderRadius: 2,
               maxWidth: 560,
               '& fieldset': { border: 'none' },
@@ -461,7 +463,7 @@ export default function Help() {
                     sx={{ p: { xs: 1.25, sm: 2 } }}
                   >
                     <Stack direction={{ xs: 'row', sm: 'column' }} spacing={{ xs: 1.25, sm: 1 }} alignItems={{ xs: 'center', sm: 'flex-start' }}>
-                      <Box sx={{ p: { xs: 0.75, sm: 1 }, bgcolor: '#eef4ff', borderRadius: 1.5, flexShrink: 0, '& .MuiSvgIcon-root': { fontSize: { xs: 20, sm: 28 } } }}>
+                      <Box sx={{ p: { xs: 0.75, sm: 1 }, bgcolor: (t) => alpha(t.palette.brand.blue, 0.12), borderRadius: 1.5, flexShrink: 0, '& .MuiSvgIcon-root': { fontSize: { xs: 20, sm: 28 } } }}>
                         {t.icon}
                       </Box>
                       <Typography variant="body2" fontWeight={600} lineHeight={1.3} sx={{ fontSize: { xs: 12, sm: 14 } }}>
@@ -577,7 +579,7 @@ export default function Help() {
       >
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems={{ sm: 'center' }} justifyContent="space-between">
           <Stack direction="row" spacing={2} alignItems="center">
-            <Box sx={{ p: 1.5, bgcolor: '#fff', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+            <Box sx={{ p: 1.5, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
               <MailOutlineIcon sx={{ color: blue, fontSize: 26 }} />
             </Box>
             <Box>

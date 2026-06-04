@@ -16,28 +16,11 @@ import ArrowForwardIcon   from '@mui/icons-material/ArrowForward';
 import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { ORDER_STATUS, getStatusEntry, CATEGORICAL_COLORS } from '@/theme/designTokens';
 
 dayjs.extend(relativeTime);
 
-// ── Status configs ────────────────────────────────────────────────────────────
-const ORDER_STATUS = {
-  pending:    { label: 'Pending',    color: '#92400E', bg: '#FEF3C7', dot: '#F59E0B' },
-  processing: { label: 'Processing', color: '#1E40AF', bg: '#DBEAFE', dot: '#3B82F6' },
-  shipped:    { label: 'Shipped',    color: '#5B21B6', bg: '#EDE9FE', dot: '#8B5CF6' },
-  delivered:  { label: 'Delivered',  color: '#065F46', bg: '#D1FAE5', dot: '#10B981' },
-  canceled:   { label: 'Canceled',   color: '#6B7280', bg: '#F3F4F6', dot: '#9CA3AF' },
-};
-
-const DELIVERY_STATUS = {
-  pending:          { label: 'Pending',           color: '#92400E', bg: '#FEF3C7', dot: '#F59E0B' },
-  processing:       { label: 'Processing',        color: '#1E40AF', bg: '#DBEAFE', dot: '#3B82F6' },
-  shipped:          { label: 'Shipped',           color: '#5B21B6', bg: '#EDE9FE', dot: '#8B5CF6' },
-  in_transit:       { label: 'In Transit',        color: '#5B21B6', bg: '#EDE9FE', dot: '#8B5CF6' },
-  out_for_delivery: { label: 'Out for Delivery',  color: '#C2410C', bg: '#FFEDD5', dot: '#F97316' },
-  delivered:        { label: 'Delivered',         color: '#065F46', bg: '#D1FAE5', dot: '#10B981' },
-  failed:           { label: 'Failed',            color: '#991B1B', bg: '#FEE2E2', dot: '#EF4444' },
-  canceled:         { label: 'Canceled',          color: '#6B7280', bg: '#F3F4F6', dot: '#9CA3AF' },
-};
+// ── Status configs (sourced from the single design base) ────────────────────────
 
 const STATUS_TABS = [
   { value: '',           label: 'All orders'  },
@@ -52,26 +35,26 @@ const PAGE_SIZES = [10, 25, 50];
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function StatusBadge({ value, config }) {
-  const cfg = config[value] ?? { label: value ?? '—', color: '#6B7280', bg: '#F3F4F6', dot: '#9CA3AF' };
+function StatusBadge({ value }) {
+  const theme = useTheme();
+  const entry = getStatusEntry(ORDER_STATUS, value);
+  const cfg = theme.palette.status[entry.hue];
   return (
     <Box sx={{
       display: 'inline-flex', alignItems: 'center', gap: 0.65,
       px: 1.25, py: 0.45, borderRadius: '6px', bgcolor: cfg.bg,
     }}>
       <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: cfg.dot, flexShrink: 0 }} />
-      <Typography sx={{ fontSize: 11, fontWeight: 700, color: cfg.color, letterSpacing: '0.05em', lineHeight: 1, whiteSpace: 'nowrap' }}>
-        {cfg.label.toUpperCase()}
+      <Typography sx={{ fontSize: 11, fontWeight: 700, color: cfg.text, letterSpacing: '0.05em', lineHeight: 1, whiteSpace: 'nowrap' }}>
+        {entry.label.toUpperCase()}
       </Typography>
     </Box>
   );
 }
 
-const AVATAR_COLORS = ['#6366F1', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#EF4444', '#14B8A6'];
-
 function CustomerAvatar({ email }) {
   const initial = email ? email[0].toUpperCase() : '?';
-  const bg = email ? AVATAR_COLORS[email.charCodeAt(0) % AVATAR_COLORS.length] : AVATAR_COLORS[0];
+  const bg = email ? CATEGORICAL_COLORS[email.charCodeAt(0) % CATEGORICAL_COLORS.length] : CATEGORICAL_COLORS[0];
   return (
     <Avatar sx={{ width: 28, height: 28, fontSize: 11, fontWeight: 700, bgcolor: bg, flexShrink: 0 }}>
       {initial}
@@ -136,7 +119,7 @@ function MobileOrderCard({ order, onView }) {
             {dayjs(order.date_created).fromNow()} · {dayjs(order.date_created).format('MMM D, YYYY')}
           </Typography>
         </Box>
-        <StatusBadge value={order.status} config={ORDER_STATUS} />
+        <StatusBadge value={order.status} />
       </Stack>
 
       <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -157,7 +140,7 @@ function MobileOrderCard({ order, onView }) {
           <Typography variant="caption" color="text.disabled">
             {(order.payment_method || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
           </Typography>
-          <StatusBadge value={order.vendor_delivery_status} config={DELIVERY_STATUS} />
+          <StatusBadge value={order.vendor_delivery_status} />
         </Stack>
       )}
     </Paper>
@@ -479,13 +462,13 @@ export default function OrderList() {
 
                         {/* Order status */}
                         <TableCell>
-                          <StatusBadge value={order.status} config={ORDER_STATUS} />
+                          <StatusBadge value={order.status} />
                         </TableCell>
 
                         {/* Delivery status */}
                         <TableCell>
                           {order.vendor_delivery_status
-                            ? <StatusBadge value={order.vendor_delivery_status} config={DELIVERY_STATUS} />
+                            ? <StatusBadge value={order.vendor_delivery_status} />
                             : <Typography variant="caption" color="text.disabled">—</Typography>}
                         </TableCell>
 

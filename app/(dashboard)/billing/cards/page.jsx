@@ -20,24 +20,13 @@ import Swal from 'sweetalert2';
 import { createAxiosClient } from '@/utils/clientFetch';
 import { useBillingOverview } from '@/hooks/useBilling';
 import useSWR from 'swr';
-
-const CARD_BG = {
-  visa:       'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-  mastercard: 'linear-gradient(135deg, #0f0c29 0%, #302b63 100%)',
-  verve:      'linear-gradient(135deg, #134e5e 0%, #71b280 100%)',
-};
-
-const PROVIDERS = [
-  { value: 'mtn',        label: 'MTN Mobile Money', color: '#FFCB00', text: '#111' },
-  { value: 'vodafone',   label: 'Vodafone Cash',     color: '#E60000', text: '#fff' },
-  { value: 'airteltigo', label: 'AirtelTigo Money',  color: '#ED1C24', text: '#fff' },
-];
+import { cardGradients as CARD_BG, momoProviders as PROVIDERS } from '@/theme/designTokens';
 
 const fetcher = (url) => createAxiosClient().get(url).then((r) => r.data);
 
 // ── Credit card visual ────────────────────────────────────────────────────────
 function CreditCard({ card, onSetDefault, onDelete, isSettingDefault, isDeleting }) {
-  const bg = CARD_BG[card.card_type?.toLowerCase()] || 'linear-gradient(135deg, #232526 0%, #414345 100%)';
+  const bg = CARD_BG[card.card_type?.toLowerCase()] || CARD_BG.default;
   return (
     <Box sx={{ borderRadius: '16px', overflow: 'hidden', position: 'relative', background: bg, p: '22px 24px', border: card.is_default ? '2px solid rgba(255,255,255,0.3)' : '2px solid transparent', transition: 'all 0.2s', '&:hover': { boxShadow: '0 12px 40px rgba(0,0,0,0.2)' }, minHeight: 168 }}>
       {card.is_default && <Chip label="Default" size="small" sx={{ position: 'absolute', top: 12, right: 12, height: 20, fontSize: 9, fontWeight: 700, bgcolor: 'rgba(255,255,255,0.2)', color: '#fff', borderRadius: '5px', '& .MuiChip-label': { px: 1 } }} />}
@@ -262,8 +251,8 @@ export default function BillingCardsPage() {
       <Box sx={{ mb: 5 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2.5 }}>
           <Stack direction="row" alignItems="center" spacing={1.5}>
-            <Box sx={{ width: 32, height: 32, borderRadius: '9px', bgcolor: '#FFCB00', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <PhoneAndroidIcon sx={{ fontSize: 16, color: '#111' }} />
+            <Box sx={{ width: 32, height: 32, borderRadius: '9px', bgcolor: PROVIDERS[0].color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <PhoneAndroidIcon sx={{ fontSize: 16, color: PROVIDERS[0].text }} />
             </Box>
             <Box>
               <Typography variant="body1" fontWeight={700} color="text.primary">Mobile Money</Typography>

@@ -20,7 +20,7 @@
   --nm-radius-card: 10px;
   --nm-shadow-card: 0 2px 12px rgba(0, 0, 0, 0.08);
   --nm-shadow-card-hover: 0 6px 24px rgba(0, 0, 0, 0.14);
-  --nm-header-h: 85px;
+  --nm-header-h: 70px;
   --nm-transition: 0.22s ease;
 }
 
@@ -54,15 +54,15 @@
 }
 
 .nm-logo-brand {
-  font-size: 21px;
+  font-size: 24px;
   font-weight: 900;
   color: var(--nm-navy);
   letter-spacing: -0.3px;
 }
 
 .nm-logo-suffix {
-  font-size: 21px;
-  font-weight: 400;
+  font-size: 24px;
+  font-weight: 600;
   color: var(--nm-blue);
 }
 

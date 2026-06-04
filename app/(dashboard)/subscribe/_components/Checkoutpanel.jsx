@@ -17,14 +17,9 @@ import BillingDetailsForm from '../_components/Billingdetailsform';
 import Script from 'next/script';
 import { createAxiosClient } from '@/utils/clientFetch';
 import { useInitiateSubscription } from '@/hooks/useSubscription';
+import { momoProviders as PROVIDERS } from '@/theme/designTokens';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-const PROVIDERS = [
-  { value: 'mtn',        label: 'MTN Mobile Money',  color: '#FFCB00', text: '#111' },
-  { value: 'vodafone',   label: 'Vodafone Cash',      color: '#E60000', text: '#fff' },
-  { value: 'airteltigo', label: 'AirtelTigo Money',   color: '#ED1C24', text: '#fff' },
-];
 
 const CARD_BG = {
   visa:       '#1a1a2e',

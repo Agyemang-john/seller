@@ -79,12 +79,7 @@ export default function Dashboard() {
         <Box sx={{ display: 'flex', alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 4 }}>
           <Box>
             <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 22, sm: 28, md: 38 }, fontWeight: 700, letterSpacing: '-1.5px', lineHeight: 1, mb: 0.5 }} color="text.primary">
-              Store Analytics
-            </Typography>
-            <Typography variant="body2" color="text.secondary">Everything about your store, in one place</Typography>
-          </Box>
-
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ xs: 'flex-start', sm: 'center' }} flexWrap="wrap">
+              Store Analytics &nbsp;
             {vendorStatus && (
               <Chip
                 component={Link}
@@ -97,6 +92,10 @@ export default function Dashboard() {
                 sx={{ fontWeight: 600, fontSize: 12 }}
               />
             )}
+            </Typography>
+          </Box>
+
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ xs: 'flex-start', sm: 'center' }} flexWrap="wrap">
             <Stack direction="row" spacing={1} sx={{ width: { xs: '70%', sm: 'auto' } }}>
               <DatePicker label="From" value={startDate} onChange={setStartDate} slotProps={{ textField: { size: 'small', sx: { flex: { xs: 1, sm: '0 0 148px' } } } }} />
               <DatePicker label="To"   value={endDate}   onChange={setEndDate}   slotProps={{ textField: { size: 'small', sx: { flex: { xs: 1, sm: '0 0 148px' } } } }} />

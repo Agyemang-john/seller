@@ -5,6 +5,7 @@ import {
   Box, Typography, Chip, Button, Divider, Tabs, Tab,
   IconButton, Tooltip, CircularProgress, Skeleton,
 } from '@mui/material';
+import { useTheme, alpha } from '@mui/material/styles';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import CheckIcon from '@mui/icons-material/Check';
@@ -18,15 +19,26 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 
 // ── Palette ──────────────────────────────────────────────────────────────────
-const P = {
-  bg: '#F5F5F5',
-  surface: '#FFFFFF',
-  border: '#E0E0E0',
-  label: '#212121',
-  body: '#424242',
-  muted: '#757575',
-  unreadBg: '#EFF6FF',
-};
+// Derived from the single design base (theme palette) so it tracks light/dark mode.
+function useNotifPalette() {
+  const t = useTheme();
+  return {
+    bg: t.palette.background.default,
+    surface: t.palette.background.paper,
+    border: t.palette.divider,
+    label: t.palette.text.primary,
+    body: t.palette.text.secondary,
+    muted: t.palette.text.disabled,
+    unreadBg: alpha(t.palette.info.main, 0.08),
+    hoverRead: t.palette.action.hover,
+    hoverUnread: alpha(t.palette.info.main, 0.12),
+    danger: t.palette.error.main,
+    dangerTint: alpha(t.palette.error.main, 0.12),
+    success: t.palette.success.main,
+    successTint: alpha(t.palette.success.main, 0.15),
+    warning: t.palette.warning.main,
+  };
+}
 
 // ── Verb category buckets ─────────────────────────────────────────────────────
 const CATEGORIES = {
@@ -41,6 +53,7 @@ const CAT_LABELS = { all: 'All', orders: 'Orders', payments: 'Payments', reviews
 
 // ── Single notification row ───────────────────────────────────────────────────
 function NotifRow({ n, onMarkRead, onDelete }) {
+  const P = useNotifPalette();
   const meta = getNotifMeta(n.verb, n.data);
   const url = n.data?.url || '#';
 
@@ -62,7 +75,7 @@ function NotifRow({ n, onMarkRead, onDelete }) {
           background: n.is_read ? P.surface : P.unreadBg,
           borderLeft: `4px solid ${n.is_read ? 'transparent' : meta.color}`,
           transition: 'background 0.2s',
-          '&:hover': { background: n.is_read ? '#FAFAFA' : '#DBEAFE40' },
+          '&:hover': { background: n.is_read ? P.hoverRead : P.hoverUnread },
         }}
       >
         {/* Icon */}
@@ -120,7 +133,7 @@ function NotifRow({ n, onMarkRead, onDelete }) {
               <IconButton
                 size="small"
                 onClick={(e) => { e.stopPropagation(); onMarkRead(n.id); }}
-                sx={{ color: '#2E7D32', '&:hover': { background: '#E8F5E9' } }}
+                sx={{ color: P.success, '&:hover': { background: P.successTint } }}
               >
                 <CheckIcon sx={{ fontSize: 16 }} />
               </IconButton>
@@ -130,7 +143,7 @@ function NotifRow({ n, onMarkRead, onDelete }) {
             <IconButton
               size="small"
               onClick={(e) => { e.stopPropagation(); onDelete(n.id); }}
-              sx={{ color: P.muted, '&:hover': { background: '#FFEBEE', color: '#C62828' } }}
+              sx={{ color: P.muted, '&:hover': { background: P.dangerTint, color: P.danger } }}
             >
               <DeleteOutlineIcon sx={{ fontSize: 16 }} />
             </IconButton>
@@ -143,6 +156,7 @@ function NotifRow({ n, onMarkRead, onDelete }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function NotificationsList() {
+  const P = useNotifPalette();
   const axiosClient = createAxiosClient();
   const wsRef = useRef(null);
 
@@ -241,7 +255,7 @@ export default function NotificationsList() {
               <Chip
                 label={`${unreadCount} unread`}
                 size="small"
-                sx={{ background: '#EF4444', color: '#fff', fontWeight: 700, fontSize: 11, height: 20, borderRadius: '10px' }}
+                sx={{ bgcolor: 'error.main', color: 'common.white', fontWeight: 700, fontSize: 11, height: 20, borderRadius: '10px' }}
               />
             )}
           </Box>
@@ -278,7 +292,7 @@ export default function NotificationsList() {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                   Unread
                   {unreadCount > 0 && (
-                    <Box sx={{ width: 18, height: 18, borderRadius: '50%', background: '#EF4444', color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: 'error.main', color: 'common.white', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </Box>
                   )}
@@ -297,10 +311,10 @@ export default function NotificationsList() {
                 onClick={() => setCategory(key)}
                 sx={{
                   height: 24, fontSize: 11.5, fontWeight: 600, borderRadius: '6px', cursor: 'pointer',
-                  background: category === key ? P.label : '#F5F5F5',
-                  color: category === key ? '#fff' : P.muted,
+                  background: category === key ? P.label : P.bg,
+                  color: category === key ? P.surface : P.muted,
                   border: `1px solid ${category === key ? P.label : P.border}`,
-                  '&:hover': { background: category === key ? '#333' : '#EEEEEE' },
+                  '&:hover': { background: category === key ? P.body : P.hoverRead },
                 }}
               />
             ))}
@@ -333,7 +347,7 @@ export default function NotificationsList() {
             </Box>
           ) : visible.length === 0 ? (
             <Box sx={{ py: 8, textAlign: 'center' }}>
-              <NotificationsNoneIcon sx={{ fontSize: 44, color: '#D1D5DB', mb: 1.5 }} />
+              <NotificationsNoneIcon sx={{ fontSize: 44, color: 'text.disabled', mb: 1.5 }} />
               <Typography sx={{ fontSize: 14, fontWeight: 600, color: P.label }}>
                 {tab === 'unread' ? 'All caught up!' : 'No notifications'}
               </Typography>
@@ -357,8 +371,8 @@ export default function NotificationsList() {
         <Box sx={{ mt: 2, textAlign: 'center' }}>
           <Typography sx={{ fontSize: 11, color: P.muted }}>
             {wsReady
-              ? <><span style={{ color: '#2E7D32' }}>●</span> Live — updates appear automatically</>
-              : <><span style={{ color: '#F57F17' }}>●</span> Reconnecting…</>
+              ? <><span style={{ color: P.success }}>●</span> Live — updates appear automatically</>
+              : <><span style={{ color: P.warning }}>●</span> Reconnecting…</>
             }
           </Typography>
         </Box>

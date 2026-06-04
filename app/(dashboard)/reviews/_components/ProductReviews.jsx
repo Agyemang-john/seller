@@ -15,8 +15,9 @@ import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import { createAxiosClient } from '@/utils/clientFetch';
 import toast from 'react-hot-toast';
+import { brand } from '@/theme/designTokens';
 
-const GOLD = '#f5a623';
+const GOLD = brand.gold;
 const PAGE_SIZE = 10;
 
 // ── Star row ──────────────────────────────────────────────────────────────────
@@ -26,7 +27,7 @@ function StarRow({ rating, size = 16 }) {
       {[1, 2, 3, 4, 5].map(i => {
         const diff = rating - i + 1;
         const Icon = diff >= 1 ? StarIcon : diff >= 0.5 ? StarHalfIcon : StarBorderIcon;
-        return <Icon key={i} sx={{ fontSize: size, color: diff > 0 ? GOLD : '#e0e0e0' }} />;
+        return <Icon key={i} sx={{ fontSize: size, color: diff > 0 ? GOLD : 'divider' }} />;
       })}
     </Stack>
   );

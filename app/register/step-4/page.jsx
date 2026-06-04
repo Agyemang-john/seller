@@ -14,7 +14,7 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import CardShell from "../_components/CardShell";
 import { useSellerForm } from "../SellerFormContext";
-import { createAxiosClient } from "@/utils/clientFetch";
+import { createRegisterClient } from "@/utils/registerClient";
 import Swal from "sweetalert2";
 
 // ─── Review Section ───────────────────────────────────────────────────────────
@@ -89,7 +89,7 @@ const ReviewSection = ({ title, editPath, rows }) => {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function Step4() {
-  const axiosClient = createAxiosClient();
+  const axiosClient = createRegisterClient();
   const { formData } = useSellerForm();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -190,13 +190,37 @@ export default function Step4() {
         router.push("/");
       });
     } catch (error) {
+      const data = error.response?.data || {};
+
+      // Applicant already has an application on file (backend returns 409).
+      // Show a clear message and route to their status page instead of a
+      // generic "submission failed" — they shouldn't re-fill the form.
+      if (error.response?.status === 409 || data.code === "vendor_exists") {
+        sessionStorage.removeItem("seller-form-data");
+        Swal.fire({
+          icon: "info",
+          title: "Application Already Submitted",
+          text: data.detail || "You already have a vendor application under review.",
+          confirmButtonColor: "#1a56db",
+        }).then(() => {
+          router.push(data.vendor_status === "VERIFIED" ? "/auth/login" : "/not-verified");
+        });
+        return;
+      }
+
+      const message =
+        data.detail ||
+        data.error ||
+        Object.values(data)
+          .flat()
+          .filter((v) => typeof v === "string")
+          .join(", ") ||
+        "Something went wrong. Please try again.";
+
       Swal.fire({
         icon: "error",
         title: "Submission Failed",
-        text:
-          error.response?.data?.error ||
-          Object.values(error.response?.data || {}).flat().join(", ") ||
-          "Something went wrong. Please try again.",
+        text: message,
         confirmButtonColor: "#1a56db",
       });
     } finally {

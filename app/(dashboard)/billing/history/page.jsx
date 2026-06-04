@@ -3,6 +3,8 @@
 
 import { useState } from 'react';
 import { Box, Typography, Stack, Chip, IconButton, Skeleton, Alert, Tooltip } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import { TXN_STATUS, getStatusEntry } from '@/theme/designTokens';
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -11,14 +13,10 @@ import { useBillingHistory } from '@/hooks/useBilling';
 
 const ghs = (n) => `GHS ${parseFloat(n || 0).toLocaleString('en-GH', { minimumFractionDigits: 2 })}`;
 
-const TXN_COLORS = {
-  success:  { label: 'Paid',     color: '#22c55e', bg: 'rgba(34,197,94,0.1)'   },
-  failed:   { label: 'Failed',   color: '#ef4444', bg: 'rgba(239,68,68,0.1)'   },
-  pending:  { label: 'Pending',  color: '#f59e0b', bg: 'rgba(245,158,11,0.1)'  },
-  refunded: { label: 'Refunded', color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)'  },
-};
+// Transaction status colours come from the single design base (TXN_STATUS).
 
 export default function BillingHistoryPage() {
+  const theme = useTheme();
   const [page, setPage] = useState(1);
   const { history, loading, error } = useBillingHistory(page);
 
@@ -55,7 +53,8 @@ export default function BillingHistoryPage() {
           </Box>
         ) : (
           txns.map((txn, i) => {
-            const sc   = TXN_COLORS[txn.status] ?? TXN_COLORS.pending;
+            const scEntry = getStatusEntry(TXN_STATUS, txn.status);
+            const sc      = theme.palette.status[scEntry.hue];
             const date = new Date(txn.created_at).toLocaleDateString('en-GH', { month: 'short', day: 'numeric', year: 'numeric' });
             return (
               <Box key={txn.id} sx={{
@@ -69,7 +68,7 @@ export default function BillingHistoryPage() {
                   <Typography variant="caption" color="text.disabled">{txn.plan_name}{txn.card_last4 ? ` · ${txn.card_last4}` : ''}</Typography>
                 </Box>
                 <Typography variant="body2" fontWeight={700} color="text.primary">{txn.amount_formatted}</Typography>
-                <Chip label={sc.label} size="small" sx={{ height: 20, fontSize: 10, fontWeight: 700, bgcolor: sc.bg, color: sc.color, borderRadius: '5px', '& .MuiChip-label': { px: 1 }, width: 'fit-content' }} />
+                <Chip label={scEntry.label} size="small" sx={{ height: 20, fontSize: 10, fontWeight: 700, bgcolor: sc.bg, color: sc.text, borderRadius: '5px', '& .MuiChip-label': { px: 1 }, width: 'fit-content' }} />
                 <Tooltip title="Download receipt">
                   <IconButton size="small" sx={{ borderRadius: '6px', color: 'text.disabled', '&:hover': { bgcolor: 'action.selected', color: 'text.primary' } }}>
                     <DownloadOutlinedIcon sx={{ fontSize: 16 }} />

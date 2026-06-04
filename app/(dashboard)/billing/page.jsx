@@ -2,6 +2,8 @@
 'use client';
 
 import { Box, Grid, Typography, Stack, Button, Chip, LinearProgress, Skeleton, Alert } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import { SUBSCRIPTION_STATUS, TXN_STATUS, getStatusEntry } from '@/theme/designTokens';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 // import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
@@ -17,20 +19,7 @@ import { useState } from 'react';
 const ghs = (n) => `GHS ${parseFloat(n || 0).toLocaleString('en-GH', { minimumFractionDigits: 2 })}`;
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GH', { year: 'numeric', month: 'long', day: 'numeric' }) : '—';
 
-const STATUS_CHIP = {
-  active:   { label: 'Active',   color: '#22c55e', bg: 'rgba(34,197,94,0.1)'   },
-  trial:    { label: 'Trial',    color: '#3b82f6', bg: 'rgba(59,130,246,0.1)'  },
-  expired:  { label: 'Expired',  color: '#ef4444', bg: 'rgba(239,68,68,0.1)'   },
-  cancelled:{ label: 'Cancelled',color: '#94a3b8', bg: 'rgba(148,163,184,0.1)' },
-  past_due: { label: 'Past Due', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)'  },
-};
-
-const TXN_STATUS = {
-  success: { color: '#22c55e' },
-  failed:  { color: '#ef4444' },
-  pending: { color: '#f59e0b' },
-  refunded:{ color: '#8b5cf6' },
-};
+// Subscription / transaction status colours come from the single design base.
 
 function SectionLabel({ children }) {
   return (
@@ -41,6 +30,7 @@ function SectionLabel({ children }) {
 }
 
 export default function BillingOverviewPage() {
+  const theme = useTheme();
   const router = useRouter();
   const { overview, loading, error, refetch } = useBillingOverview();
   const [paying, setPaying] = useState(false);
@@ -88,7 +78,8 @@ export default function BillingOverviewPage() {
   if (loading) return <OverviewSkeleton />;
   if (error)   return <Alert severity="error" sx={{ borderRadius: '10px' }}>{error}</Alert>;
 
-  const st = sub ? (STATUS_CHIP[sub.status] ?? STATUS_CHIP.active) : null;
+  const subEntry = sub ? getStatusEntry(SUBSCRIPTION_STATUS, sub.status) : null;
+  const st = subEntry ? theme.palette.status[subEntry.hue] : null;
 
   return (
     <Box>
@@ -100,10 +91,10 @@ export default function BillingOverviewPage() {
             <Grid container alignItems="flex-start" spacing={2}>
               <Grid size={{ xs: 12, md: 8 }}>
                 <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1.5 }}>
-                  <Chip label={st.label} size="small" sx={{ height: 20, fontSize: 10, fontWeight: 700, bgcolor: st.bg, color: st.color, borderRadius: '5px', '& .MuiChip-label': { px: 1 } }} />
+                  <Chip label={subEntry.label} size="small" sx={{ height: 20, fontSize: 10, fontWeight: 700, bgcolor: st.bg, color: st.dot, borderRadius: '5px', '& .MuiChip-label': { px: 1 } }} />
                   {sub.auto_renew && <Chip label="Auto-renew on" size="small" sx={{ height: 20, fontSize: 10, fontWeight: 600, bgcolor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', borderRadius: '5px', '& .MuiChip-label': { px: 1 } }} />}
                 </Stack>
-                <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 26, md: 34 }, fontWeight: 700, letterSpacing: '-1px', color: '1#ffffff', lineHeight: 1.1, mb: 0.75 }}>
+                <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 26, md: 34 }, fontWeight: 700, letterSpacing: '-1px', color: 'common.white', lineHeight: 1.1, mb: 0.75 }}>
                   {sub.plan.name}
                 </Typography>
                 <Typography sx={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>
@@ -116,7 +107,7 @@ export default function BillingOverviewPage() {
                     <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', mb: 0.25 }}>
                       {sub.status === 'active' ? 'Renews' : 'Expires'}
                     </Typography>
-                    <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: '#ffffff', lineHeight: 1 }}>
+                    <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: 'common.white', lineHeight: 1 }}>
                       {fmtDate(sub.end_date)}
                     </Typography>
                     <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', mt: 0.3 }}>
@@ -126,13 +117,13 @@ export default function BillingOverviewPage() {
                   <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 0.75 }}>
                     {sub.status === 'past_due' && (
                       <Button size="small" variant="contained" disableElevation onClick={handlePayNow} disabled={paying}
-                        sx={{ bgcolor: '#ef4444', color: '#ffffff', borderRadius: '8px', fontWeight: 700, fontSize: 12, '&:hover': { bgcolor: '#dc2626' } }}>
+                        sx={{ bgcolor: 'error.main', color: 'common.white', borderRadius: '8px', fontWeight: 700, fontSize: 12, '&:hover': { bgcolor: 'error.dark' } }}>
                         {paying ? 'Processing…' : 'Pay now'}
                       </Button>
                     )}
                     <Button size="small" variant="outlined" onClick={() => router.push('/billing/plans')}
                       endIcon={<ArrowForwardIcon sx={{ fontSize: 12 }} />}
-                      sx={{ borderRadius: '8px', borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: 600, '&:hover': { borderColor: '#ffffff', color: '#ffffff' } }}>
+                      sx={{ borderRadius: '8px', borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: 600, '&:hover': { borderColor: 'common.white', color: 'common.white' } }}>
                       Change plan
                     </Button>
                   </Stack>
@@ -215,7 +206,7 @@ export default function BillingOverviewPage() {
               </Box>
             ) : (
               txns.map((txn, i) => {
-                const sc = TXN_STATUS[txn.status] ?? { color: '#94a3b8' };
+                const sc = theme.palette.status[getStatusEntry(TXN_STATUS, txn.status).hue];
                 return (
                   <Stack key={txn.id} direction="row" alignItems="center" sx={{ px: 3, py: 1.75, borderBottom: i < txns.length - 1 ? '1px solid' : 'none', borderColor: 'divider', '&:hover': { bgcolor: 'action.hover' } }}>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -224,7 +215,7 @@ export default function BillingOverviewPage() {
                     </Box>
                     <Stack alignItems="flex-end" spacing={0.25} sx={{ flexShrink: 0 }}>
                       <Typography variant="body2" fontWeight={700} color="text.primary">{txn.amount_formatted}</Typography>
-                      <Typography variant="caption" sx={{ color: sc.color, fontWeight: 600, fontSize: 10 }}>{txn.status_display}</Typography>
+                      <Typography variant="caption" sx={{ color: sc.dot, fontWeight: 600, fontSize: 10 }}>{txn.status_display}</Typography>
                     </Stack>
                   </Stack>
                 );
@@ -290,7 +281,7 @@ export default function BillingOverviewPage() {
                       <Typography variant="caption" color="text.disabled">Exp {card.expiry_display}</Typography>
                     </Box>
                     {card.is_default && <Chip label="Default" size="small" sx={{ height: 18, fontSize: 9, fontWeight: 700, bgcolor: 'text.primary', color: 'background.paper', borderRadius: '4px', '& .MuiChip-label': { px: 0.75 } }} />}
-                    {card.is_expired && <Chip label="Expired" size="small" sx={{ height: 18, fontSize: 9, fontWeight: 700, bgcolor: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: '4px', '& .MuiChip-label': { px: 0.75 } }} />}
+                    {card.is_expired && <Chip label="Expired" size="small" sx={{ height: 18, fontSize: 9, fontWeight: 700, bgcolor: 'rgba(239,68,68,0.1)', color: 'error.main', borderRadius: '4px', '& .MuiChip-label': { px: 0.75 } }} />}
                   </Stack>
                 ))}
                 {cards.length > 2 && (

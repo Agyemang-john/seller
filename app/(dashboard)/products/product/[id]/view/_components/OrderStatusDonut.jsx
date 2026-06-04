@@ -18,18 +18,8 @@ import { LineChart } from '@mui/x-charts/LineChart';
 import { BarChart } from '@mui/x-charts/BarChart';
 import { PieChart } from '@mui/x-charts/PieChart';
 import { Skeleton } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import { CHART_STATUS_COLORS } from '@/theme/designTokens';
 
-const STATUS = {
-  published: { label: 'Live',       color: '#22c55e', bg: 'rgba(34,197,94,0.12)'   },
-  in_review: { label: 'In Review',  color: '#f59e0b', bg: 'rgba(245,158,11,0.12)'  },
-  draft:     { label: 'Draft',      color: '#94a3b8', bg: 'rgba(148,163,184,0.12)' },
-  disabled:  { label: 'Disabled',   color: '#ef4444', bg: 'rgba(239,68,68,0.12)'   },
-  rejected:  { label: 'Rejected',   color: '#dc2626', bg: 'rgba(220,38,38,0.12)'   },
-};
-function getStatus(s) { return STATUS[s] ?? { label: s, color: '#94a3b8', bg: 'rgba(148,163,184,0.12)' }; }
-const ghs = (n) => `GHS ${parseFloat(n || 0).toLocaleString('en-GH', { minimumFractionDigits: 2 })}`;
-const STATUS_COLORS = { delivered: '#22c55e', pending: '#f59e0b', processing: '#3b82f6', shipped: '#8b5cf6', canceled: '#ef4444', refunded: '#ec4899' };
 const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 
 export function OrderStatusChart({ data = [] }) {
@@ -44,7 +34,7 @@ export function OrderStatusChart({ data = [] }) {
   }
 
   const total   = data.reduce((s, d) => s + d.count, 0);
-  const pieData = data.map((d, i) => ({ id: d.status, value: d.count, label: cap(d.status), color: STATUS_COLORS[d.status] || `hsl(${i * 60},60%,55%)` }));
+  const pieData = data.map((d, i) => ({ id: d.status, value: d.count, label: cap(d.status), color: CHART_STATUS_COLORS[d.status] || `hsl(${i * 60},60%,55%)` }));
 
   return (
     <Box sx={{ p: { xs: 2.5, md: 3 }, borderRadius: '20px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>

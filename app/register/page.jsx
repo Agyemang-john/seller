@@ -60,33 +60,80 @@ const BENEFITS = [
   },
 ];
 
+const MAIN_PLATFORM = "https://www.negromart.com";
+
 export default function SellerRegisterPage() {
   const [authState, setAuthState] = useState(null); // null=checking, true=logged in, false=not
+  const [vendorApp, setVendorApp] = useState(null); // existing vendor application (if any)
   const router = useRouter();
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_HOST}/api/v1/vendor/check`, {
+    const HOST = process.env.NEXT_PUBLIC_HOST;
+    const checkOpts = {
       method: "GET",
       credentials: "include",
       headers: { "X-User-Type": "customer" },
-    })
-      .then((res) => { if (!res.ok) throw new Error(); return res.json(); })
-      .then(() => setAuthState(true))
-      .catch(() => setAuthState(false));
+    };
+
+    const run = async () => {
+      // 1. Verify the customer access cookie. If it has expired, try a single
+      //    refresh before concluding the user is logged out — otherwise a
+      //    logged-in user with a stale 1h access token is wrongly told to sign up.
+      let res = await fetch(`${HOST}/api/v1/vendor/check`, checkOpts);
+      if (res.status === 401) {
+        const refreshed = await fetch(`${HOST}/api/jwt/refresh/`, {
+          method: "POST",
+          credentials: "include",
+        });
+        if (refreshed.ok) {
+          res = await fetch(`${HOST}/api/v1/vendor/check`, checkOpts);
+        }
+      }
+      if (!res.ok) {
+        setAuthState(false);
+        return;
+      }
+      setAuthState(true);
+
+      // 2. Logged in — detect an existing application so we don't send a
+      //    pending applicant back through the whole 4-step form.
+      try {
+        const statusRes = await fetch(`${HOST}/api/v1/vendor/my-status/`, checkOpts);
+        if (statusRes.ok) {
+          const data = await statusRes.json();
+          if (data?.is_vendor && data?.vendor_status) setVendorApp(data);
+        }
+      } catch {
+        /* non-critical — fall through to the normal setup CTA */
+      }
+    };
+
+    run().catch(() => setAuthState(false));
   }, []);
 
+  const goToMainPlatform = (path) => {
+    const returnUrl = `${window.location.origin}/register/step-1`;
+    window.location.href = `${MAIN_PLATFORM}${path}?redirect=${encodeURIComponent(returnUrl)}`;
+  };
+
   const handleCTA = () => {
+    if (authState === null) return;
     if (!authState) {
-      window.location.href = "https://www.negromart.com/auth/register";
-    } else {
-      router.push("/register/step-1");
+      goToMainPlatform("/auth/register");
+      return;
     }
+    if (vendorApp) {
+      router.push(vendorApp.vendor_status === "VERIFIED" ? "/auth/login" : "/not-verified");
+      return;
+    }
+    router.push("/register/step-1");
   };
 
   const ctaLabel =
     authState === null ? "Checking your account…" :
-    authState          ? "Continue to vendor setup →" :
-                         "Create account to continue →";
+    !authState         ? "Create account to continue →" :
+    vendorApp          ? (vendorApp.vendor_status === "VERIFIED" ? "Go to seller login →" : "View application status →") :
+                         "Continue to vendor setup →";
 
   return (
     <div>
@@ -190,10 +237,38 @@ export default function SellerRegisterPage() {
               <div className="nm-reg-notice-title">You need a Negromart account first</div>
               <div className="nm-reg-notice-body">
                 Log in or sign up at{" "}
-                <a href="https://www.negromart.com/auth/register" className="nm-reg-notice-link">
+                <a
+                  href="#"
+                  onClick={(e) => { e.preventDefault(); goToMainPlatform("/auth/register"); }}
+                  className="nm-reg-notice-link"
+                >
                   negromart.com
                 </a>{" "}
-                then return here to set up your vendor account.
+                — we'll bring you straight back here to set up your vendor account.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Info: an application is already on file */}
+        {authState === true && vendorApp && (
+          <div className="nm-reg-notice nm-reg-notice-warn">
+            <div className="nm-reg-notice-icon nm-reg-notice-icon-warn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <div>
+              <div className="nm-reg-notice-title">
+                {vendorApp.vendor_status === "VERIFIED"
+                  ? "Your vendor account is approved"
+                  : "You already have an application under review"}
+              </div>
+              <div className="nm-reg-notice-body">
+                {vendorApp.vendor_status === "VERIFIED"
+                  ? "Head to the seller login to access your dashboard."
+                  : "We're reviewing your details — you'll be notified by email within 24–48 hours. You don't need to submit again."}
               </div>
             </div>
           </div>

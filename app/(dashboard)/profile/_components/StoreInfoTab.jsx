@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createAxiosClient } from '@/utils/clientFetch';
+import { socialBrand } from '@/theme/designTokens';
 import { useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -307,10 +308,10 @@ export default function StoreInfoTab() {
 
           <Stack spacing={2}>
             {[
-              { name: 'facebook_url', label: 'Facebook', icon: <FacebookIcon sx={{ color: '#1877f2' }} />, placeholder: 'https://facebook.com/yourpage' },
-              { name: 'instagram_url', label: 'Instagram', icon: <InstagramIcon sx={{ color: '#e1306c' }} />, placeholder: 'https://instagram.com/yourpage' },
+              { name: 'facebook_url', label: 'Facebook', icon: <FacebookIcon sx={{ color: socialBrand.facebook }} />, placeholder: 'https://facebook.com/yourpage' },
+              { name: 'instagram_url', label: 'Instagram', icon: <InstagramIcon sx={{ color: socialBrand.instagram }} />, placeholder: 'https://instagram.com/yourpage' },
               { name: 'twitter_url', label: 'X / Twitter', icon: <TwitterIcon sx={{ color: 'text.primary' }} />, placeholder: 'https://x.com/yourhandle' },
-              { name: 'linkedin_url', label: 'LinkedIn', icon: <LinkedInIcon sx={{ color: '#0a66c2' }} />, placeholder: 'https://linkedin.com/in/yourprofile' },
+              { name: 'linkedin_url', label: 'LinkedIn', icon: <LinkedInIcon sx={{ color: socialBrand.linkedin }} />, placeholder: 'https://linkedin.com/in/yourprofile' },
             ].map(({ name, label, icon, placeholder }) => (
               <FormControl key={name} error={!!errors[name]}>
                 <FormLabel>{label}</FormLabel>

@@ -6,6 +6,7 @@ import { createAxiosClient } from '@/utils/clientFetch';
 import {
   Box, Typography, Chip, Divider, Skeleton, Button,
 } from '@mui/material';
+import { useTheme, alpha } from '@mui/material/styles';
 import { motion } from 'framer-motion';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -15,16 +16,22 @@ import { getNotifMeta } from '@/utils/notifMeta';
 import * as timeago from 'timeago.js';
 import Link from 'next/link';
 
-const P = {
-  bg: '#F5F5F5',
-  surface: '#FFFFFF',
-  border: '#E0E0E0',
-  label: '#212121',
-  body: '#424242',
-  muted: '#757575',
-};
-
 export default function NotificationDetail() {
+  const theme = useTheme();
+  // Palette derived from the single design base so it tracks light/dark mode.
+  const P = {
+    bg: theme.palette.background.default,
+    surface: theme.palette.background.paper,
+    border: theme.palette.divider,
+    label: theme.palette.text.primary,
+    body: theme.palette.text.secondary,
+    muted: theme.palette.text.disabled,
+    hover: theme.palette.action.hover,
+    success: theme.palette.success.main,
+    successTint: alpha(theme.palette.success.main, 0.15),
+    info: theme.palette.info.main,
+    unreadBg: alpha(theme.palette.info.main, 0.1),
+  };
   const { id } = useParams();
   const router = useRouter();
   const axiosClient = createAxiosClient();
@@ -102,7 +109,7 @@ export default function NotificationDetail() {
               </Box>
             ) : error || !notification ? (
               <Box sx={{ p: 4, textAlign: 'center' }}>
-                <ErrorOutlineIcon sx={{ fontSize: 44, color: '#EF4444', mb: 1.5 }} />
+                <ErrorOutlineIcon sx={{ fontSize: 44, color: 'error.main', mb: 1.5 }} />
                 <Typography sx={{ fontSize: 15, fontWeight: 700, color: P.label }}>Notification not found</Typography>
                 <Typography sx={{ fontSize: 13, color: P.muted, mt: 0.5 }}>It may have been deleted.</Typography>
                 <Button onClick={() => router.push('/notifications')} sx={{ mt: 2, textTransform: 'none', fontWeight: 600 }}>
@@ -145,8 +152,8 @@ export default function NotificationDetail() {
                       icon={notification.is_read ? <CheckCircleIcon /> : undefined}
                       sx={{
                         fontSize: 11, fontWeight: 700, height: 22, borderRadius: '6px', flexShrink: 0,
-                        background: notification.is_read ? '#E8F5E9' : '#EFF6FF',
-                        color: notification.is_read ? '#2E7D32' : '#1565C0',
+                        background: notification.is_read ? P.successTint : P.unreadBg,
+                        color: notification.is_read ? P.success : P.info,
                         '& .MuiChip-icon': { fontSize: 13 },
                       }}
                     />
@@ -156,7 +163,7 @@ export default function NotificationDetail() {
 
                   {/* Message body */}
                   {notification.data?.message && (
-                    <Box sx={{ background: '#FAFAFA', border: `1px solid ${P.border}`, borderRadius: '10px', p: 2.5, mb: 2.5 }}>
+                    <Box sx={{ background: P.hover, border: `1px solid ${P.border}`, borderRadius: '10px', p: 2.5, mb: 2.5 }}>
                       <Typography sx={{ fontSize: 14, color: P.body, lineHeight: 1.7 }}>
                         {notification.data.message}
                       </Typography>
@@ -170,10 +177,10 @@ export default function NotificationDetail() {
                         <Chip label={`Order #${notification.data.order_number}`} size="small" sx={{ fontSize: 11, fontWeight: 700, background: `${meta.color}12`, color: meta.color, borderRadius: '6px' }} />
                       )}
                       {notification.data?.vendor_name && (
-                        <Chip label={notification.data.vendor_name} size="small" sx={{ fontSize: 11, background: '#F5F5F5', color: P.muted, borderRadius: '6px' }} />
+                        <Chip label={notification.data.vendor_name} size="small" sx={{ fontSize: 11, background: P.bg, color: P.muted, borderRadius: '6px' }} />
                       )}
                       {notification.data?.total_amount && (
-                        <Chip label={notification.data.total_amount} size="small" sx={{ fontSize: 11, fontWeight: 700, background: '#E8F5E9', color: '#2E7D32', borderRadius: '6px' }} />
+                        <Chip label={notification.data.total_amount} size="small" sx={{ fontSize: 11, fontWeight: 700, background: P.successTint, color: P.success, borderRadius: '6px' }} />
                       )}
                     </Box>
                   )}
@@ -186,7 +193,7 @@ export default function NotificationDetail() {
                         disableElevation
                         endIcon={<OpenInNewIcon sx={{ fontSize: '14px !important' }} />}
                         sx={{
-                          background: meta.color, color: '#fff',
+                          background: meta.color, color: 'common.white',
                           borderRadius: '9px', textTransform: 'none',
                           fontSize: 13, fontWeight: 600, px: 2.5,
                           '&:hover': { filter: 'brightness(0.88)' },

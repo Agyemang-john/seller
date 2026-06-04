@@ -19,21 +19,14 @@ import { BarChart } from '@mui/x-charts/BarChart';
 import { PieChart } from '@mui/x-charts/PieChart';
 import { Skeleton } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
+import { PRODUCT_STATUS, getStatusEntry } from '@/theme/designTokens';
 
-const STATUS = {
-  published: { label: 'Live',       color: '#22c55e', bg: 'rgba(34,197,94,0.12)'   },
-  in_review: { label: 'In Review',  color: '#f59e0b', bg: 'rgba(245,158,11,0.12)'  },
-  draft:     { label: 'Draft',      color: '#94a3b8', bg: 'rgba(148,163,184,0.12)' },
-  disabled:  { label: 'Disabled',   color: '#ef4444', bg: 'rgba(239,68,68,0.12)'   },
-  rejected:  { label: 'Rejected',   color: '#dc2626', bg: 'rgba(220,38,38,0.12)'   },
-};
-function getStatus(s) { return STATUS[s] ?? { label: s, color: '#94a3b8', bg: 'rgba(148,163,184,0.12)' }; }
 const ghs = (n) => `GHS ${parseFloat(n || 0).toLocaleString('en-GH', { minimumFractionDigits: 2 })}`;
-const STATUS_COLORS = { delivered: '#22c55e', pending: '#f59e0b', processing: '#3b82f6', shipped: '#8b5cf6', canceled: '#ef4444', refunded: '#ec4899' };
-const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 
 export function ProductHero({ data }) {
-  const st       = getStatus(data.status);
+  const theme    = useTheme();
+  const stEntry  = getStatusEntry(PRODUCT_STATUS, data.status);
+  const st       = theme.palette.status[stEntry.hue];
   const price    = parseFloat(data.price || 0);
   const oldPrice = parseFloat(data.old_price || 0);
   const hasDiscount = oldPrice > price && price > 0;
@@ -63,8 +56,8 @@ export function ProductHero({ data }) {
               sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
             />
             {/* Status */}
-            <Box sx={{ position: 'absolute', top: 10, left: 10, px: 1.25, py: 0.4, borderRadius: '6px', bgcolor: st.bg, border: `1px solid ${st.color}33` }}>
-              <Typography sx={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', color: st.color }}>{st.label.toUpperCase()}</Typography>
+            <Box sx={{ position: 'absolute', top: 10, left: 10, px: 1.25, py: 0.4, borderRadius: '6px', bgcolor: st.bg, border: `1px solid ${st.dot}55` }}>
+              <Typography sx={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', color: st.text }}>{stEntry.label.toUpperCase()}</Typography>
             </Box>
           </Box>
           {/* Gallery strip */}
@@ -105,7 +98,7 @@ export function ProductHero({ data }) {
               {hasDiscount && (
                 <>
                   <Typography sx={{ fontSize: 14, textDecoration: 'line-through', color: 'text.disabled' }}>{ghs(data.old_price)}</Typography>
-                  <Chip label={`-${Math.round(((oldPrice - price) / oldPrice) * 100)}%`} size="small" sx={{ height: 20, fontSize: 10, fontWeight: 700, borderRadius: '5px', bgcolor: '#ef4444', color: '#ffffff' }} />
+                  <Chip label={`-${Math.round(((oldPrice - price) / oldPrice) * 100)}%`} size="small" sx={{ height: 20, fontSize: 10, fontWeight: 700, borderRadius: '5px', bgcolor: 'error.main', color: 'error.contrastText' }} />
                 </>
               )}
             </Stack>

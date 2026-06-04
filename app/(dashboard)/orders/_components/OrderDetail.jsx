@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTheme } from '@mui/material/styles';
 import { createAxiosClient } from '@/utils/clientFetch';
+import { SHIPMENT_STATUS, getStatusEntry } from '@/theme/designTokens';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -34,17 +36,7 @@ import dayjs from 'dayjs';
 import Swal from 'sweetalert2';
 import PageContainer from '@/components/PageContainer';
 
-// ─── Shipment status colours ──────────────────────────────────────────────────
-const SHIPMENT_STATUS_COLORS = {
-  pending:          { label: "Pending",           color: "#F57F17", bg: "#FFF8E1" },
-  label_created:    { label: "Label Created",     color: "#1565C0", bg: "#E3F2FD" },
-  in_transit:       { label: "In Transit",        color: "#6A1B9A", bg: "#F3E5F5" },
-  out_for_delivery: { label: "Out for Delivery",  color: "#E65100", bg: "#FFF3E0" },
-  delivered:        { label: "Delivered",         color: "#2E7D32", bg: "#E8F5E9" },
-  failed:           { label: "Failed",            color: "#C62828", bg: "#FFEBEE" },
-  canceled:         { label: "Canceled",          color: "#757575", bg: "#F5F5F5" },
-  returned:         { label: "Returned",          color: "#BF360C", bg: "#FBE9E7" },
-};
+// Shipment status colours now come from the single design base (SHIPMENT_STATUS).
 
 const TRACKING_EVENT_STATUSES = [
   { value: 'info',               label: 'Info Received'         },
@@ -67,6 +59,7 @@ const STEP_ORDER = { label_created: 1, in_transit: 2, out_for_delivery: 3, deliv
 
 // ─── Shipment Panel ───────────────────────────────────────────────────────────
 function ShipmentPanel({ orderId, existingShipments, onShipmentUpdated }) {
+  const theme = useTheme();
   const axiosClient = createAxiosClient();
   const [shipments, setShipments] = useState(existingShipments || []);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -212,7 +205,7 @@ function ShipmentPanel({ orderId, existingShipments, onShipmentUpdated }) {
                 value={form.status}
                 onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
               >
-                {Object.entries(SHIPMENT_STATUS_COLORS).map(([v, { label }]) => (
+                {Object.entries(SHIPMENT_STATUS).map(([v, { label }]) => (
                   <MenuItem key={v} value={v}>{label}</MenuItem>
                 ))}
               </Select>
@@ -242,7 +235,8 @@ function ShipmentPanel({ orderId, existingShipments, onShipmentUpdated }) {
         </Paper>
       ) : (
         shipments.map((sh) => {
-          const cfg = SHIPMENT_STATUS_COLORS[sh.status] ?? SHIPMENT_STATUS_COLORS.pending;
+          const shEntry = getStatusEntry(SHIPMENT_STATUS, sh.status);
+          const cfg = theme.palette.status[shEntry.hue];
           const currentStep = STEP_ORDER[sh.status] || 0;
           const isExpanded = expandedShipment === sh.shipment_id;
           const ef = eventForms[sh.shipment_id] || defaultEventForm;
@@ -251,7 +245,7 @@ function ShipmentPanel({ orderId, existingShipments, onShipmentUpdated }) {
             <Paper key={sh.shipment_id} variant="outlined" sx={{ mb: 2, overflow: 'hidden' }}>
               {/* Shipment header */}
               <Box
-                sx={{ px: 2, py: 1.5, background: '#FAFAFA', borderBottom: '1px solid #E0E0E0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+                sx={{ px: 2, py: 1.5, bgcolor: 'action.hover', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
                 onClick={() => setExpandedShipment(isExpanded ? null : sh.shipment_id)}
               >
                 <Stack direction="row" spacing={1.5} alignItems="center">
@@ -269,9 +263,9 @@ function ShipmentPanel({ orderId, existingShipments, onShipmentUpdated }) {
                 </Stack>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Chip
-                    label={cfg.label}
+                    label={shEntry.label}
                     size="small"
-                    sx={{ background: cfg.bg, color: cfg.color, fontWeight: 700, fontSize: 11, height: 22, borderRadius: '6px' }}
+                    sx={{ background: cfg.bg, color: cfg.text, fontWeight: 700, fontSize: 11, height: 22, borderRadius: '6px' }}
                   />
                   {isExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
                 </Stack>
@@ -288,18 +282,18 @@ function ShipmentPanel({ orderId, existingShipments, onShipmentUpdated }) {
                         <Box key={step.key} sx={{ display: 'flex', alignItems: 'center', flex: idx < PROGRESS_STEPS.length - 1 ? 1 : 'initial' }}>
                           <Stack alignItems="center" spacing={0.5}>
                             {done ? (
-                              <CheckCircleIcon sx={{ fontSize: 20, color: '#2E7D32' }} />
+                              <CheckCircleIcon sx={{ fontSize: 20, color: 'success.main' }} />
                             ) : active ? (
-                              <FiberManualRecordIcon sx={{ fontSize: 16, color: '#1565C0' }} />
+                              <FiberManualRecordIcon sx={{ fontSize: 16, color: 'info.main' }} />
                             ) : (
-                              <RadioButtonUncheckedIcon sx={{ fontSize: 20, color: '#E0E0E0' }} />
+                              <RadioButtonUncheckedIcon sx={{ fontSize: 20, color: 'divider' }} />
                             )}
-                            <Typography sx={{ fontSize: 10, fontWeight: active ? 700 : 500, color: done ? '#2E7D32' : active ? '#1565C0' : '#9E9E9E', whiteSpace: 'nowrap' }}>
+                            <Typography sx={{ fontSize: 10, fontWeight: active ? 700 : 500, color: done ? 'success.main' : active ? 'info.main' : 'text.disabled', whiteSpace: 'nowrap' }}>
                               {step.label}
                             </Typography>
                           </Stack>
                           {idx < PROGRESS_STEPS.length - 1 && (
-                            <Box sx={{ flex: 1, height: 2, background: done ? '#2E7D32' : '#E0E0E0', mx: 0.5, mb: 2.5 }} />
+                            <Box sx={{ flex: 1, height: 2, bgcolor: done ? 'success.main' : 'divider', mx: 0.5, mb: 2.5 }} />
                           )}
                         </Box>
                       );
@@ -383,11 +377,11 @@ function ShipmentPanel({ orderId, existingShipments, onShipmentUpdated }) {
                       <Divider sx={{ my: 2 }} />
                       <Typography variant="subtitle2" gutterBottom>Tracking History</Typography>
                       <Box sx={{ position: 'relative', pl: 2 }}>
-                        <Box sx={{ position: 'absolute', left: 7, top: 8, bottom: 8, width: 2, background: '#E0E0E0' }} />
+                        <Box sx={{ position: 'absolute', left: 7, top: 8, bottom: 8, width: 2, bgcolor: 'divider' }} />
                         {sh.tracking_events.map((ev, idx) => (
                           <Box key={ev.id} sx={{ display: 'flex', gap: 2, mb: 1.5, position: 'relative' }}>
                             <Box sx={{ mt: '3px', flexShrink: 0 }}>
-                              <Box sx={{ width: 12, height: 12, borderRadius: '50%', background: idx === 0 ? '#1565C0' : '#E0E0E0', border: `2px solid ${idx === 0 ? '#1565C0' : '#E0E0E0'}` }} />
+                              <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: idx === 0 ? 'info.main' : 'divider', border: '2px solid', borderColor: idx === 0 ? 'info.main' : 'divider' }} />
                             </Box>
                             <Box>
                               <Typography variant="body2" fontWeight={idx === 0 ? 700 : 500}>

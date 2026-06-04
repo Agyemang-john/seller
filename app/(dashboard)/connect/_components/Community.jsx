@@ -35,20 +35,25 @@ import { FaXTwitter, FaTiktok, FaDiscord, FaSnapchat } from 'react-icons/fa6';
 import { QRCodeSVG } from 'qrcode.react';
 import axios from 'axios';
 
+import { brand, brandGradients, socialBrand } from '@/theme/designTokens';
+
 // ── Platform config ────────────────────────────────────────────────────────────
+// Brand colours come from the single design base; tinted backgrounds are derived
+// with alpha so they read correctly in both light and dark mode.
+const platform = (Icon, color, label) => ({ Icon, color, bg: alpha(color, 0.14), label });
 const PLATFORM_CONFIG = {
-  whatsapp:  { Icon: FaWhatsapp,   color: '#25D366', bg: '#e8faea', label: 'WhatsApp' },
-  telegram:  { Icon: FaTelegram,   color: '#229ED9', bg: '#e6f4ff', label: 'Telegram' },
-  facebook:  { Icon: FaFacebook,   color: '#1877F2', bg: '#e7f0ff', label: 'Facebook' },
-  instagram: { Icon: FaInstagram,  color: '#E1306C', bg: '#fde7ef', label: 'Instagram' },
-  twitter:   { Icon: FaXTwitter,   color: '#111111', bg: '#f0f0f0', label: 'X / Twitter' },
-  youtube:   { Icon: FaYoutube,    color: '#FF0000', bg: '#ffe8e8', label: 'YouTube' },
-  linkedin:  { Icon: FaLinkedinIn, color: '#0A66C2', bg: '#e7f0ff', label: 'LinkedIn' },
-  tiktok:    { Icon: FaTiktok,     color: '#111111', bg: '#f0f0f0', label: 'TikTok' },
-  discord:   { Icon: FaDiscord,    color: '#5865F2', bg: '#eef0ff', label: 'Discord' },
-  pinterest: { Icon: FaPinterest,  color: '#E60023', bg: '#ffe8ea', label: 'Pinterest' },
-  snapchat:  { Icon: FaSnapchat,   color: '#FFCC00', bg: '#fffff0', label: 'Snapchat' },
-  other:     { Icon: PublicIcon,   color: '#555555', bg: '#f5f5f5', label: 'Platform' },
+  whatsapp:  platform(FaWhatsapp,   socialBrand.whatsapp,  'WhatsApp'),
+  telegram:  platform(FaTelegram,   socialBrand.telegram,  'Telegram'),
+  facebook:  platform(FaFacebook,   socialBrand.facebook,  'Facebook'),
+  instagram: platform(FaInstagram,  socialBrand.instagram, 'Instagram'),
+  twitter:   platform(FaXTwitter,   socialBrand.twitter,   'X / Twitter'),
+  youtube:   platform(FaYoutube,    socialBrand.youtube,   'YouTube'),
+  linkedin:  platform(FaLinkedinIn, socialBrand.linkedin,  'LinkedIn'),
+  tiktok:    platform(FaTiktok,     socialBrand.tiktok,    'TikTok'),
+  discord:   platform(FaDiscord,    socialBrand.discord,   'Discord'),
+  pinterest: platform(FaPinterest,  socialBrand.pinterest, 'Pinterest'),
+  snapchat:  platform(FaSnapchat,   socialBrand.snapchat,  'Snapchat'),
+  other:     platform(PublicIcon,   socialBrand.other,     'Platform'),
 };
 
 const HOST = process.env.NEXT_PUBLIC_HOST;
@@ -70,7 +75,7 @@ function QRDialog({ open, onClose, link }) {
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, py: 2 }}>
           <Box
             sx={{
-              p: 2.5, borderRadius: 3, bgcolor: '#fff',
+              p: 2.5, borderRadius: 3, bgcolor: 'common.white',
               border: '3px solid', borderColor: cfg.color,
               boxShadow: `0 0 0 6px ${alpha(cfg.color, 0.1)}`,
             }}
@@ -228,7 +233,7 @@ function LinkCard({ link, onQROpen }) {
           >
             <Box
               sx={{
-                p: 1, borderRadius: 2, bgcolor: '#fff',
+                p: 1, borderRadius: 2, bgcolor: 'common.white',
                 border: '1.5px solid', borderColor: alpha(cfg.color, 0.3),
               }}
             >
@@ -309,19 +314,19 @@ function StatsBar({ communityLinks, socialLinks }) {
       icon: <GroupsIcon fontSize="small" />,
       value: communityLinks.length,
       label: 'Community Groups',
-      color: '#25D366',
+      color: socialBrand.whatsapp,
     },
     {
       icon: <ThumbUpAltOutlinedIcon fontSize="small" />,
       value: socialLinks.length,
       label: 'Social Platforms',
-      color: '#1877F2',
+      color: socialBrand.facebook,
     },
     {
       icon: <PeopleAltOutlinedIcon fontSize="small" />,
       value: communityLinks.length + socialLinks.length,
       label: 'Total Channels',
-      color: '#0071ce',
+      color: brand.blue,
     },
   ];
 
@@ -396,8 +401,8 @@ export default function Community() {
           mb: 4,
           px: { xs: 3, sm: 5 },
           py: { xs: 4, sm: 5 },
-          background: 'linear-gradient(135deg, #041f41 0%, #0a3570 50%, #0071ce 100%)',
-          color: '#fff',
+          background: brandGradients.heroWide,
+          color: 'common.white',
           position: 'relative',
           overflow: 'hidden',
         }}
@@ -415,7 +420,7 @@ export default function Community() {
               flexShrink: 0,
             }}
           >
-            <GroupsIcon sx={{ fontSize: 28, color: '#ffc220' }} />
+            <GroupsIcon sx={{ fontSize: 28, color: brand.gold }} />
           </Box>
           <Box>
             <Typography
@@ -436,22 +441,22 @@ export default function Community() {
 
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 2.5 }}>
           <Chip
-            icon={<GroupsIcon sx={{ fontSize: '14px !important', color: '#ffc220 !important' }} />}
+            icon={<GroupsIcon sx={{ fontSize: '14px !important', color: `${brand.gold} !important` }} />}
             label="Community Groups"
             size="small"
-            sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: '#fff', fontWeight: 600, fontSize: 12 }}
+            sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: 'common.white', fontWeight: 600, fontSize: 12 }}
           />
           <Chip
-            icon={<ThumbUpAltOutlinedIcon sx={{ fontSize: '14px !important', color: '#ffc220 !important' }} />}
+            icon={<ThumbUpAltOutlinedIcon sx={{ fontSize: '14px !important', color: `${brand.gold} !important` }} />}
             label="Social Media"
             size="small"
-            sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: '#fff', fontWeight: 600, fontSize: 12 }}
+            sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: 'common.white', fontWeight: 600, fontSize: 12 }}
           />
           <Chip
-            icon={<QrCode2Icon sx={{ fontSize: '14px !important', color: '#ffc220 !important' }} />}
+            icon={<QrCode2Icon sx={{ fontSize: '14px !important', color: `${brand.gold} !important` }} />}
             label="QR Codes"
             size="small"
-            sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: '#fff', fontWeight: 600, fontSize: 12 }}
+            sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: 'common.white', fontWeight: 600, fontSize: 12 }}
           />
         </Box>
       </Box>

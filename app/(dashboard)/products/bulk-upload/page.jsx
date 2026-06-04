@@ -60,7 +60,7 @@ function UpgradeGate() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', textAlign: 'center', px: 3 }}>
       <Box sx={{ width: 72, height: 72, borderRadius: '20px', bgcolor: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
-        <LockOutlinedIcon sx={{ fontSize: 32, color: '#f59e0b' }} />
+        <LockOutlinedIcon sx={{ fontSize: 32, color: 'warning.main' }} />
       </Box>
       <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 28, md: 36 }, fontWeight: 700, letterSpacing: '-0.5px', mb: 1.5 }}>
         Pro Feature
@@ -72,7 +72,7 @@ function UpgradeGate() {
       <Stack direction="row" spacing={1.5}>
         <Button variant="outlined" onClick={() => router.back()} sx={{ borderRadius: '10px', borderColor: 'divider' }}>Go back</Button>
         <Button variant="contained" disableElevation href="/subscribe"
-          sx={{ bgcolor: '#f59e0b', color: '#fff', borderRadius: '10px', fontWeight: 700, '&:hover': { bgcolor: '#d97706' } }}>
+          sx={{ bgcolor: 'warning.main', color: 'common.white', borderRadius: '10px', fontWeight: 700, '&:hover': { bgcolor: 'warning.dark' } }}>
           Upgrade to Pro
         </Button>
       </Stack>
@@ -90,8 +90,8 @@ function UploadReport({ result, onReset }) {
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {[
           { icon: <InfoOutlinedIcon />, label: 'Total rows', value: result.total_rows, color: 'text.primary' },
-          { icon: <CheckCircleOutlineIcon />, label: 'Uploaded', value: result.success_count, color: '#22c55e' },
-          { icon: <ErrorOutlineIcon />, label: 'Failed', value: result.failed_count, color: result.failed_count > 0 ? '#ef4444' : 'text.disabled' },
+          { icon: <CheckCircleOutlineIcon />, label: 'Uploaded', value: result.success_count, color: 'success.main' },
+          { icon: <ErrorOutlineIcon />, label: 'Failed', value: result.failed_count, color: result.failed_count > 0 ? 'error.main' : 'text.disabled' },
         ].map(({ icon, label, value, color }) => (
           <Grid item xs={4} key={label}>
             <Box sx={{ p: 2.5, borderRadius: '12px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', textAlign: 'center' }}>
@@ -124,7 +124,7 @@ function UploadReport({ result, onReset }) {
           <Stack direction="row" alignItems="center" justifyContent="space-between"
             sx={{ px: 2, py: 1.25, bgcolor: 'rgba(239,68,68,0.05)', cursor: 'pointer', borderBottom: showErrors ? '1px solid' : 'none', borderColor: 'divider' }}
             onClick={() => setShowErrors((p) => !p)}>
-            <Typography sx={{ fontWeight: 700, fontSize: 13, color: '#ef4444' }}>
+            <Typography sx={{ fontWeight: 700, fontSize: 13, color: 'error.main' }}>
               {result.errors.length} error{result.errors.length !== 1 ? 's' : ''} to fix
             </Typography>
             <IconButton size="small">{showErrors ? <ExpandLessIcon sx={{ fontSize: 18 }} /> : <ExpandMoreIcon sx={{ fontSize: 18 }} />}</IconButton>
@@ -133,7 +133,7 @@ function UploadReport({ result, onReset }) {
             {result.errors.map((err, i) => (
               <Box key={i} sx={{ px: 2, py: 1.5, borderBottom: i < result.errors.length - 1 ? '1px solid' : 'none', borderColor: 'divider' }}>
                 <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
-                  <Chip label={`Row ${err.row}`} size="small" sx={{ fontSize: 10, fontWeight: 700, bgcolor: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: '5px' }} />
+                  <Chip label={`Row ${err.row}`} size="small" sx={{ fontSize: 10, fontWeight: 700, bgcolor: 'rgba(239,68,68,0.1)', color: 'error.main', borderRadius: '5px' }} />
                   <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{err.title}</Typography>
                 </Stack>
                 {Object.entries(err.errors).map(([field, msgs]) => (
@@ -165,8 +165,8 @@ function AsyncJobPanel({ job }) {
   return (
     <Box>
       <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2 }}>
-        {isRunning && <HourglassEmptyIcon sx={{ fontSize: 20, color: '#f59e0b', animation: 'spin 2s linear infinite', '@keyframes spin': { from: { transform: 'rotate(0deg)' }, to: { transform: 'rotate(360deg)' } } }} />}
-        {job.status === 'failed' && <ErrorOutlineIcon sx={{ fontSize: 20, color: '#ef4444' }} />}
+        {isRunning && <HourglassEmptyIcon sx={{ fontSize: 20, color: 'warning.main', animation: 'spin 2s linear infinite', '@keyframes spin': { from: { transform: 'rotate(0deg)' }, to: { transform: 'rotate(360deg)' } } }} />}
+        {job.status === 'failed' && <ErrorOutlineIcon sx={{ fontSize: 20, color: 'error.main' }} />}
         <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
           {job.status === 'queued'     && 'Upload queued — waiting for server…'}
           {job.status === 'processing' && `Processing ${job.total_rows} products…`}
@@ -243,7 +243,7 @@ function PreviewTable({ headers, rows, errorRows = new Set() }) {
               <TableRow>
                 <TableCell sx={{ fontWeight: 700, fontSize: 11, bgcolor: 'background.paper' }}>#</TableCell>
                 {headers.map((h) => (
-                  <TableCell key={h} sx={{ fontWeight: 700, fontSize: 11, bgcolor: 'background.paper', color: REQUIRED_COLS.includes(h) ? '#ef4444' : 'text.secondary', whiteSpace: 'nowrap' }}>
+                  <TableCell key={h} sx={{ fontWeight: 700, fontSize: 11, bgcolor: 'background.paper', color: REQUIRED_COLS.includes(h) ? 'error.main' : 'text.secondary', whiteSpace: 'nowrap' }}>
                     {h}{REQUIRED_COLS.includes(h) ? ' *' : ''}
                   </TableCell>
                 ))}
@@ -253,7 +253,7 @@ function PreviewTable({ headers, rows, errorRows = new Set() }) {
               {rows.slice(0, MAX_PREVIEW_ROWS).map((row, i) => (
                 <TableRow key={i} sx={{ bgcolor: errorRows.has(i + 2) ? 'rgba(239,68,68,0.04)' : 'transparent' }}>
                   <TableCell sx={{ fontSize: 11, color: 'text.disabled', fontWeight: 600 }}>
-                    {i + 2}{errorRows.has(i + 2) && <ErrorOutlineIcon sx={{ fontSize: 11, color: '#ef4444', ml: 0.5, verticalAlign: 'middle' }} />}
+                    {i + 2}{errorRows.has(i + 2) && <ErrorOutlineIcon sx={{ fontSize: 11, color: 'error.main', ml: 0.5, verticalAlign: 'middle' }} />}
                   </TableCell>
                   {headers.map((h) => (
                     <TableCell key={h} sx={{ fontSize: 12, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row[h] ?? ''}</TableCell>
@@ -283,11 +283,11 @@ function ColumnReference() {
         <Box sx={{ p: 2 }}>
           <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mb: 1.5 }}>
             {ALL_COLS.map((c) => (
-              <Chip key={c} label={c} size="small" sx={{ fontSize: 10, fontWeight: 700, borderRadius: '5px', bgcolor: REQUIRED_COLS.includes(c) ? 'rgba(239,68,68,0.08)' : 'action.hover', color: REQUIRED_COLS.includes(c) ? '#ef4444' : 'text.secondary', border: '1px solid', borderColor: REQUIRED_COLS.includes(c) ? 'rgba(239,68,68,0.3)' : 'divider' }} />
+              <Chip key={c} label={c} size="small" sx={{ fontSize: 10, fontWeight: 700, borderRadius: '5px', bgcolor: REQUIRED_COLS.includes(c) ? 'rgba(239,68,68,0.08)' : 'action.hover', color: REQUIRED_COLS.includes(c) ? 'error.main' : 'text.secondary', border: '1px solid', borderColor: REQUIRED_COLS.includes(c) ? 'rgba(239,68,68,0.3)' : 'divider' }} />
             ))}
           </Stack>
           <Typography variant="caption" color="text.disabled">
-            <Box component="span" sx={{ color: '#ef4444', fontWeight: 700 }}>Red * = required.</Box>
+            <Box component="span" sx={{ color: 'error.main', fontWeight: 700 }}>Red * = required.</Box>
             {' '}Use semicolons for multiple values: <code>S;M;L</code>
           </Typography>
         </Box>
@@ -513,7 +513,7 @@ export default function BulkUploadPage() {
           <Typography color="text.secondary" sx={{ lineHeight: 1.7 }}>
             Add multiple products at once.
             {remainSlots != null && (
-              <Box component="span" sx={{ ml: 1, fontWeight: 600, color: remainSlots < 10 ? '#f59e0b' : 'text.primary' }}>
+              <Box component="span" sx={{ ml: 1, fontWeight: 600, color: remainSlots < 10 ? 'warning.main' : 'text.primary' }}>
                 {remainSlots} slot{remainSlots !== 1 ? 's' : ''} remaining on your plan.
               </Box>
             )}
@@ -553,10 +553,10 @@ export default function BulkUploadPage() {
                 ].map(([n, title, desc]) => (
                   <Stack key={n} direction="row" spacing={1} sx={{ flex: 1, minWidth: 200 }}>
                     <Box sx={{ width: 20, height: 20, borderRadius: '6px', bgcolor: 'rgba(59,130,246,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, mt: 0.1 }}>
-                      <Typography sx={{ fontSize: 10, fontWeight: 800, color: '#3b82f6' }}>{n}</Typography>
+                      <Typography sx={{ fontSize: 10, fontWeight: 800, color: 'info.main' }}>{n}</Typography>
                     </Box>
                     <Box>
-                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#1e40af' }}>{title}</Typography>
+                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'info.dark' }}>{title}</Typography>
                       <Typography sx={{ fontSize: 11, color: 'text.secondary', lineHeight: 1.4 }}>{desc}</Typography>
                     </Box>
                   </Stack>
@@ -626,7 +626,7 @@ export default function BulkUploadPage() {
                     <Alert severity="error" sx={{ mt: 2, borderRadius: '8px' }}>
                       <AlertTitle>Missing required columns</AlertTitle>
                       <Stack direction="row" flexWrap="wrap" gap={0.5} sx={{ mt: 0.5 }}>
-                        {missingCols.map((c) => <Chip key={c} label={c} size="small" sx={{ fontSize: 10, fontWeight: 700, bgcolor: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: '5px' }} />)}
+                        {missingCols.map((c) => <Chip key={c} label={c} size="small" sx={{ fontSize: 10, fontWeight: 700, bgcolor: 'rgba(239,68,68,0.1)', color: 'error.main', borderRadius: '5px' }} />)}
                       </Stack>
                     </Alert>
                   )}

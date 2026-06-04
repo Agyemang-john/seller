@@ -43,7 +43,7 @@ function ViewTile({ label, data, accent = false }) {
       <Typography sx={{
         fontFamily: "'Cormorant Garamond', serif",
         fontSize: { xs: 24, md: 36 }, fontWeight: 700, lineHeight: 1,
-        color: accent ? '#ffffff' : 'text.primary',
+        color: accent ? 'common.white' : 'text.primary',
       }}>
         {fmt(headline)}
       </Typography>

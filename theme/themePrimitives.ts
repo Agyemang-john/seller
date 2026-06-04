@@ -1,4 +1,10 @@
 import { createTheme, alpha, PaletteMode, Shadows } from '@mui/material/styles';
+import {
+  brand as brandTokens,
+  buildStatusPalette,
+  StatusColor,
+  HueToken,
+} from './designTokens';
 
 declare module '@mui/material/Paper' {
   interface PaperPropsVariantOverrides {
@@ -21,8 +27,19 @@ declare module '@mui/material/styles' {
 
   interface PaletteColor extends ColorRange {}
 
+  // Brand identity + status accents, sourced from `designTokens.ts`.
+  type BrandPalette = typeof brandTokens;
+  type StatusPalette = Record<HueToken, StatusColor>;
+
   interface Palette {
     baseShadow: string;
+    brand: BrandPalette;
+    status: StatusPalette;
+  }
+
+  interface PaletteOptions {
+    brand?: typeof brandTokens;
+    status?: Record<HueToken, StatusColor>;
   }
 }
 
@@ -181,6 +198,8 @@ export const getDesignTokens = (mode: PaletteMode) => {
           selected: alpha(gray[600], 0.3),
         }),
       },
+      brand: brandTokens,
+      status: buildStatusPalette(mode),
     },
     typography: {
       fontFamily: 'Inter, sans-serif',
@@ -285,6 +304,8 @@ export const colorSchemes = {
         hover: alpha(gray[200], 0.2),
         selected: `${alpha(gray[200], 0.3)}`,
       },
+      brand: brandTokens,
+      status: buildStatusPalette('light'),
       baseShadow:
         'hsla(220, 30%, 5%, 0.07) 0px 4px 16px 0px, hsla(220, 25%, 10%, 0.07) 0px 8px 16px -5px',
     },
@@ -334,6 +355,8 @@ export const colorSchemes = {
         hover: alpha(gray[600], 0.2),
         selected: alpha(gray[600], 0.3),
       },
+      brand: brandTokens,
+      status: buildStatusPalette('dark'),
       baseShadow:
         'hsla(220, 30%, 5%, 0.7) 0px 4px 16px 0px, hsla(220, 25%, 10%, 0.8) 0px 8px 16px -5px',
     },

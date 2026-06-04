@@ -42,14 +42,14 @@ function Logout() {
   <Typography
     variant="h4"
     gutterBottom
-    sx={{ fontWeight: 'bold', color: '#333', fontSize: { xs: '1.35rem', sm: '1.75rem', md: '2.125rem' } }}
+    sx={{ fontWeight: 'bold', color: 'text.primary', fontSize: { xs: '1.35rem', sm: '1.75rem', md: '2.125rem' } }}
   >
     Are you sure you want to logout?
   </Typography>
 
   <Typography
     variant="body1"
-    sx={{ color: '#666', marginBottom: 3, textAlign: 'center' }}
+    sx={{ color: 'text.secondary', marginBottom: 3, textAlign: 'center' }}
   >
     Logging out will end your current session, and you'll need to log in
     again to continue.

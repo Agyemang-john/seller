@@ -21,6 +21,7 @@ import {
   Legend, ResponsiveContainer, BarChart, Bar,
 } from 'recharts';
 import { createAxiosClient } from '@/utils/clientFetch';
+import { useTheme } from '@mui/material/styles';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -153,6 +154,19 @@ function fmtDate(iso: string) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ProductAnalyticsPage() {
+  const theme = useTheme();
+  // Chart colours sourced from the theme so they track light/dark mode.
+  const chart = {
+    grid: theme.palette.divider,
+    tooltipBg: theme.palette.background.paper,
+    tooltipText: theme.palette.text.primary,
+    views: theme.palette.info.main,
+    unique: theme.palette.success.main,
+    returning: theme.palette.warning.main,
+    bots: theme.palette.text.disabled,
+    revenue: theme.palette.info.main,
+    units: theme.palette.success.main,
+  };
   const { id } = useParams<{ id: string }>();
   const [data, setData]     = useState<ProductAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
@@ -300,17 +314,17 @@ export default function ProductAnalyticsPage() {
           ) : (
             <ResponsiveContainer width="100%" height={280}>
               <LineChart data={trendData} margin={{ top: 4, right: 16, bottom: 4, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                 <RechartsTooltip
-                  contentStyle={{ borderRadius: 8, border: '1px solid #e0e0e0', fontSize: 13 }}
+                  contentStyle={{ borderRadius: 8, border: `1px solid ${chart.grid}`, background: chart.tooltipBg, color: chart.tooltipText, fontSize: 13 }}
                 />
                 <Legend />
-                <Line type="monotone" dataKey="Views"     stroke="#1976d2" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="Unique"    stroke="#2e7d32" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="Returning" stroke="#ed6c02" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="Bots"      stroke="#9e9e9e" strokeWidth={1} dot={false} strokeDasharray="4 2" />
+                <Line type="monotone" dataKey="Views"     stroke={chart.views}     strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="Unique"    stroke={chart.unique}    strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="Returning" stroke={chart.returning} strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="Bots"      stroke={chart.bots}      strokeWidth={1} dot={false} strokeDasharray="4 2" />
               </LineChart>
             </ResponsiveContainer>
           )}
@@ -344,14 +358,14 @@ export default function ProductAnalyticsPage() {
             <Typography variant="h6" fontWeight={700} mb={2}>30-Day Sales Trend</Typography>
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={salesTrendData} margin={{ top: 4, right: 16, bottom: 4, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                 <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
                 <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
-                <RechartsTooltip contentStyle={{ borderRadius: 8, fontSize: 13 }} />
+                <RechartsTooltip contentStyle={{ borderRadius: 8, border: `1px solid ${chart.grid}`, background: chart.tooltipBg, color: chart.tooltipText, fontSize: 13 }} />
                 <Legend />
-                <Bar yAxisId="left"  dataKey="Revenue" fill="#1976d2" radius={[4, 4, 0, 0]} />
-                <Bar yAxisId="right" dataKey="Units"   fill="#2e7d32" radius={[4, 4, 0, 0]} />
+                <Bar yAxisId="left"  dataKey="Revenue" fill={chart.revenue} radius={[4, 4, 0, 0]} />
+                <Bar yAxisId="right" dataKey="Units"   fill={chart.units}   radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

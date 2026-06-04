@@ -111,10 +111,6 @@ export default function Header() {
 
         {/* Drawer header row: close button */}
         <div className="nm-drawer-header">
-          <Link href="/" className="nm-logo">
-            <span className="nm-logo-brand">Negromart</span>
-            <span className="nm-logo-suffix">Marketplace</span>
-          </Link>
           <button
             className="nm-mobile-close"
             onClick={() => setDrawerOpen(false)}

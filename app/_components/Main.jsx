@@ -8,7 +8,7 @@ const SLIDES = [
   {
     title: "Let's grow together!",
     subtitle:
-      'Get up to ₦500K* in new-seller savings when you sign up to sell on Negromart Marketplace.',
+      'Get up to USD100 in new-seller savings when you sign up to sell on Negromart Marketplace.',
     btnLabel: 'Learn more',
     btnHref: '/register',
     note: '*Conditions apply.',

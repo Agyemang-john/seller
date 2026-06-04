@@ -39,7 +39,7 @@ export function SalesKPIs({ data }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               bgcolor: accent ? 'rgba(255,255,255,0.12)' : 'action.selected',
             }}>
-              <Icon sx={{ fontSize: 16, color: accent ? '#ffffff' : 'text.secondary' }} />
+              <Icon sx={{ fontSize: 16, color: accent ? 'common.white' : 'text.secondary' }} />
             </Box>
             <Box sx={{ minWidth: 0 }}>
               <Typography variant="caption" sx={{
@@ -53,7 +53,7 @@ export function SalesKPIs({ data }) {
               <Typography sx={{
                 fontFamily: "'Cormorant Garamond', serif",
                 fontSize: 18, fontWeight: 700, lineHeight: 1,
-                color: accent ? '#ffffff' : 'text.primary',
+                color: accent ? 'common.white' : 'text.primary',
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               }}>
                 {value}

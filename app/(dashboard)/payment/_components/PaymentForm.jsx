@@ -1,19 +1,56 @@
+'use client';
+
 import React, { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { debounce } from "lodash";
-import PageContainer from './PageContainer';
 import {
-  BanknotesIcon,
-  PhoneIcon,
-  BuildingOfficeIcon,
-  UserIcon,
-  HashtagIcon,
-  ArrowPathIcon,
-  GlobeAltIcon,
-  CurrencyDollarIcon,
-} from "@heroicons/react/24/outline";
+  Box, Card, Stack, Typography, Avatar, Chip, Divider, TextField,
+  MenuItem, InputAdornment, Button, CircularProgress, Collapse, Paper,
+  List, ListItemButton, ClickAwayListener,
+} from "@mui/material";
+import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
+import PhoneAndroidOutlinedIcon from "@mui/icons-material/PhoneAndroidOutlined";
+import AccountBalanceOutlinedIcon from "@mui/icons-material/AccountBalanceOutlined";
+import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
+import NumbersRoundedIcon from "@mui/icons-material/NumbersRounded";
+import PublicOutlinedIcon from "@mui/icons-material/PublicOutlined";
+import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
+import VerifiedRoundedIcon from "@mui/icons-material/VerifiedRounded";
+import HourglassEmptyRoundedIcon from "@mui/icons-material/HourglassEmptyRounded";
+import ErrorOutlineRoundedIcon from "@mui/icons-material/ErrorOutlineRounded";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import PageContainer from './PageContainer';
 import { createAxiosClient } from "@/utils/clientFetch";
 import Swal from "sweetalert2";
+
+const PAYMENT_METHODS = [
+  { value: "momo", label: "Mobile Money" },
+  { value: "bank", label: "Bank Transfer" },
+];
+
+const MOMO_PROVIDERS = [
+  { value: "MTN", label: "MTN" },
+  { value: "VODAFONE", label: "Vodafone" },
+  { value: "AIRTELTIGO", label: "AirtelTigo" },
+];
+
+const COUNTRIES = [
+  { value: "GH", label: "Ghana" },
+  { value: "US", label: "United States" },
+  { value: "EU", label: "European Union" },
+];
+
+const CURRENCIES = [
+  { value: "GHS", label: "Ghanaian Cedi (GHS)" },
+  { value: "USD", label: "US Dollar (USD)" },
+  { value: "EUR", label: "Euro (EUR)" },
+];
+
+// Payment-method verification status → design-base hue token + icon.
+const STATUS_META = {
+  verified: { hue: "green", label: "Verified", Icon: VerifiedRoundedIcon },
+  rejected: { hue: "red", label: "Rejected", Icon: ErrorOutlineRoundedIcon },
+  pending: { hue: "amber", label: "Pending", Icon: HourglassEmptyRoundedIcon },
+};
 
 const PaymentForm = () => {
   const pageTitle = "Payment Method";
@@ -37,10 +74,6 @@ const PaymentForm = () => {
   });
 
   const [paymentStatus, setPaymentStatus] = useState('pending');
-
-  useEffect(() => {
-    fetchPaymentDetail();
-  }, []);
 
   const fetchPaymentDetail = async () => {
     try {
@@ -69,7 +102,6 @@ const PaymentForm = () => {
       setLoading(false);
     }
   };
-
 
   const validateBankName = async (bankName) => {
     if (!bankName || formData.paymentMethod !== 'bank') {
@@ -169,13 +201,6 @@ const PaymentForm = () => {
         text: "Please correct the errors before submitting.",
         icon: "error",
         confirmButtonText: "OK",
-        customClass: {
-          popup: "bg-gray-900 text-white",
-          title: "text-white",
-          content: "text-white",
-          confirmButton: "bg-gray-700 hover:bg-gray-600",
-        },
-        buttonsStyling: false,
       });
       return;
     }
@@ -185,18 +210,10 @@ const PaymentForm = () => {
       text: `Do you want to ${hasPaymentMethod ? "update" : "add"} your payment details?`,
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#4f46e5",
+      confirmButtonColor: "#0071ce",
       cancelButtonColor: "#6b7280",
       confirmButtonText: `Yes, ${hasPaymentMethod ? "update" : "add"} it!`,
       cancelButtonText: "Cancel",
-      customClass: {
-        popup: "bg-gray-900 text-white",
-        title: "text-white",
-        content: "text-white",
-        confirmButton: "bg-indigo-600 hover:bg-indigo-700",
-        cancelButton: "bg-gray-600 hover:bg-gray-700",
-      },
-      buttonsStyling: false,
     });
 
     if (confirmResult.isConfirmed) {
@@ -213,19 +230,12 @@ const PaymentForm = () => {
       };
 
       try {
-        const response = await axiosClient.put("/api/v1/vendor/payment-method/", payload);
+        await axiosClient.put("/api/v1/vendor/payment-method/", payload);
         await Swal.fire({
           title: hasPaymentMethod ? "Updated!" : "Added!",
           text: `Your payment details have been successfully ${hasPaymentMethod ? "updated" : "added"}.`,
           icon: "success",
           confirmButtonText: "OK",
-          customClass: {
-            popup: "bg-gray-900 text-white",
-            title: "text-white",
-            content: "text-white",
-            confirmButton: "bg-green-600 hover:bg-green-700",
-          },
-          buttonsStyling: false,
         });
         setHasPaymentMethod(true);
         fetchPaymentDetail();
@@ -240,13 +250,6 @@ const PaymentForm = () => {
           text: errorMessage,
           icon: "error",
           confirmButtonText: "OK",
-          customClass: {
-            popup: "bg-gray-900 text-white",
-            title: "text-white",
-            content: "text-white",
-            confirmButton: "bg-red-600 hover:bg-red-700",
-          },
-          buttonsStyling: false,
         });
       } finally {
         setIsSubmitting(false);
@@ -261,335 +264,285 @@ const PaymentForm = () => {
     };
   }, []);
 
-  const getStatusStyles = (status) => {
-    switch (status) {
-      case 'verified':
-        return 'bg-green-100 text-green-800 border-green-400';
-      case 'rejected':
-        return 'bg-red-100 text-red-800 border-red-400';
-      case 'pending':
-      default:
-        return 'bg-yellow-100 text-yellow-800 border-yellow-400';
-    }
-  };
+  // Shared field styling — rounded inputs that match the dashboard.
+  const fieldSx = { '& .MuiOutlinedInput-root': { borderRadius: '12px' } };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full"
-        />
-      </div>
+      <PageContainer
+        title={pageTitle}
+        breadcrumbs={[{ title: 'Home', path: '/dashboard' }, { title: pageTitle }]}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+          <CircularProgress />
+        </Box>
+      </PageContainer>
     );
   }
+
+  const status = STATUS_META[paymentStatus] || STATUS_META.pending;
 
   return (
     <PageContainer
       title={pageTitle}
-      breadcrumbs={[
-        { title: 'Home', path: '/dashboard' },
-        { title: pageTitle },
-      ]}
+      breadcrumbs={[{ title: 'Home', path: '/dashboard' }, { title: pageTitle }]}
     >
-      <div className="min-h-screen py-8 px-0 sm:px-0 lg:px-8">
-        <div className="max-w-2xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-xl shadow-0 p-6 sm:p-8"
-          >
-            <div className="flex items-center mb-6">
-              <BanknotesIcon className="h-8 w-8 text-indigo-600 mr-3" />
-              <h5 className="text-lg font-bold">
-                {hasPaymentMethod ? "Update Your Payment Method" : "Set Up Your Payment Method"}
-              </h5>
-            </div>
-
-            {hasPaymentMethod && (
-              <div className={`mb-4 p-2 rounded border ${getStatusStyles(paymentStatus)}`}>
-                <p className="font-semibold">
-                  Payment Method Status: {paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1)}
-                </p>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.1 }}
+      <Box sx={{ maxWidth: 1200, mx: 'auto', width: '100%' }}>
+        <Card
+          variant="outlined"
+          sx={{ borderRadius: '20px', borderColor: 'divider', overflow: 'visible' }}
+        >
+          {/* Header */}
+          <Box sx={{ p: { xs: 2.5, sm: 3.5 } }}>
+            <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: hasPaymentMethod ? 2.5 : 0 }}>
+              <Avatar
+                variant="rounded"
+                sx={{ bgcolor: (t) => `${t.palette.brand.blue}1f`, color: 'brand.blue', width: 48, height: 48, borderRadius: '14px' }}
               >
-                <label className="block text-sm font-medium mb-2">
-                  Payment Method <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <select
-                    name="paymentMethod"
-                    value={formData.paymentMethod}
+                <AccountBalanceWalletOutlinedIcon />
+              </Avatar>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 22, sm: 26 }, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1.2 }} color="text.primary">
+                  {hasPaymentMethod ? "Update payment method" : "Set up payment method"}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Where your sales payouts will be sent.
+                </Typography>
+              </Box>
+              {hasPaymentMethod && (
+                <Chip
+                  size="small"
+                  icon={<status.Icon sx={{ fontSize: '16px !important' }} />}
+                  label={status.label}
+                  sx={{
+                    fontWeight: 700, fontSize: 11, borderRadius: '8px',
+                    bgcolor: `status.${status.hue}.bg`,
+                    color: `status.${status.hue}.text`,
+                    '& .MuiChip-icon': { color: `status.${status.hue}.text` },
+                  }}
+                />
+              )}
+            </Stack>
+          </Box>
+
+          <Divider />
+
+          {/* Form */}
+          <Box component="form" onSubmit={handleSubmit} sx={{ p: { xs: 2.5, sm: 3.5 } }}>
+            <Stack spacing={2.5}>
+              <TextField
+                select
+                fullWidth
+                name="paymentMethod"
+                label="Payment method"
+                value={formData.paymentMethod}
+                onChange={handleInputChange}
+                error={Boolean(errors.paymentMethod)}
+                helperText={errors.paymentMethod}
+                sx={fieldSx}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PaymentsOutlinedIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              >
+                {PAYMENT_METHODS.map((m) => (
+                  <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>
+                ))}
+              </TextField>
+
+              {/* Mobile Money */}
+              <Collapse in={formData.paymentMethod === "momo"} unmountOnExit>
+                <Stack spacing={2.5}>
+                  <TextField
+                    fullWidth
+                    name="momoNumber"
+                    label="Mobile Money number"
+                    placeholder="e.g. 0241234567"
+                    value={formData.momoNumber}
                     onChange={handleInputChange}
-                    className={`w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ${
-                      errors.paymentMethod ? "border-red-500 focus:ring-red-500" : ""
-                    }`}
+                    error={Boolean(errors.momoNumber)}
+                    helperText={errors.momoNumber}
+                    sx={fieldSx}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PhoneAndroidOutlinedIcon fontSize="small" color="action" />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  <TextField
+                    select
+                    fullWidth
+                    name="momoProvider"
+                    label="Mobile Money provider"
+                    value={formData.momoProvider}
+                    onChange={handleInputChange}
+                    error={Boolean(errors.momoProvider)}
+                    helperText={errors.momoProvider}
+                    sx={fieldSx}
                   >
-                    <option value="momo">Mobile Money</option>
-                    <option value="bank">Bank Transfer</option>
-                    {/* <option value="paypal">PayPal</option> */}
-                  </select>
-                  <BanknotesIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5" />
-                </div>
-                {errors.paymentMethod && (
-                  <p className="mt-1 text-sm text-red-600">{errors.paymentMethod}</p>
-                )}
-              </motion.div>
+                    <MenuItem value=""><em>Select provider</em></MenuItem>
+                    {MOMO_PROVIDERS.map((p) => (
+                      <MenuItem key={p.value} value={p.value}>{p.label}</MenuItem>
+                    ))}
+                  </TextField>
+                </Stack>
+              </Collapse>
 
-              <AnimatePresence mode="wait">
-                {formData.paymentMethod === "momo" && (
-                  <motion.div
-                    key="momo"
-                    initial={{ opacity: 0, height: 0, y: -10 }}
-                    animate={{ opacity: 1, height: "auto", y: 0 }}
-                    exit={{ opacity: 0, height: 0, y: 10 }}
-                    transition={{ duration: 0.3 }}
-                    className="space-y-4"
-                  >
-                    <div>
-                      <label className="block text-sm font-medium mb-2 flex items-center">
-                        <PhoneIcon className="h-4 w-4 mr-1 text-indigo-600" />
-                        Mobile Money Number <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="momoNumber"
-                        value={formData.momoNumber}
-                        onChange={handleInputChange}
-                        className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ${
-                          errors.momoNumber ? "border-red-500 focus:ring-red-500" : "border-gray-300"
-                        }`}
-                        placeholder="Enter your mobile money number"
-                      />
-                      {errors.momoNumber && (
-                        <p className="mt-1 text-sm text-red-600">{errors.momoNumber}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
-                        Mobile Money Provider <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        name="momoProvider"
-                        value={formData.momoProvider}
-                        onChange={handleInputChange}
-                        className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ${
-                          errors.momoProvider ? "border-red-500 focus:ring-red-500" : "border-gray-300"
-                        }`}
-                      >
-                        <option value="">Select provider</option>
-                        <option value="MTN">MTN</option>
-                        <option value="VODAFONE">Vodafone</option>
-                        <option value="AIRTELTIGO">AirtelTigo</option>
-                      </select>
-                      {errors.momoProvider && (
-                        <p className="mt-1 text-sm text-red-600">{errors.momoProvider}</p>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <AnimatePresence mode="wait">
-                {formData.paymentMethod === "paypal" && (
-                  <motion.div
-                    key="paypal"
-                    initial={{ opacity: 0, height: 0, y: -10 }}
-                    animate={{ opacity: 1, height: "auto", y: 0 }}
-                    exit={{ opacity: 0, height: 0, y: 10 }}
-                    transition={{ duration: 0.3 }}
-                    className="space-y-4"
-                  >
-                    <div>
-                      <label className="block text-sm font-medium mb-2 flex items-center">
-                        <PhoneIcon className="h-4 w-4 mr-1 text-indigo-600" />
-                        PayPal Email or Phone <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="momoNumber"
-                        value={formData.momoNumber}
-                        onChange={handleInputChange}
-                        className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ${
-                          errors.momoNumber ? "border-red-500 focus:ring-red-500" : "border-gray-300"
-                        }`}
-                        placeholder="Enter your PayPal email or phone"
-                      />
-                      {errors.momoNumber && (
-                        <p className="mt-1 text-sm text-red-600">{errors.momoNumber}</p>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <AnimatePresence mode="wait">
-                {formData.paymentMethod === "bank" && (
-                  <motion.div
-                    key="bank"
-                    initial={{ opacity: 0, height: 0, y: -10 }}
-                    animate={{ opacity: 1, height: "auto", y: 0 }}
-                    exit={{ opacity: 0, height: 0, y: 10 }}
-                    transition={{ duration: 0.3 }}
-                    className="space-y-4"
-                  >
-                    <div className="relative">
-                      <label className="block text-sm font-medium mb-2 flex items-center">
-                        <BuildingOfficeIcon className="h-4 w-4 mr-1 text-indigo-600" />
-                        Bank Name <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
+              {/* Bank */}
+              <Collapse in={formData.paymentMethod === "bank"} unmountOnExit>
+                <Stack spacing={2.5}>
+                  <ClickAwayListener onClickAway={() => setShowSuggestions(false)}>
+                    <Box sx={{ position: 'relative' }}>
+                      <TextField
+                        fullWidth
                         name="bankName"
+                        label="Bank name"
+                        placeholder="Enter bank name"
                         value={formData.bankName}
                         onChange={handleInputChange}
-                        className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ${
-                          errors.bankName ? "border-red-500 focus:ring-red-500" : "border-gray-300"
-                        }`}
-                        placeholder="Enter bank name"
+                        error={Boolean(errors.bankName)}
+                        helperText={errors.bankName}
+                        sx={fieldSx}
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <AccountBalanceOutlinedIcon fontSize="small" color="action" />
+                            </InputAdornment>
+                          ),
+                        }}
                       />
                       {showSuggestions && bankSuggestions.length > 0 && (
-                        <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-40 overflow-y-auto shadow-md">
-                          {bankSuggestions.map((suggestion, index) => (
-                            <li
-                              key={index}
-                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                              onClick={() => handleSuggestionClick(suggestion)}
-                            >
-                              {suggestion.name}
-                            </li>
-                          ))}
-                        </ul>
+                        <Paper
+                          elevation={4}
+                          sx={{ position: 'absolute', zIndex: 20, mt: 0.5, width: '100%', borderRadius: '12px', overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}
+                        >
+                          <List disablePadding>
+                            {bankSuggestions.map((suggestion, index) => (
+                              <ListItemButton key={index} onClick={() => handleSuggestionClick(suggestion)} sx={{ py: 1.25 }}>
+                                <AccountBalanceOutlinedIcon fontSize="small" sx={{ mr: 1.5, color: 'text.disabled' }} />
+                                <Typography variant="body2">{suggestion.name}</Typography>
+                              </ListItemButton>
+                            ))}
+                          </List>
+                        </Paper>
                       )}
-                      {errors.bankName && (
-                        <p className="mt-1 text-sm text-red-600">{errors.bankName}</p>
-                      )}
-                    </div>
+                    </Box>
+                  </ClickAwayListener>
 
-                    <div>
-                      <label className="block text-sm font-medium mb-2 flex items-center">
-                        <UserIcon className="h-4 w-4 mr-1 text-indigo-600" />
-                        Account Name <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="bankAccountName"
-                        value={formData.bankAccountName}
-                        onChange={handleInputChange}
-                        className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ${
-                          errors.bankAccountName ? "border-red-500 focus:ring-red-500" : "border-gray-300"
-                        }`}
-                        placeholder="Enter account holder name"
-                      />
-                      {errors.bankAccountName && (
-                        <p className="mt-1 text-sm text-red-600">{errors.bankAccountName}</p>
-                      )}
-                    </div>
+                  <TextField
+                    fullWidth
+                    name="bankAccountName"
+                    label="Account name"
+                    placeholder="Account holder name"
+                    value={formData.bankAccountName}
+                    onChange={handleInputChange}
+                    error={Boolean(errors.bankAccountName)}
+                    helperText={errors.bankAccountName}
+                    sx={fieldSx}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PersonOutlineRoundedIcon fontSize="small" color="action" />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  <TextField
+                    fullWidth
+                    name="bankAccountNumber"
+                    label="Account number"
+                    placeholder="Enter account number"
+                    value={formData.bankAccountNumber}
+                    onChange={handleInputChange}
+                    error={Boolean(errors.bankAccountNumber)}
+                    helperText={errors.bankAccountNumber}
+                    sx={fieldSx}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <NumbersRoundedIcon fontSize="small" color="action" />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Stack>
+              </Collapse>
 
-                    <div>
-                      <label className="block text-sm font-medium mb-2 flex items-center">
-                        <HashtagIcon className="h-4 w-4 mr-1 text-indigo-600" />
-                        Account Number <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="bankAccountNumber"
-                        value={formData.bankAccountNumber}
-                        onChange={handleInputChange}
-                        className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ${
-                          errors.bankAccountNumber ? "border-red-500 focus:ring-red-500" : "border-gray-300"
-                        }`}
-                        placeholder="Enter account number"
-                      />
-                      {errors.bankAccountNumber && (
-                        <p className="mt-1 text-sm text-red-600">{errors.bankAccountNumber}</p>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              <Divider sx={{ '&::before, &::after': { borderColor: 'divider' } }}>
+                <Typography variant="caption" color="text.disabled" sx={{ fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  Region
+                </Typography>
+              </Divider>
 
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-              >
-                <label className="block text-sm font-medium mb-2 flex items-center">
-                  <GlobeAltIcon className="h-4 w-4 mr-1 text-indigo-600" />
-                  Country <span className="text-red-500">*</span>
-                </label>
-                <select
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2.5}>
+                <TextField
+                  select
+                  fullWidth
                   name="country"
+                  label="Country"
                   value={formData.country}
                   onChange={handleInputChange}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ${
-                    errors.country ? "border-red-500 focus:ring-red-500" : "border-gray-300"
-                  }`}
+                  error={Boolean(errors.country)}
+                  helperText={errors.country}
+                  sx={fieldSx}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PublicOutlinedIcon fontSize="small" color="action" />
+                      </InputAdornment>
+                    ),
+                  }}
                 >
-                  <option value="GH">Ghana</option>
-                  <option value="US">United States</option>
-                  <option value="EU">European Union</option>
-                </select>
-                {errors.country && (
-                  <p className="mt-1 text-sm text-red-600">{errors.country}</p>
-                )}
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-              >
-                <label className="block text-sm font-medium mb-2 flex items-center">
-                  <CurrencyDollarIcon className="h-4 w-4 mr-1 text-indigo-600" />
-                  Currency <span className="text-red-500">*</span>
-                </label>
-                <select
+                  {COUNTRIES.map((c) => (
+                    <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>
+                  ))}
+                </TextField>
+                <TextField
+                  select
+                  fullWidth
                   name="currency"
+                  label="Currency"
                   value={formData.currency}
                   onChange={handleInputChange}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ${
-                    errors.currency ? "border-red-500 focus:ring-red-500" : "border-gray-300"
-                  }`}
+                  error={Boolean(errors.currency)}
+                  helperText={errors.currency}
+                  sx={fieldSx}
                 >
-                  <option value="GHS">Ghanaian Cedi (GHS)</option>
-                  <option value="USD">US Dollar (USD)</option>
-                  <option value="EUR">Euro (EUR)</option>
-                </select>
-                {errors.currency && (
-                  <p className="mt-1 text-sm text-red-600">{errors.currency}</p>
-                )}
-              </motion.div>
+                  {CURRENCIES.map((c) => (
+                    <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>
+                  ))}
+                </TextField>
+              </Stack>
 
-              <motion.button
+              <Button
                 type="submit"
+                variant="contained"
+                size="large"
+                disableElevation
                 disabled={isSubmitting}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full flex justify-center items-center py-3 px-4 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                startIcon={isSubmitting ? <CircularProgress size={18} color="inherit" /> : null}
+                sx={{ borderRadius: '12px', fontWeight: 700, py: 1.25, textTransform: 'none', fontSize: 15 }}
               >
-                {isSubmitting ? (
-                  <>
-                    <ArrowPathIcon className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
-                    {hasPaymentMethod ? "Updating..." : "Adding..."}
-                  </>
-                ) : (
-                  hasPaymentMethod ? "Update Payment Details" : "Add Payment Details"
-                )}
-              </motion.button>
-            </form>
-          </motion.div>
-        </div>
-      </div>
+                {isSubmitting
+                  ? (hasPaymentMethod ? "Updating…" : "Adding…")
+                  : (hasPaymentMethod ? "Update payment details" : "Add payment details")}
+              </Button>
+
+              <Stack direction="row" spacing={1} alignItems="center" justifyContent="center">
+                <LockOutlinedIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
+                <Typography variant="caption" color="text.disabled">
+                  Your details are encrypted and used only for payouts.
+                </Typography>
+              </Stack>
+            </Stack>
+          </Box>
+        </Card>
+      </Box>
     </PageContainer>
   );
 };
