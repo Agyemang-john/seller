@@ -11,6 +11,7 @@ import AddIcon from '@mui/icons-material/Add';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined';
@@ -19,6 +20,8 @@ import Swal from 'sweetalert2';
 import { createAxiosClient } from '@/utils/clientFetch';
 import DeleteConfirmDialog from './Deleteconfirmdialog';
 import BulkUploadButton from './BulkUploadButton';
+import ProductListSkeleton from './Productlistskeleton';
+import ProductListError from './Productlisterror';
 
 const PAGE_SIZE = 20;
 
@@ -42,6 +45,7 @@ function ProductCard({ product, onEdit, onDelete, onView, index }) {
   const price      = typeof p.price === 'string' ? parseFloat(p.price) : (p.price ?? 0);
   const oldPrice   = typeof p.old_price === 'string' ? parseFloat(p.old_price) : p.old_price;
   const hasDiscount = oldPrice && oldPrice > price;
+  const views      = p.views ?? 0;
 
   return (
     <Box sx={{
@@ -95,7 +99,17 @@ function ProductCard({ product, onEdit, onDelete, onView, index }) {
           <Typography variant="caption" sx={{ fontWeight: 600, letterSpacing: '0.04em', color: inStock ? '#22c55e' : '#ef4444' }}>
             {inStock ? `${p.total_quantity} in stock` : 'Out of stock'}
           </Typography>
-          {p.sku && <Typography variant="caption" color="text.disabled" sx={{ fontSize: 10 }}>{p.sku}</Typography>}
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Tooltip title={`${views.toLocaleString()} view${views !== 1 ? 's' : ''}`} placement="top">
+              <Stack direction="row" alignItems="center" spacing={0.3}>
+                <VisibilityOutlinedIcon sx={{ fontSize: 13, color: 'text.disabled' }} />
+                <Typography variant="caption" color="text.disabled" sx={{ fontSize: 10, fontWeight: 600 }}>
+                  {views.toLocaleString()}
+                </Typography>
+              </Stack>
+            </Tooltip>
+            {p.sku && <Typography variant="caption" color="text.disabled" sx={{ fontSize: 10 }}>{p.sku}</Typography>}
+          </Stack>
         </Stack>
       </Box>
 
@@ -146,52 +160,95 @@ function EmptyState({ onAdd, filtered }) {
 }
 
 // ── Main ProductList ──────────────────────────────────────────────────────────
-export default function ProductList({ products = [], onProductDeleted, canBulkUpload = false }) {
-  const router      = useRouter();
-  const pathname    = usePathname();
+export default function ProductList({ canBulkUpload = false }) {
+  const router       = useRouter();
+  const pathname     = usePathname();
   const searchParams = useSearchParams();
 
-  const [search,        setSearch]       = useState('');
-  const [statusFilter,  setFilter]       = useState('all');
-  const [deleting,      setDeleting]     = useState(null);
-  const [dialogOpen,    setDialogOpen]   = useState(false);
+  const [search,        setSearch]        = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [statusFilter,  setFilter]        = useState('all');
+  const [deleting,      setDeleting]      = useState(null);
+  const [dialogOpen,    setDialogOpen]    = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
+
+  // Server-driven data
+  const [products,     setProducts]     = useState([]);
+  const [count,        setCount]        = useState(0);   // items matching search/filter
+  const [totalPages,   setTotalPages]   = useState(1);
+  const [statusCounts, setStatusCounts] = useState({});
+  const [catalogTotal, setCatalogTotal] = useState(0);   // whole catalog, ignores filters
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState(null);
+  const [hasLoaded,    setHasLoaded]    = useState(false);
 
   // Current page from URL — survives refresh
   const currentPage = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
 
-  // Navigate to a specific page without scrolling to top
+  // Navigate to a specific page (persisted in the URL) without scrolling to top
   const goToPage = useCallback((page) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('page', String(page));
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }, [router, pathname, searchParams]);
 
-  const filtered = useMemo(() => products.filter((item) => {
-    const p = item.product ?? item;
-    return (!search || p.title?.toLowerCase().includes(search.toLowerCase()))
-        && (statusFilter === 'all' || p.status === statusFilter);
-  }), [products, search, statusFilter]);
+  // Debounce the search box so we don't hit the API on every keystroke
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 350);
+    return () => clearTimeout(t);
+  }, [search]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const safePage   = Math.min(currentPage, totalPages);
-  const paginated  = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-
-  // Reset to page 1 when search or filter changes (skip mount)
+  // Reset to page 1 when the search term or status filter changes (skip mount)
   const isMount = useRef(true);
   useEffect(() => {
     if (isMount.current) { isMount.current = false; return; }
-    goToPage(1);
+    if (currentPage !== 1) goToPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, statusFilter]);
+  }, [debouncedSearch, statusFilter]);
 
-  // If a deletion empties the current page, go back one page
-  useEffect(() => {
-    if (paginated.length === 0 && filtered.length > 0 && currentPage > 1) {
-      goToPage(currentPage - 1);
+  // ── Fetch the current page from the server ─────────────────────────────────
+  const reqSeq = useRef(0);
+  const fetchProducts = useCallback(async () => {
+    const seq = ++reqSeq.current;
+    setLoading(true);
+    setError(null);
+    try {
+      const client = createAxiosClient();
+      const params = new URLSearchParams();
+      params.set('page', String(currentPage));
+      params.set('page_size', String(PAGE_SIZE));
+      if (debouncedSearch)           params.set('search', debouncedSearch);
+      if (statusFilter !== 'all')    params.set('status', statusFilter);
+
+      const { data } = await client.get(`/api/v1/vendor/products/?${params.toString()}`);
+      if (seq !== reqSeq.current) return; // a newer request superseded this one
+
+      setProducts(data.results || []);
+      setCount(data.count ?? (data.results?.length || 0));
+      setTotalPages(data.total_pages || 1);
+      setStatusCounts(data.status_counts || {});
+      setCatalogTotal(data.catalog_total ?? 0);
+
+      // Backend clamps out-of-range pages — keep the URL in sync if it did.
+      if (data.current_page && data.current_page !== currentPage) {
+        goToPage(data.current_page);
+      }
+    } catch (err) {
+      if (seq !== reqSeq.current) return;
+      const msg = err?.response?.data?.detail
+        || err?.response?.data?.error
+        || err?.message
+        || 'Could not load your products. Please try again.';
+      setError(msg);
+    } finally {
+      if (seq === reqSeq.current) {
+        setLoading(false);
+        setHasLoaded(true);
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paginated.length, currentPage]);
+  }, [currentPage, debouncedSearch, statusFilter, goToPage]);
+
+  useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
   const handleEdit = useCallback((id) => router.push(`/products/product/${id}`), [router]);
   const handleView = useCallback((id) => router.push(`/products/product/${id}/view`), [router]);
@@ -209,8 +266,13 @@ export default function ProductList({ products = [], onProductDeleted, canBulkUp
     try {
       const client = createAxiosClient();
       await client.delete(`/api/v1/vendor/products/${id}/`);
-      onProductDeleted?.(id);
       Swal.fire({ title: 'Deleted', text: 'Product removed from your catalog.', icon: 'success', timer: 2000, showConfirmButton: false });
+      // If that was the last item on the page, step back a page; else refetch.
+      if (products.length === 1 && currentPage > 1) {
+        goToPage(currentPage - 1);
+      } else {
+        fetchProducts();
+      }
     } catch (err) {
       const msg = err?.response?.data?.detail || err?.response?.data?.error || 'Failed to delete product.';
       Swal.fire({ title: 'Error', text: msg, icon: 'error' });
@@ -218,24 +280,23 @@ export default function ProductList({ products = [], onProductDeleted, canBulkUp
       setDeleting(null);
       setPendingDelete(null);
     }
-  }, [pendingDelete, onProductDeleted]);
+  }, [pendingDelete, products.length, currentPage, goToPage, fetchProducts]);
 
   const handleDialogClose = useCallback(() => {
     setDialogOpen(false);
     setPendingDelete(null);
   }, []);
 
-  const statusCounts = useMemo(() => {
-    const c = {};
-    products.forEach((item) => { const s = (item.product ?? item).status; c[s] = (c[s] || 0) + 1; });
-    return c;
-  }, [products]);
+  const isFiltered = !!debouncedSearch || statusFilter !== 'all';
 
-  const isFiltered = search || statusFilter !== 'all';
+  // Range label for current page (server-paginated)
+  const rangeStart = count === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const rangeEnd   = Math.min(currentPage * PAGE_SIZE, count);
 
-  // Range label for current page
-  const rangeStart = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
-  const rangeEnd   = Math.min(safePage * PAGE_SIZE, filtered.length);
+  // First load — full skeleton. Subsequent fetches keep the UI mounted so the
+  // search box doesn't lose focus and the page doesn't jump.
+  if (loading && !hasLoaded) return <ProductListSkeleton />;
+  if (error && !hasLoaded)   return <ProductListError message={error} onRetry={fetchProducts} />;
 
   return (
     <Box>
@@ -256,9 +317,9 @@ export default function ProductList({ products = [], onProductDeleted, canBulkUp
             My Products
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {products.length === 0
+            {catalogTotal === 0
               ? 'Your catalog is empty'
-              : `${products.length} product${products.length !== 1 ? 's' : ''} in your catalog`}
+              : `${catalogTotal} product${catalogTotal !== 1 ? 's' : ''} in your catalog`}
           </Typography>
         </Box>
 
@@ -282,7 +343,7 @@ export default function ProductList({ products = [], onProductDeleted, canBulkUp
       </Stack>
 
       {/* Search + filter */}
-      {products.length > 0 && (
+      {(catalogTotal > 0 || isFiltered) && (
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 3 }}>
           <TextField
             placeholder="Search products…"
@@ -315,20 +376,20 @@ export default function ProductList({ products = [], onProductDeleted, canBulkUp
       )}
 
       {/* Status chip quick-filters */}
-      {products.length > 3 && (
+      {catalogTotal > 3 && (
         <Stack direction="row" spacing={0.75} sx={{ mb: 2.5, overflowX: 'auto', pb: 0.5, '&::-webkit-scrollbar': { display: 'none' } }}>
           <Chip
-            label={`All (${products.length})`}
+            label={`All (${catalogTotal})`}
             size="small"
             onClick={() => setFilter('all')}
             sx={{ borderRadius: '8px', fontWeight: 600, fontSize: 11, flexShrink: 0, bgcolor: statusFilter === 'all' ? 'text.primary' : 'action.hover', color: statusFilter === 'all' ? 'background.paper' : 'text.secondary' }}
           />
-          {Object.entries(statusCounts).map(([s, count]) => {
+          {Object.entries(statusCounts).map(([s, c]) => {
             const cfg = getStatus(s);
             return (
               <Chip
                 key={s}
-                label={`${cfg.label} (${count})`}
+                label={`${cfg.label} (${c})`}
                 size="small"
                 onClick={() => setFilter(s === statusFilter ? 'all' : s)}
                 sx={{ borderRadius: '8px', fontWeight: 600, fontSize: 11, flexShrink: 0, bgcolor: statusFilter === s ? cfg.color : 'action.hover', color: statusFilter === s ? '#ffffff' : 'text.secondary' }}
@@ -339,19 +400,19 @@ export default function ProductList({ products = [], onProductDeleted, canBulkUp
       )}
 
       {/* Grid */}
-      {paginated.length === 0 ? (
-        <EmptyState onAdd={() => router.push('/products/product')} filtered={!!isFiltered} />
+      {products.length === 0 ? (
+        <EmptyState onAdd={() => router.push('/products/product')} filtered={isFiltered} />
       ) : (
         <>
           {/* Range counter */}
           <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mb: 1.5 }}>
             {isFiltered
-              ? `Showing ${rangeStart}–${rangeEnd} of ${filtered.length} matching products`
-              : `Showing ${rangeStart}–${rangeEnd} of ${products.length} products`}
+              ? `Showing ${rangeStart}–${rangeEnd} of ${count} matching products`
+              : `Showing ${rangeStart}–${rangeEnd} of ${count} products`}
           </Typography>
 
-          <Grid container spacing={{ xs: 1.5, sm: 2 }}>
-            {paginated.map((item, i) => {
+          <Grid container spacing={{ xs: 1.5, sm: 2 }} sx={{ opacity: loading ? 0.5 : 1, transition: 'opacity 0.2s', pointerEvents: loading ? 'none' : 'auto' }}>
+            {products.map((item, i) => {
               const p = item.product ?? item;
               return (
                 <Grid key={p.id} size={{ xs: 6, sm: 4, md: 3, lg: 3 }}>
@@ -368,7 +429,7 @@ export default function ProductList({ products = [], onProductDeleted, canBulkUp
             <Stack alignItems="center" sx={{ mt: 4 }}>
               <Pagination
                 count={totalPages}
-                page={safePage}
+                page={Math.min(currentPage, totalPages)}
                 onChange={(_, page) => goToPage(page)}
                 shape="rounded"
                 siblingCount={1}
@@ -392,7 +453,7 @@ export default function ProductList({ products = [], onProductDeleted, canBulkUp
       )}
 
       {/* Footer upsell */}
-      {products.length > 0 && (
+      {catalogTotal > 0 && (
         <Box sx={{ mt: 4, p: '16px 22px', borderRadius: '12px', bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
           <Typography variant="caption" color="text.secondary">
             {canBulkUpload
