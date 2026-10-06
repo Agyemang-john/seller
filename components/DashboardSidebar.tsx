@@ -37,6 +37,8 @@ import InfoOutlinedIcon          from '@mui/icons-material/InfoOutlined';
 import LogoutRoundedIcon         from '@mui/icons-material/LogoutRounded';
 import LocationOnRoundedIcon     from '@mui/icons-material/LocationOnRounded';
 import VerifiedRoundedIcon       from '@mui/icons-material/VerifiedRounded';
+import BadgeRoundedIcon          from '@mui/icons-material/BadgeRounded';
+import useVendorAccess, { CAP } from '@/hooks/useVendorAccess';
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -61,26 +63,29 @@ interface NavItemDef {
   text: string;
   icon: React.ReactElement;
   path: string;
+  /** Hidden unless the member's team role grants this (see hooks/useVendorAccess). */
+  capability?: string;
 }
 
 // ── Nav definitions ───────────────────────────────────────────────────────────
 const mainListItems: NavItemDef[] = [
-  { id: 'dashboard',       text: 'Dashboard',     icon: <DashboardRoundedIcon />,           path: '/dashboard' },
-  { id: 'store-analytics', text: 'Store Traffic', icon: <TrendingUpRoundedIcon />,           path: '/store-analytics' },
-  { id: 'orders',          text: 'Orders',        icon: <LocalShippingRoundedIcon />,        path: '/orders' },
-  { id: 'products',      text: 'Products',      icon: <Inventory2RoundedIcon />,             path: '/products' },
-  { id: 'payment',       text: 'Payment',       icon: <AccountBalanceWalletRoundedIcon />,   path: '/payment' },
-  { id: 'payouts',       text: 'Payouts',       icon: <PaymentsRoundedIcon />,               path: '/payouts' },
-  { id: 'working-hours', text: 'Working Hours', icon: <ScheduleRoundedIcon />,               path: '/working-hours' },
-  { id: 'profile',       text: 'Store Profile', icon: <StoreRoundedIcon />,                  path: '/profile' },
-  { id: 'reviews',       text: 'Reviews',       icon: <StarRoundedIcon />,                   path: '/reviews' },
+  { id: 'dashboard',       text: 'Dashboard',     icon: <DashboardRoundedIcon />,           path: '/dashboard',       capability: CAP.VIEW_ANALYTICS },
+  { id: 'store-analytics', text: 'Store Traffic', icon: <TrendingUpRoundedIcon />,           path: '/store-analytics', capability: CAP.VIEW_ANALYTICS },
+  { id: 'orders',          text: 'Orders',        icon: <LocalShippingRoundedIcon />,        path: '/orders',          capability: CAP.MANAGE_ORDERS },
+  { id: 'products',      text: 'Products',      icon: <Inventory2RoundedIcon />,             path: '/products',      capability: CAP.MANAGE_CATALOG },
+  { id: 'payment',       text: 'Payment',       icon: <AccountBalanceWalletRoundedIcon />,   path: '/payment',       capability: CAP.VIEW_FINANCE },
+  { id: 'payouts',       text: 'Payouts',       icon: <PaymentsRoundedIcon />,               path: '/payouts',       capability: CAP.VIEW_FINANCE },
+  { id: 'working-hours', text: 'Working Hours', icon: <ScheduleRoundedIcon />,               path: '/working-hours', capability: CAP.MANAGE_STORE },
+  { id: 'profile',       text: 'Store Profile', icon: <StoreRoundedIcon />,                  path: '/profile',       capability: CAP.MANAGE_STORE },
+  { id: 'reviews',       text: 'Reviews',       icon: <StarRoundedIcon />,                   path: '/reviews',       capability: CAP.MANAGE_CATALOG },
+  { id: 'team',          text: 'Team',          icon: <BadgeRoundedIcon />,                  path: '/team' },
   { id: 'help',          text: 'Help & Guide',  icon: <HelpOutlineRoundedIcon />,            path: '/help' },
   { id: 'connect',      text: 'Community',     icon: <GroupsRoundedIcon />,                 path: '/connect' },
 ];
 
 const subscribeListItems: NavItemDef[] = [
-  { id: 'billing',   text: 'Billing',      icon: <ReceiptLongRoundedIcon />,    path: '/billing' },
-  { id: 'subscribe', text: 'Subscription', icon: <CardMembershipRoundedIcon />, path: '/subscribe' },
+  { id: 'billing',   text: 'Billing',      icon: <ReceiptLongRoundedIcon />,    path: '/billing',   capability: CAP.VIEW_FINANCE },
+  { id: 'subscribe', text: 'Subscription', icon: <CardMembershipRoundedIcon />, path: '/subscribe', capability: CAP.VIEW_FINANCE },
 ];
 
 const bottomListItems: NavItemDef[] = [
@@ -347,6 +352,20 @@ export default function DashboardSidebar({
 
   const hasDrawerTransitions = isOverSmViewport && (!disableCollapsibleSidebar || isOverMdViewport);
 
+  // Team members only see sections their role can use. The API enforces the
+  // same rules, so this is purely to avoid dead ends in the nav.
+  const { can, capabilities } = useVendorAccess();
+  const visibleMain = React.useMemo(
+    () => mainListItems.filter((i) => !i.capability || can(i.capability)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [capabilities],
+  );
+  const visibleSubscribe = React.useMemo(
+    () => subscribeListItems.filter((i) => !i.capability || can(i.capability)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [capabilities],
+  );
+
   const getDrawerContent = React.useCallback(
     (viewport: 'phone' | 'tablet' | 'desktop') => (
       <Box
@@ -381,18 +400,22 @@ export default function DashboardSidebar({
           }}
         >
           <List dense disablePadding>
-            {mainListItems.map((item) => (
+            {visibleMain.map((item) => (
               <NavItem key={item.id} item={item} mini={mini} pathname={pathname} onPageItemClick={handlePageItemClick} />
             ))}
           </List>
 
-          <SectionLabel label="Subscription" mini={mini} />
+          {visibleSubscribe.length > 0 && (
+            <>
+              <SectionLabel label="Subscription" mini={mini} />
 
-          <List dense disablePadding>
-            {subscribeListItems.map((item) => (
-              <NavItem key={item.id} item={item} mini={mini} pathname={pathname} onPageItemClick={handlePageItemClick} />
-            ))}
-          </List>
+              <List dense disablePadding>
+                {visibleSubscribe.map((item) => (
+                  <NavItem key={item.id} item={item} mini={mini} pathname={pathname} onPageItemClick={handlePageItemClick} />
+                ))}
+              </List>
+            </>
+          )}
         </Box>
 
         {/* Pinned bottom items */}
@@ -408,6 +431,7 @@ export default function DashboardSidebar({
     [
       mini, hasDrawerTransitions, isFullyExpanded, pathname,
       storeName, storeAddress, storeAvatar, storeLoading, handlePageItemClick,
+      visibleMain, visibleSubscribe,
     ],
   );
 

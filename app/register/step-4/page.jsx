@@ -192,6 +192,30 @@ export default function Step4() {
     } catch (error) {
       const data = error.response?.data || {};
 
+      // Account not fully verified yet (accounts created before phone
+      // verification existed). The form is kept in sessionStorage, so after
+      // verifying on the landing page they come straight back here.
+      if (data.code === "phone_unverified" || data.code === "email_unverified") {
+        Swal.fire({
+          icon: "info",
+          title: "Verify your account first",
+          text: data.detail,
+          confirmButtonColor: "#1a56db",
+        }).then(() => router.push("/register#account"));
+        return;
+      }
+
+      // Their account is on another store's team; one store per account.
+      if (data.code === "team_member") {
+        Swal.fire({
+          icon: "info",
+          title: "Already on a store team",
+          text: data.detail,
+          confirmButtonColor: "#1a56db",
+        });
+        return;
+      }
+
       // Applicant already has an application on file (backend returns 409).
       // Show a clear message and route to their status page instead of a
       // generic "submission failed" — they shouldn't re-fill the form.

@@ -1326,6 +1326,32 @@
 }
 
 .nm-reg-notice-link { font-weight: 600; text-decoration: underline; }
+
+/* ── Inline account step (create / sign in / verify phone) ── */
+.nm-reg-account {
+  width: 100%;
+  max-width: 520px;
+  margin: 8px auto 0;
+  padding: 24px;
+  background: var(--nm-white, #fff);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  scroll-margin-top: 96px; /* clear the sticky header when scrolled into view */
+}
+
+.nm-reg-account-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--nm-text-mid);
+  margin-bottom: 12px;
+}
+
+@media (max-width: 560px) {
+  .nm-reg-account { padding: 18px 16px; border-radius: 12px; }
+}
 .nm-reg-notice-info .nm-reg-notice-link { color: var(--nm-blue); }
 .nm-reg-notice-warn .nm-reg-notice-link { color: #d97706; }
 

@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import AccountPanel from "@/components/account/AccountPanel";
+import PhoneVerifyPanel from "@/components/account/PhoneVerifyPanel";
 
 const TRUST_BADGES = [
   "Free to join",
@@ -60,14 +62,19 @@ const BENEFITS = [
   },
 ];
 
-const MAIN_PLATFORM = "https://www.negromart.com";
+// Selling uses the same Negromart account as shopping (one identity, like
+// Amazon). People without an account create one right here; customers sign in
+// here. Nobody is sent to www.negromart.com and back any more.
+const scrollToAccount = () =>
+  document.getElementById("account")?.scrollIntoView({ behavior: "smooth", block: "start" });
 
 export default function SellerRegisterPage() {
   const [authState, setAuthState] = useState(null); // null=checking, true=logged in, false=not
+  const [customer, setCustomer] = useState(null);   // /vendor/check payload (verification flags)
   const [vendorApp, setVendorApp] = useState(null); // existing vendor application (if any)
   const router = useRouter();
 
-  useEffect(() => {
+  const checkAccount = useCallback(() => {
     const HOST = process.env.NEXT_PUBLIC_HOST;
     const checkOpts = {
       method: "GET",
@@ -93,6 +100,7 @@ export default function SellerRegisterPage() {
         setAuthState(false);
         return;
       }
+      setCustomer(await res.json().catch(() => null));
       setAuthState(true);
 
       // 2. Logged in — detect an existing application so we don't send a
@@ -111,15 +119,15 @@ export default function SellerRegisterPage() {
     run().catch(() => setAuthState(false));
   }, []);
 
-  const goToMainPlatform = (path) => {
-    const returnUrl = `${window.location.origin}/register/step-1`;
-    window.location.href = `${MAIN_PLATFORM}${path}?redirect=${encodeURIComponent(returnUrl)}`;
-  };
+  useEffect(() => { checkAccount(); }, [checkAccount]);
+
+  // Older accounts were never asked for a phone code; applying requires one.
+  const needsPhone = authState === true && !vendorApp && customer && !customer.phone_verified;
 
   const handleCTA = () => {
     if (authState === null) return;
-    if (!authState) {
-      goToMainPlatform("/auth/register");
+    if (!authState || needsPhone) {
+      scrollToAccount();
       return;
     }
     if (vendorApp) {
@@ -131,8 +139,9 @@ export default function SellerRegisterPage() {
 
   const ctaLabel =
     authState === null ? "Checking your account…" :
-    !authState         ? "Create account to continue →" :
+    !authState         ? "Create account or sign in →" :
     vendorApp          ? (vendorApp.vendor_status === "VERIFIED" ? "Go to seller login →" : "View application status →") :
+    needsPhone         ? "Verify your phone to continue →" :
                          "Continue to vendor setup →";
 
   return (
@@ -202,7 +211,7 @@ export default function SellerRegisterPage() {
 
       {/* ── NOTICES ─────────────────────────────────────────── */}
       <div className="nm-reg-notices">
-        {/* Info: must be a registered user */}
+        {/* Info: one account for shopping and selling */}
         <div className="nm-reg-notice nm-reg-notice-info">
           <div className="nm-reg-notice-icon nm-reg-notice-icon-info">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -212,39 +221,42 @@ export default function SellerRegisterPage() {
             </svg>
           </div>
           <div>
-            <div className="nm-reg-notice-title">You must be a registered Negromart user before selling</div>
+            <div className="nm-reg-notice-title">One Negromart account for shopping and selling</div>
             <div className="nm-reg-notice-body">
-              If you don't have an account yet, sign up at{" "}
-              <a href="https://www.negromart.com" target="_blank" rel="noopener noreferrer" className="nm-reg-notice-link">
-                www.negromart.com
-              </a>{" "}
-              first, then return here to create your vendor account.
+              Already shop on Negromart? Sign in with that account. New here? Create one below. We'll
+              confirm your email and phone with one-time codes, then you can set up your store.
             </div>
           </div>
         </div>
 
-        {/* Warning: not logged in */}
-        {authState === false && (
-          <div className="nm-reg-notice nm-reg-notice-warn">
-            <div className="nm-reg-notice-icon nm-reg-notice-icon-warn">
+        {/* Not signed in, or signed in but phone never verified → inline account step */}
+        {(authState === false || needsPhone) && (
+          <section id="account" className="nm-reg-account">
+            <div className="nm-reg-account-title">
+              {authState === false ? "Your Negromart account" : "One more check"}
+            </div>
+            {authState === false ? (
+              <AccountPanel onAuthenticated={checkAccount} />
+            ) : (
+              <PhoneVerifyPanel maskedPhone={customer?.masked_phone} onVerified={checkAccount} />
+            )}
+          </section>
+        )}
+
+        {/* Signed in and verified → ready to apply */}
+        {authState === true && !vendorApp && !needsPhone && (
+          <div className="nm-reg-notice nm-reg-notice-info">
+            <div className="nm-reg-notice-icon nm-reg-notice-icon-info">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                <line x1="12" y1="9" x2="12" y2="13"/>
-                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                <polyline points="20 6 9 17 4 12"/>
               </svg>
             </div>
             <div>
-              <div className="nm-reg-notice-title">You need a Negromart account first</div>
+              <div className="nm-reg-notice-title">
+                You're signed in{customer?.first_name ? ` as ${customer.first_name}` : ""}
+              </div>
               <div className="nm-reg-notice-body">
-                Log in or sign up at{" "}
-                <a
-                  href="#"
-                  onClick={(e) => { e.preventDefault(); goToMainPlatform("/auth/register"); }}
-                  className="nm-reg-notice-link"
-                >
-                  negromart.com
-                </a>{" "}
-                — we'll bring you straight back here to set up your vendor account.
+                Your account is verified{customer?.email ? ` (${customer.email})` : ""}. Continue to set up your store.
               </div>
             </div>
           </div>

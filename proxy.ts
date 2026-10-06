@@ -17,6 +17,7 @@ const PROTECTED_PREFIXES = [
   '/subscribe',
   '/store-analytics',
   '/subscription',
+  '/team',
   '/logout',
 ];
 
@@ -73,8 +74,11 @@ export function proxy(request: NextRequest) {
       return redirectToLogin({ expired: 'true' });
     }
 
-    // Valid access token — enforce vendor role on all protected routes
-    if (payload.role !== 'vendor' || payload.is_verified_vendor !== true) {
+    // Valid access token: the user must belong to a verified store (as owner,
+    // admin or staff). `is_vendor` is the new claim; `role === 'vendor'` is
+    // kept for tokens issued before the team-membership release.
+    const isVendor = payload.is_vendor === true || payload.role === 'vendor';
+    if (!isVendor || payload.is_verified_vendor !== true) {
       return NextResponse.redirect(new URL('/not-verified', request.url));
     }
   }
@@ -100,6 +104,7 @@ export const config = {
     '/subscribe/:path*',
     '/store-analytics/:path*',
     '/subscription/:path*',
+    '/team/:path*',
     '/logout/:path*',
   ],
 };
