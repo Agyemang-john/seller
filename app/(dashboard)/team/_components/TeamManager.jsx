@@ -14,7 +14,6 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   Alert, Avatar, Box, Button, Card, CardContent, Chip, CircularProgress, Dialog, DialogActions,
   DialogContent, DialogTitle, Divider, IconButton, MenuItem, Select, Skeleton, Stack, TextField,
@@ -58,7 +57,6 @@ export default function TeamManager() {
   const [error, setError] = useState('');
   const [inviteOpen, setInviteOpen] = useState(false);
   const dialogs = useDialogs();
-  const router = useRouter();
 
   const load = useCallback(async () => {
     try {
@@ -114,9 +112,12 @@ export default function TeamManager() {
     try {
       await createAxiosClient().delete(`/api/v1/vendor/team/members/${member.id}/`);
       if (leaving) {
+        // Access is already gone server-side; clear the vendor cookies and do
+        // a full reload so no dashboard state survives.
         resetVendorAccess();
+        await createAxiosClient().post('/api/vendor/logout/').catch(() => {});
         toast.success('You left the team.');
-        router.push('/logout');
+        window.location.href = '/';
         return;
       }
       toast.success('Member removed.');

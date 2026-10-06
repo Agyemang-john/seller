@@ -7,6 +7,7 @@ import { useLogoutMutation } from '@/redux/features/authApiSlice';
 import { logout as setLogout } from '@/redux/features/authSlice';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/navigation';
+import { resetVendorAccess } from '@/hooks/useVendorAccess';
 
 
 function Logout() {
@@ -20,6 +21,9 @@ function Logout() {
         logout(undefined)
           .unwrap()
           .then(() => {
+            // Forget this member's team role so the next account signed in
+            // on this tab doesn't inherit their sidebar.
+            resetVendorAccess();
             dispatch(setLogout());
             toast.success('Logged out successfully!');
             router.push('/');
