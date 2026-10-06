@@ -132,8 +132,8 @@ export default function Step2() {
   return (
     <CardShell
       stepLabel="Step 2 of 4"
-      title="Store Profile"
-      description="Set up your storefront — how customers will discover you"
+      title="Store profile"
+      description="What customers see on your storefront: logo, cover image, location and a short description. You can change these later in Seller Centre."
       onBack={handleBack}
       onNext={handleNext}
     >

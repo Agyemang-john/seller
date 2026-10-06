@@ -114,7 +114,7 @@ export default function DeleteConfirmDialog({ open, productTitle, onConfirm, onC
         >
           <Stack direction="row" spacing={1.75} alignItems="flex-start">
             <Box>
-              <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, letterSpacing: '-0.4px', lineHeight: 1.2 }} color="text.primary">
+              <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: '-0.4px', lineHeight: 1.2 }} color="text.primary">
                 Delete product?
               </Typography>
               <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.5, display: 'block', mt: 0.4 }}>
@@ -164,7 +164,7 @@ export default function DeleteConfirmDialog({ open, productTitle, onConfirm, onC
           >
             <Typography
               sx={{
-                fontFamily: 'monospace', fontSize: 16, fontWeight: 700,
+                fontFamily: 'var(--font-mono-stack), ui-monospace, monospace', fontSize: 16, fontWeight: 700,
                 letterSpacing: '0.12em', color: 'action.secondary', userSelect: 'none',
                 userSelect: 'none',
               }}
@@ -213,7 +213,7 @@ export default function DeleteConfirmDialog({ open, productTitle, onConfirm, onC
                 </InputAdornment>
               ) : null,
               sx: {
-                fontFamily: 'monospace',
+                fontFamily: 'var(--font-mono-stack), ui-monospace, monospace',
                 letterSpacing: '0.08em',
                 borderRadius: '10px',
                 '& fieldset': {

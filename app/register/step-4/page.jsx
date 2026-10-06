@@ -280,11 +280,11 @@ export default function Step4() {
   return (
     <CardShell
       stepLabel="Step 4 of 4"
-      title="Review & Submit"
-      description="Check your details before completing registration"
+      title="Review and submit"
+      description="Check your details before submitting. We review every application, usually within 24–48 hours, and will email you the decision."
       onBack={handleBack}
       onNext={handleSubmit}
-      nextLabel="Submit Registration"
+      nextLabel="Submit application"
       loading={loading}
     >
       {Object.keys(errors).length > 0 && (

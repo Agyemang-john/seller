@@ -61,8 +61,8 @@ export default function Step3() {
   return (
     <CardShell
       stepLabel="Step 3 of 4"
-      title="Payment Setup"
-      description="How you'll receive your earnings from sales"
+      title="Payout details"
+      description="The account Negromart pays your earnings into. It should be in your name or your business's name."
       onBack={handleBack}
       onNext={handleNext}
     >

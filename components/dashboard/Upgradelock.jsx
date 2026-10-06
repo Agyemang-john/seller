@@ -132,7 +132,7 @@ export default function UpgradeLock({
       {/* Heading */}
       <Typography
         sx={{
-          fontFamily: "'Cormorant Garamond', serif",
+          fontFamily: "var(--font-figtree), system-ui, sans-serif",
           fontSize: 26,
           fontWeight: 700,
           letterSpacing: '-0.5px',

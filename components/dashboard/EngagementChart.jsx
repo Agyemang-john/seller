@@ -44,7 +44,7 @@ function EngagementTile({ icon: Icon, label, value, subtext }) {
         </Typography>
         <Typography
           sx={{
-            fontFamily: "'Cormorant Garamond', serif",
+            fontFamily: "var(--font-figtree), system-ui, sans-serif",
             fontSize: { xs: 20, md: 28 }, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1,
           }}
           color="text.primary"
@@ -90,7 +90,7 @@ export default function EngagementChart({ data }) {
         bgcolor: 'background.paper', minHeight: 160,
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
       }}>
-        <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700 }} color="text.primary">Engagement</Typography>
+        <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 22, fontWeight: 700 }} color="text.primary">Engagement</Typography>
         <Typography variant="body2" color="text.disabled">No engagement data yet.</Typography>
       </Box>
     );
@@ -144,7 +144,7 @@ export default function EngagementChart({ data }) {
       <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mb: 2.5 }} flexWrap="wrap">
         <Stack direction="row" alignItems="baseline" spacing={1} sx={{ minWidth: 0 }}>
           <Typography
-            sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 16, md: 22 }, fontWeight: 700, letterSpacing: '-0.5px' }}
+            sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 16, md: 22 }, fontWeight: 700, letterSpacing: '-0.5px' }}
             color="text.primary"
           >
             Customer Engagement

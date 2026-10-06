@@ -41,7 +41,7 @@ function ViewTile({ label, data, accent = false }) {
       </Typography>
 
       <Typography sx={{
-        fontFamily: "'Cormorant Garamond', serif",
+        fontFamily: "var(--font-figtree), system-ui, sans-serif",
         fontSize: { xs: 24, md: 36 }, fontWeight: 700, lineHeight: 1,
         color: accent ? 'common.white' : 'text.primary',
       }}>
@@ -112,7 +112,7 @@ export function ViewAnalytics({ data }) {
         >
           <Stack direction="row" alignItems="baseline" spacing={1}>
             <Typography sx={{
-              fontFamily: "'Cormorant Garamond', serif",
+              fontFamily: "var(--font-figtree), system-ui, sans-serif",
               fontSize: 20, fontWeight: 700, letterSpacing: '-0.5px',
             }} color="text.primary">
               View Trend

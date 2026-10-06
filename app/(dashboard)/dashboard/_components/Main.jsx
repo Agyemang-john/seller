@@ -78,7 +78,7 @@ export default function Dashboard() {
         {/* ── Page header ──────────────────────────────────────────────── */}
         <Box sx={{ display: 'flex', alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 4 }}>
           <Box>
-            <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 22, sm: 28, md: 38 }, fontWeight: 700, letterSpacing: '-1.5px', lineHeight: 1, mb: 0.5 }} color="text.primary">
+            <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 22, sm: 28, md: 38 }, fontWeight: 700, letterSpacing: '-1.5px', lineHeight: 1, mb: 0.5 }} color="text.primary">
               Store Analytics &nbsp;
             {vendorStatus && (
               <Chip
@@ -180,7 +180,7 @@ export default function Dashboard() {
               <TrendingUpIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
             </Box>
             <Box>
-              <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, letterSpacing: '-0.4px', lineHeight: 1.2, mb: 0.3 }} color="text.primary">
+              <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 18, fontWeight: 700, letterSpacing: '-0.4px', lineHeight: 1.2, mb: 0.3 }} color="text.primary">
                 Store Traffic
               </Typography>
               <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.5 }}>

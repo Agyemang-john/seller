@@ -42,7 +42,7 @@ export default function FAQSection() {
         <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: "0.18em", display: "block", mb: 1.25 }}>
           Questions
         </Typography>
-        <Typography sx={{ fontFamily: "serif", fontSize: 34, fontWeight: 700, letterSpacing: "-1px" }} color="text.primary">
+        <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 34, fontWeight: 700, letterSpacing: "-1px" }} color="text.primary">
           Frequently asked
         </Typography>
       </Box>

@@ -17,7 +17,7 @@ export function StockChart({ data = [], variantType = 'None', totalStock = 0 }) 
         </Box>
         <Box>
           <Typography variant="caption" color="text.disabled" sx={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block', mb: 0.25 }}>Total stock</Typography>
-          <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 42, fontWeight: 700, letterSpacing: '-1px', lineHeight: 1 }} color="text.primary">{totalStock.toLocaleString()}</Typography>
+          <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 42, fontWeight: 700, letterSpacing: '-1px', lineHeight: 1 }} color="text.primary">{totalStock.toLocaleString()}</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>units available · no variants</Typography>
         </Box>
       </Box>
@@ -39,7 +39,7 @@ export function StockChart({ data = [], variantType = 'None', totalStock = 0 }) 
   return (
     <Box sx={{ p: { xs: 2.5, md: 3 }, borderRadius: '20px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
       <Stack direction="row" alignItems="baseline" spacing={1} sx={{ mb: 2.5 }}>
-        <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, letterSpacing: '-0.5px' }} color="text.primary">
+        <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: '-0.5px' }} color="text.primary">
           Stock by Variant
         </Typography>
         <Typography variant="caption" color="text.disabled" sx={{ letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: 10 }}>

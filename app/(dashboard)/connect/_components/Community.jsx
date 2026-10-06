@@ -90,7 +90,7 @@ function QRDialog({ open, onClose, link }) {
             sx={{
               px: 1.5, py: 0.5, borderRadius: 2,
               bgcolor: 'action.hover', wordBreak: 'break-all', textAlign: 'center',
-              color: 'text.secondary', fontFamily: 'monospace', fontSize: 11,
+              color: 'text.secondary', fontFamily: 'var(--font-mono-stack), ui-monospace, monospace', fontSize: 11,
             }}
           >
             {link.url}

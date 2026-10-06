@@ -151,7 +151,7 @@ function ProductSidebar({ formData, isLoading, isEdit, onSubmit, activeStep, id 
         {/* Title + price */}
         <Box sx={{ p: '16px 20px 20px' }}>
           <Typography
-            sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, letterSpacing: '-0.4px', color: '#ffffff', lineHeight: 1.25, mb: 0.75 }}
+            sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: '-0.4px', color: '#ffffff', lineHeight: 1.25, mb: 0.75 }}
             noWrap
           >
             {formData.title || 'Untitled product'}
@@ -159,7 +159,7 @@ function ProductSidebar({ formData, isLoading, isEdit, onSubmit, activeStep, id 
 
           {formData.price ? (
             <Stack direction="row" alignItems="baseline" spacing={0.75}>
-              <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, color: '#ffffff', lineHeight: 1 }}>
+              <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 22, fontWeight: 700, color: '#ffffff', lineHeight: 1 }}>
                 GHS {price.toLocaleString('en-GH', { minimumFractionDigits: 2 })}
               </Typography>
               {hasDiscount && (
@@ -430,7 +430,7 @@ export default function ProductForm({ id = null }) {
                       {React.createElement(currentStep.icon, { sx: { fontSize: 18, color: 'text.secondary' } })}
                     </Box>
                     <Box>
-                      <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1.1 }} color="text.primary">
+                      <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1.1 }} color="text.primary">
                         {currentStep.label}
                       </Typography>
                       <Typography variant="caption" color="text.disabled">{currentStep.desc}</Typography>

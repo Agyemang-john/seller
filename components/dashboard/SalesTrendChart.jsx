@@ -46,7 +46,7 @@ export default function SalesTrendChart({ data, period, setPeriod }) {
       <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" spacing={1.5} sx={{ mb: 2.5 }}>
         <Box>
           <Typography
-            sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 16, md: 22 }, fontWeight: 700, letterSpacing: '-0.5px' }}
+            sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 16, md: 22 }, fontWeight: 700, letterSpacing: '-0.5px' }}
             color="text.primary"
           >
             Sales Trends
@@ -118,7 +118,7 @@ function EmptyState({ label, message }) {
       bgcolor: 'background.paper', minHeight: 200,
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
     }}>
-      <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700 }} color="text.primary">{label}</Typography>
+      <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 22, fontWeight: 700 }} color="text.primary">{label}</Typography>
       <Typography variant="body2" color="text.disabled">{message}</Typography>
     </Box>
   );

@@ -1079,522 +1079,274 @@
 .nm-social-btn:hover { background: rgba(255, 255, 255, 0.28); }
 
 /* =====================================================
-   REGISTER LANDING PAGE  (/register)
+   SELLER REGISTRATION  (/register, /register/step-*, /join-team)
+   Plain, document-style layout: white surfaces, hairline borders, one accent
+   colour, square-ish controls. No gradients, glows or hover lifts.
    ===================================================== */
 
-/* ── Hero ── */
-.nm-reg-hero {
-  background: var(--nm-navy);
-  padding: 80px 28px 72px;
-  position: relative;
-  overflow: hidden;
-}
+.nm-reg { background: var(--nm-white); color: var(--nm-text-dark); }
 
-.nm-reg-hero::before {
-  content: '';
-  position: absolute;
-  top: -100px;
-  left: -100px;
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(ellipse at center, rgba(0,113,206,0.25) 0%, transparent 65%);
-  pointer-events: none;
-}
+.nm-reg-wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+.nm-reg-narrow { max-width: 760px; }
 
-.nm-reg-hero-inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1fr 420px;
-  gap: 60px;
-  align-items: center;
-  position: relative;
-}
-
-.nm-reg-hero-eyebrow {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--nm-yellow);
-  margin-bottom: 20px;
-}
-
-.nm-reg-hero-title {
-  font-size: 52px;
-  font-weight: 300;
-  color: var(--nm-white);
-  line-height: 1.1;
-  margin-bottom: 20px;
-  letter-spacing: -1px;
-}
-
-.nm-reg-hero-subtitle {
-  font-size: 16px;
-  color: rgba(255,255,255,0.78);
-  line-height: 1.7;
-  margin-bottom: 28px;
-  max-width: 460px;
-}
-
-/* Trust badges row */
-.nm-reg-trust-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  margin-bottom: 36px;
-}
-
-.nm-reg-trust-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(255,255,255,0.82);
-}
-
-.nm-reg-trust-check {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: rgba(255,193,32,0.22);
-  border: 1.5px solid var(--nm-yellow);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  color: var(--nm-yellow);
-}
-
-/* Hero CTA button – same pill style */
-.nm-reg-hero-btn {
+/* ── Buttons ── */
+.nm-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 14px 36px;
-  background: var(--nm-blue);
-  color: var(--nm-white);
-  font-size: 15px;
-  font-weight: 700;
-  border-radius: var(--nm-radius-pill);
-  border: none;
+  min-height: 42px;
+  padding: 0 20px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid transparent;
   cursor: pointer;
   text-decoration: none;
-  transition: background var(--nm-transition), transform 0.1s;
-  font-family: inherit;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
 }
+.nm-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.nm-btn-primary { background: var(--nm-blue); color: var(--nm-white); }
+.nm-btn-primary:hover:not(:disabled) { background: var(--nm-blue-hover); color: var(--nm-white); }
+.nm-btn-secondary { background: var(--nm-white); color: var(--nm-text-dark); border-color: #c9ced6; }
+.nm-btn-secondary:hover { border-color: var(--nm-text-dark); }
+.nm-btn-block { width: 100%; }
 
-.nm-reg-hero-btn:hover { background: var(--nm-blue-hover); transform: scale(1.02); color: var(--nm-white); }
-.nm-reg-hero-btn:disabled { background: #555; cursor: not-allowed; transform: none; opacity: 0.7; }
-
+/* Outline button for dark banners (community, returns and shipping pages) */
 .nm-reg-hero-btn-outline {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 36px;
+  padding: 12px 24px;
   background: transparent;
   color: var(--nm-white);
-  font-size: 15px;
-  font-weight: 700;
-  border-radius: var(--nm-radius-pill);
-  border: 2px solid rgba(255,255,255,0.5);
-  cursor: pointer;
-  text-decoration: none;
-  font-family: inherit;
-  transition: border-color var(--nm-transition), background var(--nm-transition);
-}
-
-.nm-reg-hero-btn-outline:hover { border-color: var(--nm-white); background: rgba(255,255,255,0.08); }
-
-/* Right panel: "How it works" card */
-.nm-reg-steps-card {
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 16px;
-  padding: 32px 28px;
-  backdrop-filter: blur(8px);
-}
-
-.nm-reg-steps-card-title {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--nm-yellow);
-  margin-bottom: 24px;
-}
-
-.nm-reg-step-list { list-style: none; padding: 0; margin: 0; }
-
-.nm-reg-step-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  padding-bottom: 20px;
-  position: relative;
-}
-
-.nm-reg-step-row:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  left: 15px;
-  top: 32px;
-  bottom: 0;
-  width: 1px;
-  background: rgba(255,255,255,0.2);
-}
-
-.nm-reg-step-num {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--nm-blue);
-  color: var(--nm-white);
-  font-size: 13px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 1;
-}
-
-.nm-reg-step-text { padding-top: 4px; }
-
-.nm-reg-step-name {
+  font: inherit;
   font-size: 14px;
   font-weight: 600;
-  color: var(--nm-white);
-  margin-bottom: 2px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+  transition: border-color 0.15s, background-color 0.15s;
 }
+.nm-reg-hero-btn-outline:hover { border-color: var(--nm-white); background: rgba(255, 255, 255, 0.08); }
 
-.nm-reg-step-hint {
-  font-size: 12px;
-  color: rgba(255,255,255,0.6);
-  line-height: 1.5;
+/* ── Page header ── */
+.nm-reg-head {
+  border-bottom: 1px solid var(--nm-border);
+  padding: 56px 0 48px;
 }
-
-/* ── Notices ── */
-.nm-reg-notices {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 32px 28px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.nm-reg-head-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 56px;
+  align-items: start;
 }
-
-.nm-reg-notice {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  padding: 14px 18px;
-  border-radius: 10px;
-  border-left: 4px solid;
-}
-
-.nm-reg-notice-info {
-  background: #eff6ff;
-  border-left-color: var(--nm-blue);
-}
-
-.nm-reg-notice-warn {
-  background: #fffbeb;
-  border-left-color: #d97706;
-}
-
-.nm-reg-notice-icon { flex-shrink: 0; margin-top: 1px; }
-.nm-reg-notice-icon-info { color: var(--nm-blue); }
-.nm-reg-notice-icon-warn { color: #d97706; }
-
-.nm-reg-notice-title {
+.nm-reg-kicker {
   font-size: 13px;
+  font-weight: 600;
+  color: var(--nm-blue);
+  margin: 0 0 10px;
+}
+.nm-reg-title {
+  font-size: 36px;
   font-weight: 700;
-  margin-bottom: 3px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--nm-navy);
+  margin: 0 0 14px;
 }
-
-.nm-reg-notice-info .nm-reg-notice-title  { color: var(--nm-blue); }
-.nm-reg-notice-warn .nm-reg-notice-title  { color: #92400e; }
-
-.nm-reg-notice-body {
-  font-size: 13px;
-  line-height: 1.6;
+.nm-reg-lead {
+  font-size: 16px;
+  line-height: 1.65;
   color: var(--nm-text-mid);
+  max-width: 560px;
+  margin: 0 0 28px;
+}
+.nm-reg-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* "At a glance" facts */
+.nm-reg-facts {
+  border: 1px solid var(--nm-border);
+  border-radius: 8px;
+  padding: 4px 20px;
+}
+.nm-reg-facts dl { margin: 0; }
+.nm-reg-facts dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--nm-border);
+  font-size: 14px;
+}
+.nm-reg-facts dl > div:last-child { border-bottom: 0; }
+.nm-reg-facts dt { color: var(--nm-text-mid); }
+.nm-reg-facts dd { margin: 0; font-weight: 600; text-align: right; }
+
+/* ── Sections ── */
+.nm-reg-section { padding: 56px 0; }
+.nm-reg-section-muted { background: #f7f8fa; border-top: 1px solid var(--nm-border); border-bottom: 1px solid var(--nm-border); }
+.nm-reg-h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--nm-navy);
+  margin: 0 0 16px;
+}
+.nm-reg-section-intro { font-size: 15px; color: var(--nm-text-mid); margin: -6px 0 24px; }
+.nm-reg-muted { font-size: 14px; color: var(--nm-text-mid); margin: 0; }
+
+.nm-reg-two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 480px) minmax(0, 1fr);
+  gap: 56px;
+  align-items: start;
 }
 
-.nm-reg-notice-link { font-weight: 600; text-decoration: underline; }
-
-/* ── Inline account step (create / sign in / verify phone) ── */
-.nm-reg-account {
-  width: 100%;
-  max-width: 520px;
-  margin: 8px auto 0;
+/* Account panel */
+.nm-reg-panel {
+  border: 1px solid var(--nm-border);
+  border-radius: 8px;
   padding: 24px;
-  background: var(--nm-white, #fff);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  background: var(--nm-white);
   scroll-margin-top: 96px; /* clear the sticky header when scrolled into view */
 }
-
-.nm-reg-account-title {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--nm-text-mid);
-  margin-bottom: 12px;
+.nm-reg-panel-intro { margin-bottom: 16px; }
+.nm-reg-signed-in { font-size: 14px; color: var(--nm-text-mid); margin: 0 0 16px; word-break: break-word; }
+.nm-reg-checks { list-style: none; margin: 0 0 20px; padding: 0; }
+.nm-reg-checks li {
+  position: relative;
+  padding: 6px 0 6px 24px;
+  font-size: 14px;
 }
-
-@media (max-width: 560px) {
-  .nm-reg-account { padding: 18px 16px; border-radius: 12px; }
+.nm-reg-checks li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 10px;
+  width: 10px;
+  height: 6px;
+  border-left: 2px solid #15803d;
+  border-bottom: 2px solid #15803d;
+  transform: rotate(-45deg);
 }
-.nm-reg-notice-info .nm-reg-notice-link { color: var(--nm-blue); }
-.nm-reg-notice-warn .nm-reg-notice-link { color: #d97706; }
+.nm-reg-status-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.nm-reg-status p { font-size: 14px; line-height: 1.6; color: var(--nm-text-mid); margin: 0 0 18px; }
 
-/* ── Benefits section ── */
-.nm-reg-benefits {
-  background: var(--nm-light-bg);
-  padding: 64px 28px;
-}
-
-.nm-reg-benefits-inner {
-  max-width: 1100px;
-  margin: 0 auto;
-}
-
-.nm-reg-benefits-eyebrow {
-  text-align: center;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--nm-blue);
-  margin-bottom: 10px;
-}
-
-.nm-reg-benefits-title {
-  text-align: center;
-  font-size: 26px;
-  font-weight: 700;
-  color: var(--nm-text-dark);
-  margin-bottom: 40px;
-}
-
-.nm-reg-benefits-grid {
+/* Process steps */
+.nm-reg-steps { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--nm-border); }
+.nm-reg-steps li {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--nm-border);
 }
+.nm-reg-step-index { font-size: 13px; font-weight: 600; color: var(--nm-blue); padding-top: 1px; }
+.nm-reg-step-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.nm-reg-step-detail { font-size: 14px; line-height: 1.6; color: var(--nm-text-mid); }
 
-/* Reuse nm-program-card but with horizontal icon layout */
-.nm-reg-feature-card {
+/* Requirements table */
+.nm-reg-table { width: 100%; border-collapse: collapse; background: var(--nm-white); border: 1px solid var(--nm-border); border-radius: 8px; overflow: hidden; }
+.nm-reg-table th,
+.nm-reg-table td { text-align: left; vertical-align: top; padding: 16px 20px; border-bottom: 1px solid var(--nm-border); font-size: 14px; line-height: 1.6; }
+.nm-reg-table tr:last-child th,
+.nm-reg-table tr:last-child td { border-bottom: 0; }
+.nm-reg-table th { width: 220px; font-weight: 600; color: var(--nm-text-dark); }
+.nm-reg-table td { color: var(--nm-text-mid); }
+
+/* FAQ */
+.nm-reg-faq { border-top: 1px solid var(--nm-border); }
+.nm-reg-faq details { border-bottom: 1px solid var(--nm-border); }
+.nm-reg-faq summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 16px 32px 16px 0;
+  font-size: 15px;
+  font-weight: 600;
+  position: relative;
+}
+.nm-reg-faq summary::-webkit-details-marker { display: none; }
+.nm-reg-faq summary::after {
+  content: '+';
+  position: absolute;
+  right: 4px;
+  top: 14px;
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--nm-text-mid);
+}
+.nm-reg-faq details[open] summary::after { content: '\2212'; }
+.nm-reg-faq p { margin: 0 0 16px; font-size: 14px; line-height: 1.7; color: var(--nm-text-mid); max-width: 680px; }
+.nm-reg-help { font-size: 14px; color: var(--nm-text-mid); margin-top: 24px; }
+.nm-reg-help a { color: var(--nm-blue); font-weight: 600; }
+
+/* Inline account card on standalone pages (e.g. /join-team) */
+.nm-reg-account {
+  width: 100%;
+  padding: 24px;
   background: var(--nm-white);
   border: 1px solid var(--nm-border);
-  border-radius: var(--nm-radius-card);
-  padding: 28px 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  transition: box-shadow var(--nm-transition), transform var(--nm-transition);
+  border-radius: 8px;
 }
 
-.nm-reg-feature-card:hover {
-  box-shadow: var(--nm-shadow-card-hover);
-  transform: translateY(-2px);
-}
-
-.nm-reg-feature-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  background: #eef4ff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--nm-blue);
-  flex-shrink: 0;
-}
-
-.nm-reg-feature-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--nm-text-dark);
-}
-
-.nm-reg-feature-desc {
-  font-size: 13px;
-  color: var(--nm-text-mid);
-  line-height: 1.6;
-}
-
-/* ── Bottom CTA banner ── */
-.nm-reg-bottom-cta {
-  background: var(--nm-navy);
-  padding: 64px 28px;
-  text-align: center;
-}
-
-.nm-reg-bottom-cta-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--nm-white);
-  margin-bottom: 10px;
-}
-
-.nm-reg-bottom-cta-sub {
-  font-size: 16px;
-  color: rgba(255,255,255,0.72);
-  margin-bottom: 32px;
-}
-
-/* ── STEP LAYOUT  (register/layout.jsx) ── */
+/* ── Application steps (register/layout.jsx) ── */
 .nm-reg-layout-banner {
-  background: var(--nm-navy);
-  padding: 28px;
-  border-bottom: 1px solid rgba(255,255,255,0.12);
+  background: var(--nm-white);
+  border-bottom: 1px solid var(--nm-border);
+  padding: 28px 24px 24px;
 }
+.nm-reg-layout-banner-inner { max-width: 720px; margin: 0 auto; }
+.nm-reg-layout-title { font-size: 22px; font-weight: 700; color: var(--nm-navy); margin-bottom: 4px; }
+.nm-reg-layout-sub { font-size: 14px; color: var(--nm-text-mid); margin-bottom: 20px; }
 
-.nm-reg-layout-banner-inner {
-  max-width: 680px;
-  margin: 0 auto;
-}
-
-.nm-reg-layout-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--nm-white);
-  margin-bottom: 4px;
-}
-
-.nm-reg-layout-sub {
-  font-size: 13px;
-  color: rgba(255,255,255,0.65);
-  margin-bottom: 28px;
-}
-
-/* Step progress */
-.nm-reg-progress {
-  display: flex;
-  align-items: center;
-}
-
-.nm-reg-progress-step {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-}
-
-.nm-reg-progress-circle {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
-  transition: all 0.25s;
-}
-
-.nm-reg-progress-circle.nm-done {
-  background: var(--nm-yellow);
-  color: var(--nm-navy);
-}
-
-.nm-reg-progress-circle.nm-active {
-  background: var(--nm-blue);
-  color: var(--nm-white);
-  box-shadow: 0 0 0 4px rgba(0,113,206,0.3);
-}
-
-.nm-reg-progress-circle.nm-pending {
-  background: rgba(255,255,255,0.12);
-  color: rgba(255,255,255,0.5);
-  border: 1.5px solid rgba(255,255,255,0.2);
-}
-
-.nm-reg-progress-label {
-  font-size: 11px;
-  font-weight: 500;
-  margin-top: 6px;
-  text-align: center;
-  transition: color 0.25s;
-}
-
-.nm-reg-progress-label.nm-label-active { color: var(--nm-white); }
-.nm-reg-progress-label.nm-label-done   { color: rgba(255,255,255,0.75); }
-.nm-reg-progress-label.nm-label-pending{ color: rgba(255,255,255,0.38); }
-
-.nm-reg-progress-line {
-  flex: 1;
-  height: 2px;
-  margin-bottom: 18px;
-  transition: background 0.3s;
-}
-
-.nm-reg-progress-line.nm-line-done   { background: var(--nm-yellow); }
-.nm-reg-progress-line.nm-line-pending{ background: rgba(255,255,255,0.15); }
+/* Segmented progress bar */
+.nm-reg-progress { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
+.nm-reg-progress-seg { display: flex; flex-direction: column; gap: 8px; }
+.nm-reg-progress-bar { height: 4px; border-radius: 2px; background: #e3e6eb; }
+.nm-reg-progress-seg.is-done .nm-reg-progress-bar,
+.nm-reg-progress-seg.is-active .nm-reg-progress-bar { background: var(--nm-blue); }
+.nm-reg-progress-label { font-size: 12px; color: var(--nm-text-mid); }
+.nm-reg-progress-seg.is-active .nm-reg-progress-label { color: var(--nm-text-dark); font-weight: 600; }
 
 /* Form area */
 .nm-reg-form-area {
-  background: var(--nm-light-bg);
+  background: #f7f8fa;
   min-height: calc(100vh - var(--nm-header-h) - 200px);
-  padding: 36px 28px 72px;
+  padding: 32px 24px 72px;
 }
-
-.nm-reg-form-area-inner {
-  max-width: 680px;
-  margin: 0 auto;
-}
-
+.nm-reg-form-area-inner { max-width: 720px; margin: 0 auto; }
 .nm-reg-form-card {
   background: var(--nm-white);
   border: 1px solid var(--nm-border);
-  border-radius: 14px;
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: var(--nm-shadow-card);
 }
-
-.nm-reg-footer-note {
-  text-align: center;
-  margin-top: 20px;
-  font-size: 13px;
-  color: var(--nm-text-mid);
-}
-
-.nm-reg-footer-note a {
-  color: var(--nm-blue);
-  font-weight: 600;
-  text-decoration: none;
-}
-
+.nm-reg-footer-note { text-align: center; margin-top: 20px; font-size: 14px; color: var(--nm-text-mid); }
+.nm-reg-footer-note a { color: var(--nm-blue); font-weight: 600; text-decoration: none; }
 .nm-reg-footer-note a:hover { text-decoration: underline; }
 
-/* ── Responsive – Register ── */
+/* ── Responsive ── */
 @media (max-width: 900px) {
-  .nm-reg-hero-inner { grid-template-columns: 1fr; gap: 40px; }
-  .nm-reg-hero-title { font-size: 40px; }
-  .nm-reg-steps-card { display: none; } /* hide on tablet - show inline below */
-  .nm-reg-benefits-grid { grid-template-columns: repeat(2, 1fr); }
+  .nm-reg-head-grid,
+  .nm-reg-two-col { grid-template-columns: 1fr; gap: 32px; }
 }
 
 @media (max-width: 560px) {
-  .nm-reg-hero { padding: 56px 20px 48px; }
-  .nm-reg-hero-title { font-size: 30px; }
-  .nm-reg-hero-subtitle { font-size: 14px; }
-  .nm-reg-notices { padding: 24px 20px 0; }
-  .nm-reg-benefits { padding: 48px 20px; }
-  .nm-reg-benefits-grid { grid-template-columns: 1fr; }
-  .nm-reg-bottom-cta { padding: 48px 20px; }
-  .nm-reg-bottom-cta-title { font-size: 22px; }
-  .nm-reg-layout-banner { padding: 20px; }
+  .nm-reg-wrap { padding: 0 16px; }
+  .nm-reg-head { padding: 36px 0 32px; }
+  .nm-reg-title { font-size: 28px; }
+  .nm-reg-lead { font-size: 15px; }
+  .nm-reg-section { padding: 40px 0; }
+  .nm-reg-panel,
+  .nm-reg-account { padding: 18px 16px; }
+  .nm-reg-steps li { grid-template-columns: 1fr; gap: 4px; }
+  .nm-reg-table th,
+  .nm-reg-table td { display: block; width: auto; padding: 12px 16px; }
+  .nm-reg-table th { padding-bottom: 0; border-bottom: 0; }
+  .nm-reg-layout-banner { padding: 20px 16px; }
   .nm-reg-progress-label { display: none; }
-  .nm-reg-form-area { padding: 24px 16px 56px; }
+  .nm-reg-form-area { padding: 20px 12px 56px; }
 }
 
 /* =====================================================

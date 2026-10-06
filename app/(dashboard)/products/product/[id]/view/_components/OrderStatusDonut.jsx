@@ -27,7 +27,7 @@ export function OrderStatusChart({ data = [] }) {
     return (
       <Box sx={{ p: 3, borderRadius: '20px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', minHeight: 240, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
         <ShoppingBagOutlinedIcon sx={{ fontSize: 28, color: 'text.disabled' }} />
-        <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700 }} color="text.primary">Order Status</Typography>
+        <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 18, fontWeight: 700 }} color="text.primary">Order Status</Typography>
         <Typography variant="body2" color="text.disabled">No orders yet</Typography>
       </Box>
     );
@@ -39,14 +39,14 @@ export function OrderStatusChart({ data = [] }) {
   return (
     <Box sx={{ p: { xs: 2.5, md: 3 }, borderRadius: '20px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
       <Stack direction="row" alignItems="baseline" spacing={1} sx={{ mb: 2 }}>
-        <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, letterSpacing: '-0.5px' }} color="text.primary">Order Status</Typography>
+        <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: '-0.5px' }} color="text.primary">Order Status</Typography>
         <Typography variant="caption" color="text.disabled" sx={{ fontSize: 10 }}>{total} total</Typography>
       </Stack>
       <Box sx={{ position: 'relative' }}>
         <PieChart series={[{ data: pieData, innerRadius: 50, outerRadius: 85, paddingAngle: 3, cornerRadius: 4 }]}
           height={200} margin={{ top: 8, right: 0, bottom: 8, left: 0 }} slotProps={{ legend: { hidden: true } }} />
         <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center', pointerEvents: 'none' }}>
-          <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, lineHeight: 1 }} color="text.primary">{total}</Typography>
+          <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 22, fontWeight: 700, lineHeight: 1 }} color="text.primary">{total}</Typography>
           <Typography variant="caption" color="text.disabled" sx={{ fontSize: 10 }}>orders</Typography>
         </Box>
       </Box>

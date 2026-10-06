@@ -64,7 +64,7 @@ function MetricCard({ label, value, icon: Icon, accent = false }) {
         </Typography>
         <Typography
           sx={{
-            fontFamily: "'Cormorant Garamond', serif",
+            fontFamily: "var(--font-figtree), system-ui, sans-serif",
             fontSize: { xs: 17, md: 22 },
             fontWeight: 700,
             letterSpacing: '-0.5px',
@@ -119,7 +119,7 @@ export default function SalesSummaryCard({ data }) {
       <Stack direction="row" alignItems="baseline" spacing={1} sx={{ mb: 3 }}>
         <Typography
           sx={{
-            fontFamily: "'Cormorant Garamond', serif",
+            fontFamily: "var(--font-figtree), system-ui, sans-serif",
             fontSize: { xs: 17, md: 22 },
             fontWeight: 700,
             letterSpacing: '-0.5px',

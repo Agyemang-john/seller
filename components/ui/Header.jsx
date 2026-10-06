@@ -79,7 +79,7 @@ export default function Header() {
               ) : (
                 <>
                   <Link href="/auth/login" className="nm-signin-btn">Sign In</Link>
-                  <Link href="/register" className="nm-join-btn">Join Marketplace</Link>
+                  <Link href="/register" className="nm-join-btn">Register as a seller</Link>
                 </>
               )}
             </div>
@@ -149,7 +149,7 @@ export default function Header() {
                   className="nm-drawer-cta nm-drawer-cta--primary"
                   onClick={() => setDrawerOpen(false)}
                 >
-                  Join Marketplace
+                  Register as a seller
                 </Link>
               </>
             )}

@@ -31,7 +31,7 @@ export default function BillingHistoryPage() {
     <Box>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
         <Box>
-          <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, letterSpacing: '-0.5px' }} color="text.primary">
+          <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: '-0.5px' }} color="text.primary">
             Billing History
           </Typography>
           <Typography variant="caption" color="text.disabled">{total} transaction{total !== 1 ? 's' : ''} total</Typography>

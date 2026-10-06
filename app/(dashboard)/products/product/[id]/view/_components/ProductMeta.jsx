@@ -28,7 +28,7 @@ export function ProductMeta({ data }) {
 
   return (
     <Box sx={{ p: { xs: 2.5, md: 3 }, borderRadius: '20px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
-      <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, letterSpacing: '-0.3px', mb: 2 }} color="text.primary">Product Details</Typography>
+      <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 18, fontWeight: 700, letterSpacing: '-0.3px', mb: 2 }} color="text.primary">Product Details</Typography>
       <Stack spacing={0.5} sx={{ mb: flags.length > 0 ? 2 : 0 }}>
         {rows.map((r) => (
           <Stack key={r.label} direction="row" justifyContent="space-between" sx={{ py: 0.6, borderBottom: '1px solid', borderColor: 'divider' }}>

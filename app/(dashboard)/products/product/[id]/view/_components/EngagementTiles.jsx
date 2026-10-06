@@ -41,7 +41,7 @@ export function EngagementTiles({ data }) {
             </Box>
             <Box>
               <Typography variant="caption" sx={{ display: 'block', fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.disabled', mb: 0.2 }}>{label}</Typography>
-              <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, lineHeight: 1 }} color="text.primary">{value}</Typography>
+              <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 22, fontWeight: 700, lineHeight: 1 }} color="text.primary">{value}</Typography>
             </Box>
           </Box>
         </Grid>

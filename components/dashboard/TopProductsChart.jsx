@@ -68,7 +68,7 @@ export default function TopProductsChart({ data }) {
         bgcolor: 'background.paper', minHeight: 200,
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
       }}>
-        <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700 }} color="text.primary">Top Products</Typography>
+        <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 22, fontWeight: 700 }} color="text.primary">Top Products</Typography>
         <Typography variant="body2" color="text.disabled">No product revenue data yet.</Typography>
       </Box>
     );
@@ -90,7 +90,7 @@ export default function TopProductsChart({ data }) {
     >
       <Stack direction="row" alignItems="baseline" spacing={1} sx={{ mb: 3 }}>
         <Typography
-          sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 16, md: 22 }, fontWeight: 700, letterSpacing: '-0.5px' }}
+          sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 16, md: 22 }, fontWeight: 700, letterSpacing: '-0.5px' }}
           color="text.primary"
         >
           Top Products

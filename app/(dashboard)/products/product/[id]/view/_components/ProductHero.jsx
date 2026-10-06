@@ -84,7 +84,7 @@ export function ProductHero({ data }) {
             </Stack>
 
             <Typography
-              sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 24, md: 30 }, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1.2, mb: 1.5 }}
+              sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 24, md: 30 }, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1.2, mb: 1.5 }}
               color="text.primary"
             >
               {data.title}
@@ -92,7 +92,7 @@ export function ProductHero({ data }) {
 
             {/* Price */}
             <Stack direction="row" alignItems="baseline" spacing={1} sx={{ mb: 2 }}>
-              <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 700, color: 'text.primary' }}>
+              <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 28, fontWeight: 700, color: 'text.primary' }}>
                 {ghs(data.price)}
               </Typography>
               {hasDiscount && (
@@ -121,7 +121,7 @@ export function ProductHero({ data }) {
                         {s.label}
                       </Typography>
                     </Stack>
-                    <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, lineHeight: 1 }} color="text.primary">
+                    <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 20, fontWeight: 700, lineHeight: 1 }} color="text.primary">
                       {s.value}
                     </Typography>
                   </Box>

@@ -51,7 +51,7 @@ export function SalesKPIs({ data }) {
                 {label}
               </Typography>
               <Typography sx={{
-                fontFamily: "'Cormorant Garamond', serif",
+                fontFamily: "var(--font-figtree), system-ui, sans-serif",
                 fontSize: 18, fontWeight: 700, lineHeight: 1,
                 color: accent ? 'common.white' : 'text.primary',
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',

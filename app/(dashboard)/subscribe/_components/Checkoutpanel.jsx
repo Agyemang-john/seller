@@ -64,7 +64,7 @@ function MomoCountdownRetry({ onRetryReady, seconds = 180 }) {
     <Stack spacing={0.75}>
       <Stack direction="row" alignItems="center" justifyContent="space-between">
         <Typography variant="caption" color="text.disabled">Session expires in</Typography>
-        <Typography variant="caption" fontWeight={700} color="text.primary" sx={{ fontFamily: 'monospace' }}>
+        <Typography variant="caption" fontWeight={700} color="text.primary" sx={{ fontFamily: 'var(--font-mono-stack), ui-monospace, monospace' }}>
           {mins}:{String(secs).padStart(2, '0')}
         </Typography>
       </Stack>
@@ -145,7 +145,7 @@ function MomoPendingState({ reference, displayText, provider, maskedPhone, requi
         {status === 'failed'  && <ErrorOutlineIcon sx={{ fontSize: 40, color: 'error.main' }} />}
       </Box>
 
-      <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, mb: 1 }} color="text.primary">
+      <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 22, fontWeight: 700, mb: 1 }} color="text.primary">
         {status === 'otp'     && 'Enter your OTP'}
         {status === 'pending' && `Waiting${dots}`}
         {status === 'success' && 'Confirmed!'}
@@ -172,7 +172,7 @@ function MomoPendingState({ reference, displayText, provider, maskedPhone, requi
             fullWidth size="small" label="OTP Code" type="number"
             value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 8))}
             placeholder="e.g. 449085"
-            inputProps={{ inputMode: 'numeric', pattern: '[0-9]*', style: { fontFamily: 'monospace', fontSize: 20, letterSpacing: '0.2em', textAlign: 'center' } }}
+            inputProps={{ inputMode: 'numeric', pattern: '[0-9]*', style: { fontFamily: 'var(--font-mono-stack), ui-monospace, monospace', fontSize: 20, letterSpacing: '0.2em', textAlign: 'center' } }}
             onKeyDown={(e) => e.key === 'Enter' && handleOtpSubmit()}
             sx={{ mb: 1.5, '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
             autoFocus
@@ -183,7 +183,7 @@ function MomoPendingState({ reference, displayText, provider, maskedPhone, requi
               cursor: (otpLoading || otp.length < 4) ? 'not-allowed' : 'pointer',
               bgcolor: otp.length < 4 ? 'action.disabledBackground' : '#080808',
               color: otp.length < 4 ? 'text.disabled' : '#ffffff',
-              fontFamily: "'Cormorant Garamond', serif", fontSize: 16, fontWeight: 700,
+              fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 16, fontWeight: 700,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1,
               transition: 'all 0.18s',
             }}>
@@ -359,7 +359,7 @@ export default function CheckoutPanel({ plan, billing }) {
     cursor: disabled ? 'not-allowed' : 'pointer',
     bgcolor: !profileComplete ? 'action.disabledBackground' : disabled ? 'rgba(8,8,8,0.5)' : '#080808',
     color: !profileComplete ? 'text.disabled' : '#ffffff',
-    fontFamily: "'Cormorant Garamond', serif", fontSize: 17, fontWeight: 700,
+    fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 17, fontWeight: 700,
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     transition: 'all 0.2s',
     '&:hover:not(:disabled)': { opacity: 0.88, transform: 'translateY(-1px)', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' },
@@ -373,11 +373,11 @@ export default function CheckoutPanel({ plan, billing }) {
         {/* Header */}
         <Box sx={{ bgcolor: 'text.primary', px: { xs: 2.5, md: 4 }, py: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
           <Box>
-            <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, color: '#ffffff', letterSpacing: '-0.5px', mb: 0.4 }}>Complete subscription</Typography>
+            <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 24, fontWeight: 700, color: '#ffffff', letterSpacing: '-0.5px', mb: 0.4 }}>Complete subscription</Typography>
             <Typography sx={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>Payment method saved for automatic renewal</Typography>
           </Box>
           <Box sx={{ px: 2.5, py: 1.5, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', textAlign: 'right' }}>
-            <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: '#ffffff', lineHeight: 1 }}>{plan.plan.name}</Typography>
+            <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 20, fontWeight: 700, color: '#ffffff', lineHeight: 1 }}>{plan.plan.name}</Typography>
             <Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>{plan.plan.price_formatted} / {isYearly ? 'year' : 'month'}</Typography>
           </Box>
         </Box>
@@ -558,7 +558,7 @@ export default function CheckoutPanel({ plan, billing }) {
                 {[['Bank','GCB Bank Ghana'],['Account number','1234567890'],['Account name','Negromart Ghana Ltd'],['Amount',plan.plan.price_formatted],['Reference',bankRef]].map(([k, v]) => (
                   <Stack key={k} direction="row" justifyContent="space-between" alignItems="center" sx={{ py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
                     <Typography variant="caption" color="text.disabled" fontWeight={600}>{k}</Typography>
-                    <Typography variant="body2" fontWeight={k === 'Reference' ? 700 : 500} color="text.primary" sx={{ fontFamily: k === 'Reference' ? 'monospace' : 'inherit', letterSpacing: k === 'Reference' ? '0.08em' : 0 }}>{v}</Typography>
+                    <Typography variant="body2" fontWeight={k === 'Reference' ? 700 : 500} color="text.primary" sx={{ fontFamily: k === 'Reference' ? 'var(--font-mono-stack), ui-monospace, monospace' : 'inherit', letterSpacing: k === 'Reference' ? '0.08em' : 0 }}>{v}</Typography>
                   </Stack>
                 ))}
               </Box>
@@ -575,10 +575,10 @@ export default function CheckoutPanel({ plan, billing }) {
             <Typography variant="caption" sx={{ display: 'block', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'text.disabled', fontSize: 10, mb: 2.5 }}>Order summary</Typography>
             <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 2.5, pb: 2.5, borderBottom: '1px solid', borderColor: 'divider' }}>
               <Box>
-                <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px', mb: 0.4 }} color="text.primary">{plan.plan.name} Plan</Typography>
+                <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px', mb: 0.4 }} color="text.primary">{plan.plan.name} Plan</Typography>
                 <Typography variant="caption" color="text.secondary">{isYearly ? 'Billed annually' : 'Billed monthly'}</Typography>
               </Box>
-              <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 700 }} color="text.primary">{plan.plan.price_formatted}</Typography>
+              <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 26, fontWeight: 700 }} color="text.primary">{plan.plan.price_formatted}</Typography>
             </Stack>
             <Stack spacing={1.25} sx={{ mb: 2.5 }}>
               {[['Commission rate', plan.plan.commission_display],['Payout delay', `${plan.plan.payout_delay_days} days`],['Max products', plan.plan.max_products >= 999999 ? 'Unlimited' : plan.plan.max_products]].map(([k, v]) => (

@@ -99,7 +99,7 @@ function MomoSuccess() {
 
       <Typography
         sx={{
-          fontFamily: "'Cormorant Garamond', serif",
+          fontFamily: "var(--font-figtree), system-ui, sans-serif",
           fontSize: 38,
           fontWeight: 700,
           letterSpacing: "-1.5px",
@@ -164,7 +164,7 @@ function MomoSuccess() {
           bgcolor: "text.primary",
           color: "background.paper",
           borderRadius: "10px",
-          fontFamily: "'Cormorant Garamond', serif",
+          fontFamily: "var(--font-figtree), system-ui, sans-serif",
           fontWeight: 700,
           fontSize: 17,
           "&:hover": { bgcolor: "text.secondary" },
@@ -211,7 +211,7 @@ function CardVerifyInner() {
 
         <Typography
           sx={{
-            fontFamily: "'Cormorant Garamond', serif",
+            fontFamily: "var(--font-figtree), system-ui, sans-serif",
             fontSize: 32,
             fontWeight: 700,
             letterSpacing: "-1px",
@@ -256,7 +256,7 @@ function CardVerifyInner() {
 
         <Typography
           sx={{
-            fontFamily: "'Cormorant Garamond', serif",
+            fontFamily: "var(--font-figtree), system-ui, sans-serif",
             fontSize: 32,
             fontWeight: 700,
             letterSpacing: "-1px",
@@ -338,7 +338,7 @@ function CardVerifyInner() {
 
       <Typography
         sx={{
-          fontFamily: "'Cormorant Garamond', serif",
+          fontFamily: "var(--font-figtree), system-ui, sans-serif",
           fontSize: 38,
           fontWeight: 700,
           letterSpacing: "-1.5px",

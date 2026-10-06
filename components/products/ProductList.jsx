@@ -86,7 +86,7 @@ function ProductCard({ product, onEdit, onDelete, onView, index }) {
           {p.title}
         </Typography>
         <Stack direction="row" alignItems="baseline" spacing={0.75} sx={{ mb: 1 }}>
-          <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, lineHeight: 1 }} color="text.primary">
+          <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 18, fontWeight: 700, lineHeight: 1 }} color="text.primary">
             GHS {price.toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </Typography>
           {hasDiscount && (
@@ -143,7 +143,7 @@ function EmptyState({ onAdd, filtered }) {
       <Box sx={{ width: 64, height: 64, borderRadius: '18px', bgcolor: 'action.selected', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
         <InventoryOutlinedIcon sx={{ fontSize: 28, color: 'text.secondary' }} />
       </Box>
-      <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 700, letterSpacing: '-0.5px', mb: 1 }} color="text.primary">
+      <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 26, fontWeight: 700, letterSpacing: '-0.5px', mb: 1 }} color="text.primary">
         {filtered ? 'No results found' : 'No products yet'}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 320, lineHeight: 1.75, mb: 3.5 }}>
@@ -310,7 +310,7 @@ export default function ProductList({ canBulkUpload = false }) {
       >
         <Box>
           <Typography sx={{
-            fontFamily: "'Cormorant Garamond', serif",
+            fontFamily: "var(--font-figtree), system-ui, sans-serif",
             fontSize: { xs: 30, md: 36 }, fontWeight: 700,
             letterSpacing: '-1px', lineHeight: 1, mb: 0.5,
           }} color="text.primary">

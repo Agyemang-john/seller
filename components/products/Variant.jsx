@@ -242,7 +242,7 @@ const VariantRow = ({
     <Box>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2.5 }}>
         <Box>
-          <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, letterSpacing: '-0.3px' }} color="text.primary">
+          <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 18, fontWeight: 700, letterSpacing: '-0.3px' }} color="text.primary">
             Product variants
           </Typography>
           <Typography variant="caption" color="text.disabled">

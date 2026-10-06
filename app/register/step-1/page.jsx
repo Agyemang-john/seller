@@ -69,8 +69,8 @@ export default function Step1() {
   return (
     <CardShell
       stepLabel="Step 1 of 4"
-      title="Business Information"
-      description="Basic details about your store and legal identity"
+      title="Business information"
+      description="Your store name, business contact details and identity documents. Documents are used only to verify you and are never shown to customers."
       onNext={handleNext}
       footerNote="* Required fields"
     >

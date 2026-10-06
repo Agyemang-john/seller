@@ -75,14 +75,14 @@ function ProductSummary({ formData, isLoading, isEdit, onSubmit }) {
           {isEdit ? 'Editing product' : 'New product'}
         </Typography>
         <Typography
-          sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1.2, mt: 0.5 }}
+          sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1.2, mt: 0.5 }}
           noWrap
         >
           {formData.title || 'Untitled product'}
         </Typography>
         {formData.price && (
           <Stack direction="row" alignItems="baseline" spacing={0.75} sx={{ mt: 1 }}>
-            <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700}}>
+            <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 20, fontWeight: 700}}>
               GHS {price.toLocaleString('en-GH', { minimumFractionDigits: 2 })}
             </Typography>
             {hasDiscount && (
@@ -389,7 +389,7 @@ export default function ProductForm({ id = null }) {
               <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
                 <Box>
                   <Typography
-                    sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px' }}
+                    sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px' }}
                     color="text.primary"
                   >
                     {STEPS[activeStep].label}

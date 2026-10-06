@@ -264,7 +264,7 @@ function DetailsForm({ defaultEmail, lockEmail, onAccountExists, onStarted }) {
       </Box>
 
       <Button type="submit" variant="contained" fullWidth disabled={busy} sx={{ py: 1.25, textTransform: 'none', fontWeight: 600 }}>
-        {busy ? <CircularProgress size={22} color="inherit" /> : 'Create account & verify email'}
+        {busy ? <CircularProgress size={22} color="inherit" /> : 'Create account'}
       </Button>
       <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 1.5, textAlign: 'center' }}>
         This is a regular Negromart account. You can also use it to shop on www.negromart.com.

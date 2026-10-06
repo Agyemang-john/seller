@@ -94,7 +94,7 @@ export default function BillingOverviewPage() {
                   <Chip label={subEntry.label} size="small" sx={{ height: 20, fontSize: 10, fontWeight: 700, bgcolor: st.bg, color: st.dot, borderRadius: '5px', '& .MuiChip-label': { px: 1 } }} />
                   {sub.auto_renew && <Chip label="Auto-renew on" size="small" sx={{ height: 20, fontSize: 10, fontWeight: 600, bgcolor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', borderRadius: '5px', '& .MuiChip-label': { px: 1 } }} />}
                 </Stack>
-                <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 26, md: 34 }, fontWeight: 700, letterSpacing: '-1px', color: 'common.white', lineHeight: 1.1, mb: 0.75 }}>
+                <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 26, md: 34 }, fontWeight: 700, letterSpacing: '-1px', color: 'common.white', lineHeight: 1.1, mb: 0.75 }}>
                   {sub.plan.name}
                 </Typography>
                 <Typography sx={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>
@@ -107,7 +107,7 @@ export default function BillingOverviewPage() {
                     <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', mb: 0.25 }}>
                       {sub.status === 'active' ? 'Renews' : 'Expires'}
                     </Typography>
-                    <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: 'common.white', lineHeight: 1 }}>
+                    <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 20, fontWeight: 700, color: 'common.white', lineHeight: 1 }}>
                       {fmtDate(sub.end_date)}
                     </Typography>
                     <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', mt: 0.3 }}>
@@ -133,7 +133,7 @@ export default function BillingOverviewPage() {
           ) : (
             <Stack alignItems="flex-start" spacing={2}>
               <Box>
-                <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 700, color: 'text.primary', letterSpacing: '-0.5px', mb: 0.5 }}>No active plan</Typography>
+                <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 28, fontWeight: 700, color: 'text.primary', letterSpacing: '-0.5px', mb: 0.5 }}>No active plan</Typography>
                 <Typography sx={{ color: 'text.primary', fontSize: 14 }}>Subscribe to unlock all vendor features and start selling.</Typography>
               </Box>
               <Button variant="contained" disableElevation onClick={() => router.push('/billing/plans')}
@@ -156,7 +156,7 @@ export default function BillingOverviewPage() {
               <Grid key={m.label} size={{ xs: 6, sm: 3 }}>
                 <Box sx={{ p: '14px 20px', borderRight: i < arr.length - 1 ? '1px solid' : 'none', borderColor: 'divider' }}>
                   <Typography variant="caption" color="text.disabled" sx={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', mb: 0.3 }}>{m.label}</Typography>
-                  <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, lineHeight: 1 }} color="text.primary">{m.value}</Typography>
+                  <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 18, fontWeight: 700, lineHeight: 1 }} color="text.primary">{m.value}</Typography>
                 </Box>
               </Grid>
             ))}

@@ -41,7 +41,7 @@ export default function SuccessModal({ planName, onClose }: SuccessModalProps) {
           <CheckIcon sx={{ fontSize: 28, color: "text.primary" }} />
         </Box>
 
-        <Typography sx={{ fontFamily: "serif", fontSize: 34, fontWeight: 700, letterSpacing: "-1px", mb: 1.5 }} color="text.primary">
+        <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 34, fontWeight: 700, letterSpacing: "-1px", mb: 1.5 }} color="text.primary">
           You&apos;re live.
         </Typography>
 
@@ -74,7 +74,7 @@ export default function SuccessModal({ planName, onClose }: SuccessModalProps) {
             width: "100%", py: 1.75,
             bgcolor: "text.primary", color: "background.paper",
             border: "none", borderRadius: "10px",
-            fontFamily: "serif", fontSize: 16, fontWeight: 700,
+            fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 16, fontWeight: 700,
             cursor: "pointer", letterSpacing: "-0.3px",
             transition: "all 0.2s",
             "&:hover": { opacity: 0.88, transform: "translateY(-1px)" },

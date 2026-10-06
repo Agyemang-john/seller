@@ -32,7 +32,7 @@ function CreditCard({ card, onSetDefault, onDelete, isSettingDefault, isDeleting
       {card.is_default && <Chip label="Default" size="small" sx={{ position: 'absolute', top: 12, right: 12, height: 20, fontSize: 9, fontWeight: 700, bgcolor: 'rgba(255,255,255,0.2)', color: '#fff', borderRadius: '5px', '& .MuiChip-label': { px: 1 } }} />}
       {card.is_expired && <Chip label="Expired" size="small" sx={{ position: 'absolute', top: 12, right: card.is_default ? 80 : 12, height: 20, fontSize: 9, fontWeight: 700, bgcolor: 'rgba(239,68,68,0.3)', color: '#fca5a5', borderRadius: '5px', '& .MuiChip-label': { px: 1 } }} />}
       <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.12em', textTransform: 'uppercase', mb: 2 }}>{card.card_type}</Typography>
-      <Typography sx={{ fontFamily: "'Courier New', monospace", fontSize: 18, fontWeight: 600, color: '#ffffff', letterSpacing: '0.18em', mb: 2.5 }}>•••• •••• •••• {card.last4}</Typography>
+      <Typography sx={{ fontFamily: "var(--font-mono-stack), ui-monospace, monospace", fontSize: 18, fontWeight: 600, color: '#ffffff', letterSpacing: '0.18em', mb: 2.5 }}>•••• •••• •••• {card.last4}</Typography>
       <Stack direction="row" alignItems="flex-end" justifyContent="space-between">
         <Box>
           <Typography sx={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', textTransform: 'uppercase', mb: 0.25 }}>Expires</Typography>
@@ -238,7 +238,7 @@ export default function BillingCardsPage() {
       {/* ── Page header ──────────────────────────────────────────────── */}
       <Stack direction="row" alignItems="flex-end" justifyContent="space-between" sx={{ mb: 4 }}>
         <Box>
-          <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 700, letterSpacing: '-0.5px' }} color="text.primary">
+          <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: '-0.5px' }} color="text.primary">
             Payment Methods
           </Typography>
           <Typography variant="body2" color="text.secondary">

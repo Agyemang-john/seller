@@ -80,7 +80,7 @@ function EmptyState({ filtered, onClear }) {
       <Box sx={{ width: 64, height: 64, borderRadius: '18px', bgcolor: 'action.selected', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
         <ShoppingBagOutlinedIcon sx={{ fontSize: 28, color: 'text.secondary' }} />
       </Box>
-      <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, letterSpacing: '-0.5px', mb: 1 }} color="text.primary">
+      <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: '-0.5px', mb: 1 }} color="text.primary">
         {filtered ? 'No orders match' : 'No orders yet'}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 300, lineHeight: 1.75, mb: 3 }}>
@@ -112,7 +112,7 @@ function MobileOrderCard({ order, onView }) {
     >
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 1.5 }}>
         <Box>
-          <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: 'text.primary', mb: 0.25 }}>
+          <Typography sx={{ fontFamily: 'var(--font-mono-stack), ui-monospace, monospace', fontWeight: 700, fontSize: 13, color: 'text.primary', mb: 0.25 }}>
             {order.order_number || `#${order.id}`}
           </Typography>
           <Typography variant="caption" color="text.disabled">
@@ -130,7 +130,7 @@ function MobileOrderCard({ order, onView }) {
             {order.user_email}
           </Typography>
         </Stack>
-        <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 19, fontWeight: 700, flexShrink: 0, ml: 1 }} color="text.primary">
+        <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 19, fontWeight: 700, flexShrink: 0, ml: 1 }} color="text.primary">
           GHS {amount.toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </Typography>
       </Stack>
@@ -231,7 +231,7 @@ export default function OrderList() {
       >
         <Box>
           <Typography sx={{
-            fontFamily: "'Cormorant Garamond', serif",
+            fontFamily: "var(--font-figtree), system-ui, sans-serif",
             fontSize: { xs: 22, sm: 28, md: 36 }, fontWeight: 700,
             letterSpacing: '-1px', lineHeight: 1, mb: 0.5,
           }} color="text.primary">
@@ -421,7 +421,7 @@ export default function OrderList() {
                       >
                         {/* Order # */}
                         <TableCell sx={{ py: 2.25 }}>
-                          <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13 }} color="text.primary">
+                          <Typography sx={{ fontFamily: 'var(--font-mono-stack), ui-monospace, monospace', fontWeight: 700, fontSize: 13 }} color="text.primary">
                             {order.order_number || `#${order.id}`}
                           </Typography>
                         </TableCell>
@@ -448,7 +448,7 @@ export default function OrderList() {
 
                         {/* Amount */}
                         <TableCell>
-                          <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, whiteSpace: 'nowrap' }} color="text.primary">
+                          <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 18, fontWeight: 700, whiteSpace: 'nowrap' }} color="text.primary">
                             GHS {amount.toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </Typography>
                         </TableCell>

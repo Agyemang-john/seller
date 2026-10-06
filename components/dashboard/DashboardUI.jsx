@@ -62,7 +62,7 @@ export function UpgradeGate({ featureName, upgradeUrl = '/subscribe', requiredTi
           <LockOutlinedIcon sx={{ color: 'background.paper', fontSize: 22 }} />
         </Box>
         <Box>
-          <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px', mb: 0.75 }} color="text.primary">{featureName}</Typography>
+          <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px', mb: 0.75 }} color="text.primary">{featureName}</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.65 }}>
             Available on the{' '}<Box component="strong" sx={{ color: 'text.primary' }}>{requiredTier} plan</Box>{' '}and above.
           </Typography>
@@ -113,7 +113,7 @@ export function ChartSection({ error, isLoading, skeletonHeight = 260, featureNa
 export function SectionHeader({ title, subtitle }) {
   return (
     <Stack direction="row" alignItems="baseline" spacing={1.25} sx={{ mb: 2.5 }}>
-      <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 16, md: 20 }, fontWeight: 700, letterSpacing: '-0.5px' }} color="text.primary">
+      <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 16, md: 20 }, fontWeight: 700, letterSpacing: '-0.5px' }} color="text.primary">
         {title}
       </Typography>
       {subtitle && (

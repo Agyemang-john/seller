@@ -29,7 +29,7 @@ export function ProductDetailError({ message, onRetry }) {
       <Box sx={{ width: 56, height: 56, borderRadius: '14px', bgcolor: 'error.lighter', border: '1px solid', borderColor: 'error.light', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2.5 }}>
         <ErrorOutlineIcon sx={{ fontSize: 26, color: 'error.main' }} />
       </Box>
-      <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, letterSpacing: '-0.5px', mb: 1 }} color="text.primary">Failed to load analytics</Typography>
+      <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: '-0.5px', mb: 1 }} color="text.primary">Failed to load analytics</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 360, lineHeight: 1.7, mb: 3.5 }}>{message}</Typography>
       <Button variant="contained" disableElevation startIcon={<RefreshIcon />} onClick={onRetry}
         sx={{ bgcolor: 'text.primary', color: 'background.paper', borderRadius: '10px', fontWeight: 600, '&:hover': { bgcolor: 'text.secondary' } }}>

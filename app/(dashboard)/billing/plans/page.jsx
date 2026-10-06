@@ -9,7 +9,7 @@ export default function BillingPlansPage() {
   const router = useRouter();
   return (
     <Box>
-      <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, letterSpacing: '-0.5px', mb: 1 }} color="text.primary">
+      <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: '-0.5px', mb: 1 }} color="text.primary">
         Subscription Plans
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>

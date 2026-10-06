@@ -78,7 +78,7 @@ export default function ChartCard({
         <Box>
           <Typography
             sx={{
-              fontFamily: "'Cormorant Garamond', serif",
+              fontFamily: "var(--font-figtree), system-ui, sans-serif",
               fontSize: 20,
               fontWeight: 700,
               letterSpacing: '-0.3px',

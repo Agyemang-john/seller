@@ -21,7 +21,7 @@ export default function HeroSection({ billing, onBillingChange }: HeroSectionPro
         aria-hidden
         sx={{
           position: "absolute", right: -20, top: 20,
-          fontFamily: "serif", fontWeight: 700,
+          fontFamily: "var(--font-figtree), system-ui, sans-serif", fontWeight: 700,
           fontSize: { xs: "120px", md: "220px" },
           lineHeight: 1, letterSpacing: "-8px",
           color: "transparent",
@@ -39,7 +39,7 @@ export default function HeroSection({ billing, onBillingChange }: HeroSectionPro
           <Typography
             component="h1"
             sx={{
-              fontFamily: "serif", fontWeight: 700,
+              fontFamily: "var(--font-figtree), system-ui, sans-serif", fontWeight: 700,
               fontSize: { xs: "30px", md: "50px", lg: "50px" },
               lineHeight: 1.02, letterSpacing: "-2px",
               color: "text.primary", mb: 2,

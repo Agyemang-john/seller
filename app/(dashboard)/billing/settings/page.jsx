@@ -67,7 +67,7 @@ export default function BillingSettingsPage() {
 
   return (
     <Box>
-      <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 700, letterSpacing: '-0.5px', mb: 0.5 }} color="text.primary">
+      <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: '-0.5px', mb: 0.5 }} color="text.primary">
         Billing Settings
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>

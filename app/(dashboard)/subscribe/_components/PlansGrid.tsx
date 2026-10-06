@@ -156,7 +156,7 @@ export default function PlansGrid({
               <Box sx={{ mb: 2.75 }}>
                 {isFree ? (
                   <Typography sx={{
-                    fontFamily: "'Cormorant Garamond', serif",
+                    fontFamily: "var(--font-figtree), system-ui, sans-serif",
                     fontSize: 38, fontWeight: 700, lineHeight: 1, letterSpacing: "-1px",
                     color: isPro ? PRO_TEXT : "text.primary",
                   }}>
@@ -172,7 +172,7 @@ export default function PlansGrid({
                         GHS
                       </Typography>
                       <Typography sx={{
-                        fontFamily: "'Cormorant Garamond', serif",
+                        fontFamily: "var(--font-figtree), system-ui, sans-serif",
                         fontSize: 48, fontWeight: 700, lineHeight: 1, letterSpacing: "-2px",
                         color: isPro ? PRO_TEXT : "text.primary",
                       }}>
@@ -191,7 +191,7 @@ export default function PlansGrid({
 
               {/* ── Plan name ───────────────────────────────────────────── */}
               <Typography sx={{
-                fontFamily: "'Cormorant Garamond', serif",
+                fontFamily: "var(--font-figtree), system-ui, sans-serif",
                 fontSize: 24, fontWeight: 700, letterSpacing: "-0.5px", mb: 1,
                 color: isPro ? PRO_TEXT : "text.primary",
               }}>
@@ -212,7 +212,7 @@ export default function PlansGrid({
               {/* ── Product count ────────────────────────────────────────── */}
               <Stack direction="row" alignItems="baseline" spacing={0.75} sx={{ mb: 2 }}>
                 <Typography sx={{
-                  fontFamily: "'Cormorant Garamond', serif",
+                  fontFamily: "var(--font-figtree), system-ui, sans-serif",
                   fontSize: 28, fontWeight: 700, lineHeight: 1,
                   color: isPro ? PRO_TEXT : "text.primary",
                 }}>

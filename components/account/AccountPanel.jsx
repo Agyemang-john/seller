@@ -16,7 +16,7 @@ import SignInForm from './SignInForm';
  *
  * Props: onAuthenticated(), defaultTab ('create' | 'signin'), email, lockEmail
  */
-export default function AccountPanel({ onAuthenticated, defaultTab = 'create', email = '', lockEmail = false }) {
+export default function AccountPanel({ onAuthenticated, defaultTab = 'signin', email = '', lockEmail = false }) {
   const [tab, setTab] = useState(defaultTab);
   const [prefill, setPrefill] = useState(email);
   const [notice, setNotice] = useState('');
@@ -29,8 +29,8 @@ export default function AccountPanel({ onAuthenticated, defaultTab = 'create', e
         variant="fullWidth"
         sx={{ mb: 2.5, borderBottom: 1, borderColor: 'divider', '& .MuiTab-root': { textTransform: 'none', fontWeight: 600 } }}
       >
-        <Tab value="create" label="I'm new to Negromart" />
-        <Tab value="signin" label="I already have an account" />
+        <Tab value="signin" label="Sign in" />
+        <Tab value="create" label="Create an account" />
       </Tabs>
 
       {tab === 'create' ? (

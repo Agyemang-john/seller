@@ -302,7 +302,7 @@ const PaymentForm = () => {
                 <AccountBalanceWalletOutlinedIcon />
               </Avatar>
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 22, sm: 26 }, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1.2 }} color="text.primary">
+                <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 22, sm: 26 }, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1.2 }} color="text.primary">
                   {hasPaymentMethod ? "Update payment method" : "Set up payment method"}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">

@@ -243,7 +243,7 @@ export default function AccountSettings() {
                   <Typography
                     variant="body2"
                     color={storeUrl ? 'text.secondary' : 'text.disabled'}
-                    sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}
+                    sx={{ fontFamily: 'var(--font-mono-stack), ui-monospace, monospace', fontSize: '0.8rem' }}
                   >
                     {storeUrl || 'Not yet available'}
                   </Typography>
@@ -336,7 +336,7 @@ export default function AccountSettings() {
                 {loading ? (
                   <Skeleton width={100} height={20} sx={{ mt: 0.5 }} />
                 ) : (
-                  <Typography variant="caption" color="text.disabled" sx={{ fontFamily: 'monospace' }}>
+                  <Typography variant="caption" color="text.disabled" sx={{ fontFamily: 'var(--font-mono-stack), ui-monospace, monospace' }}>
                     #{vendorInfo?.id ?? userInfo?.id ?? '—'}
                   </Typography>
                 )}

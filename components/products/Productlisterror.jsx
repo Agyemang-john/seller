@@ -20,7 +20,7 @@ export default function ProductListError({ message, onRetry }) {
         <ErrorOutlineIcon sx={{ fontSize: 26, color: 'error.main' }} />
       </Box>
 
-      <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, letterSpacing: '-0.5px', mb: 1 }} color="text.primary">
+      <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: '-0.5px', mb: 1 }} color="text.primary">
         Failed to load products
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 360, lineHeight: 1.7, mb: 3.5 }}>

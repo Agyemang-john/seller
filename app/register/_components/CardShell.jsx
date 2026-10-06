@@ -1,8 +1,11 @@
 import React from "react";
 import { CircularProgress } from "@mui/material";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
+/**
+ * Frame for each store-application step: heading, body, and a footer with
+ * Back / Continue. Plain styling to match the rest of registration
+ * (see the SELLER REGISTRATION block in styles/marketplace.css).
+ */
 const CardShell = ({
   stepLabel,
   title,
@@ -16,149 +19,60 @@ const CardShell = ({
 }) => {
   return (
     <div>
-      {/* ── Card header ── */}
-      <div
-        style={{
-          padding: "24px 32px 20px",
-          borderBottom: "1px solid rgba(0,0,0,0.07)",
-        }}
-      >
-        {/* Step badge */}
-        <span
-          style={{
-            display: "inline-block",
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: "0.07em",
-            textTransform: "uppercase",
-            color: "var(--nm-blue)",
-            background: "#e8f2ff",
-            padding: "3px 12px",
-            borderRadius: "999px",
-            marginBottom: 10,
-          }}
-        >
+      {/* ── Header ── */}
+      <div style={{ padding: "24px 32px 20px", borderBottom: "1px solid var(--nm-border)" }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--nm-blue)", marginBottom: 6 }}>
           {stepLabel}
-        </span>
-
-        <div
-          style={{
-            fontSize: "1.1rem",
-            fontWeight: 700,
-            lineHeight: 1.3,
-            color: "var(--nm-text-dark)",
-          }}
-        >
-          {title}
         </div>
-
+        <h2 style={{ fontSize: 20, fontWeight: 700, lineHeight: 1.3, color: "var(--nm-navy)", margin: 0 }}>
+          {title}
+        </h2>
         {description && (
-          <div
-            style={{
-              fontSize: 13,
-              color: "var(--nm-text-mid)",
-              marginTop: 4,
-              lineHeight: 1.5,
-            }}
-          >
+          <p style={{ fontSize: 14, color: "var(--nm-text-mid)", margin: "6px 0 0", lineHeight: 1.6 }}>
             {description}
-          </div>
+          </p>
         )}
       </div>
 
-      {/* ── Card body ── */}
-      <div style={{ padding: "24px 32px" }}>
-        {children}
-      </div>
+      {/* ── Body ── */}
+      <div style={{ padding: "24px 32px" }}>{children}</div>
 
-      {/* ── Card footer ── */}
+      {/* ── Footer ── */}
       <div
         style={{
-          padding: "14px 32px",
-          borderTop: "1px solid rgba(0,0,0,0.07)",
-          background: "#f8fafc",
-          borderRadius: "0 0 14px 14px",
+          padding: "16px 32px",
+          borderTop: "1px solid var(--nm-border)",
+          background: "#f7f8fa",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           gap: 12,
+          flexWrap: "wrap",
         }}
       >
-        {/* Left side */}
         <div>
           {footerNote ? (
-            <span style={{ fontSize: 12, color: "var(--nm-text-mid)" }}>
-              {footerNote}
-            </span>
+            <span style={{ fontSize: 13, color: "var(--nm-text-mid)" }}>{footerNote}</span>
           ) : onBack ? (
-            <button
-              onClick={onBack}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontSize: 13,
-                fontWeight: 500,
-                color: "var(--nm-text-mid)",
-                padding: "6px 10px",
-                borderRadius: 8,
-                transition: "background 0.15s",
-                fontFamily: "inherit",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#f0f0f0")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
-            >
-              <ArrowBackIcon style={{ fontSize: 15 }} />
+            <button type="button" onClick={onBack} className="nm-btn nm-btn-secondary">
               Back
             </button>
           ) : (
-            <span style={{ fontSize: 12, color: "var(--nm-text-mid)" }}>
-              <span style={{ color: "#e53e3e" }}>*</span> Required fields
+            <span style={{ fontSize: 13, color: "var(--nm-text-mid)" }}>
+              Fields marked <span style={{ color: "#b91c1c" }}>*</span> are required
             </span>
           )}
         </div>
 
-        {/* Right: Next/Submit button */}
         {onNext && (
-          <button
-            onClick={onNext}
-            disabled={loading}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              background: loading ? "#93c5fd" : "var(--nm-blue)",
-              color: "var(--nm-white)",
-              border: "none",
-              borderRadius: "var(--nm-radius-pill)",
-              padding: "10px 28px",
-              fontSize: 14,
-              fontWeight: 700,
-              cursor: loading ? "not-allowed" : "pointer",
-              fontFamily: "inherit",
-              transition: "background 0.18s, transform 0.1s",
-              boxShadow: "0 2px 8px rgba(0,113,206,0.3)",
-            }}
-            onMouseEnter={(e) => {
-              if (!loading) e.currentTarget.style.background = "var(--nm-blue-hover)";
-            }}
-            onMouseLeave={(e) => {
-              if (!loading) e.currentTarget.style.background = "var(--nm-blue)";
-            }}
-          >
+          <button type="button" onClick={onNext} disabled={loading} className="nm-btn nm-btn-primary">
             {loading ? (
               <>
                 <CircularProgress size={14} style={{ color: "white" }} />
                 Submitting…
               </>
             ) : (
-              <>
-                {nextLabel}
-                <ArrowForwardIcon style={{ fontSize: 15 }} />
-              </>
+              nextLabel
             )}
           </button>
         )}

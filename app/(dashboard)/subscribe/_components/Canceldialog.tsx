@@ -74,7 +74,7 @@ export default function CancelDialog({
             <WarningAmberRoundedIcon sx={{ color: "#fbbf24", fontSize: 22 }} />
             <Typography
               sx={{
-                fontFamily: "'Cormorant Garamond', serif",
+                fontFamily: "var(--font-figtree), system-ui, sans-serif",
                 fontSize: 22, fontWeight: 700,
               }}
             >

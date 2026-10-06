@@ -31,7 +31,7 @@ export function RatingDistribution({ distribution = [], avgRating = 0, reviewCou
       <Stack direction="row" alignItems="flex-start" spacing={3} sx={{ mb: 3 }}>
         {/* Big number */}
         <Box sx={{ textAlign: 'center', flexShrink: 0 }}>
-          <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 48, fontWeight: 700, lineHeight: 1, letterSpacing: '-2px' }} color="text.primary">{avgRating.toFixed(1)}</Typography>
+          <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 48, fontWeight: 700, lineHeight: 1, letterSpacing: '-2px' }} color="text.primary">{avgRating.toFixed(1)}</Typography>
           <Stack direction="row" justifyContent="center" spacing={0.3} sx={{ my: 0.5 }}>
             {[1,2,3,4,5].map((s) => (
               <Box key={s} sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: s <= Math.round(avgRating) ? 'text.primary' : 'divider' }} />

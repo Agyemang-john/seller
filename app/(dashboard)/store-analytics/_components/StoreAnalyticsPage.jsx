@@ -55,7 +55,7 @@ function ViewTile({ label, data, accent = false }) {
         {label}
       </Typography>
       <Typography sx={{
-        fontFamily: "'Cormorant Garamond', serif",
+        fontFamily: "var(--font-figtree), system-ui, sans-serif",
         fontSize: { xs: 28, md: 44 }, fontWeight: 700, lineHeight: 1,
         color: accent ? 'common.white' : 'text.primary',
       }}>
@@ -89,7 +89,7 @@ function TrendChart({ data }) {
     <Box sx={{ p: { xs: 2.5, md: 3 }, borderRadius: '20px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
       <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" spacing={1.5} sx={{ mb: 2.5 }}>
         <Stack direction="row" alignItems="baseline" spacing={1}>
-          <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, letterSpacing: '-0.5px' }} color="text.primary">
+          <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: '-0.5px' }} color="text.primary">
             View Trend
           </Typography>
           <Typography variant="caption" color="text.disabled" sx={{ letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: 10 }}>
@@ -157,7 +157,7 @@ function DeviceBreakdown({ breakdown }) {
   return (
     <Box sx={{ p: { xs: 2.5, md: 3 }, borderRadius: '20px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', height: '100%' }}>
       <Stack direction="row" alignItems="baseline" spacing={1} sx={{ mb: 3 }}>
-        <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, letterSpacing: '-0.5px' }} color="text.primary">
+        <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: '-0.5px' }} color="text.primary">
           Devices
         </Typography>
         <Typography variant="caption" color="text.disabled" sx={{ letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: 10 }}>
@@ -207,7 +207,7 @@ function VisitorComposition({ data }) {
   return (
     <Box sx={{ p: { xs: 2.5, md: 3 }, borderRadius: '20px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Stack direction="row" alignItems="baseline" spacing={1} sx={{ mb: 2 }}>
-        <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, letterSpacing: '-0.5px' }} color="text.primary">
+        <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: '-0.5px' }} color="text.primary">
           Visitors
         </Typography>
         <Typography variant="caption" color="text.disabled" sx={{ letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: 10 }}>
@@ -240,7 +240,7 @@ function VisitorComposition({ data }) {
           <Divider sx={{ my: 2 }} />
           <Stack direction="row" spacing={3} justifyContent="center">
             <Stack alignItems="center" spacing={0.25}>
-              <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 700, lineHeight: 1 }} color="text.primary">
+              <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 28, fontWeight: 700, lineHeight: 1 }} color="text.primary">
                 {returnRate}%
               </Typography>
               <Typography variant="caption" color="text.disabled" sx={{ fontSize: 10, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
@@ -249,7 +249,7 @@ function VisitorComposition({ data }) {
             </Stack>
             <Box sx={{ width: '1px', bgcolor: 'divider' }} />
             <Stack alignItems="center" spacing={0.25}>
-              <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 700, lineHeight: 1 }} color="text.primary">
+              <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 28, fontWeight: 700, lineHeight: 1 }} color="text.primary">
                 {fmt(total)}
               </Typography>
               <Typography variant="caption" color="text.disabled" sx={{ fontSize: 10, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
@@ -279,7 +279,7 @@ function InsightCard({ icon: Icon, label, value, subtext }) {
         <Typography variant="caption" sx={{ display: 'block', fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'text.disabled', mb: 0.3 }}>
           {label}
         </Typography>
-        <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 18, md: 24 }, fontWeight: 700, lineHeight: 1 }} color="text.primary">
+        <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 18, md: 24 }, fontWeight: 700, lineHeight: 1 }} color="text.primary">
           {value ?? '—'}
         </Typography>
         {subtext && (
@@ -373,7 +373,7 @@ function SubscriptionGate({ upgradeUrl = '/subscribe' }) {
           <LockOutlinedIcon sx={{ color: 'background.paper', fontSize: 28 }} />
         </Box>
         <Box>
-          <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 26, md: 32 }, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1.15, mb: 1.25 }} color="text.primary">
+          <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 26, md: 32 }, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1.15, mb: 1.25 }} color="text.primary">
             Subscribe to unlock Store Traffic
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.75 }}>
@@ -433,7 +433,7 @@ export default function StoreAnalyticsPage() {
         gap: 2, mb: 4,
       }}>
         <Box>
-          <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 22, sm: 28, md: 38 }, fontWeight: 700, letterSpacing: '-1.5px', lineHeight: 1, mb: 0.5 }} color="text.primary">
+          <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 22, sm: 28, md: 38 }, fontWeight: 700, letterSpacing: '-1.5px', lineHeight: 1, mb: 0.5 }} color="text.primary">
             Store Traffic
           </Typography>
           <Typography variant="body2" color="text.secondary">

@@ -15,7 +15,7 @@ export default function DeliveryPerformanceChart({ data }) {
         bgcolor: 'background.paper', minHeight: 200,
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
       }}>
-        <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700 }} color="text.primary">Delivery</Typography>
+        <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 22, fontWeight: 700 }} color="text.primary">Delivery</Typography>
         <Typography variant="body2" color="text.disabled">No delivery data yet.</Typography>
       </Box>
     );
@@ -43,7 +43,7 @@ export default function DeliveryPerformanceChart({ data }) {
     >
       <Stack direction="row" alignItems="baseline" spacing={1} sx={{ mb: 2 }}>
         <Typography
-          sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 16, md: 22 }, fontWeight: 700, letterSpacing: '-0.5px' }}
+          sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 16, md: 22 }, fontWeight: 700, letterSpacing: '-0.5px' }}
           color="text.primary"
         >
           Delivery
@@ -73,7 +73,7 @@ export default function DeliveryPerformanceChart({ data }) {
           transform: 'translate(-50%, -50%)', textAlign: 'center', pointerEvents: 'none',
         }}>
           <Typography
-            sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 20, md: 26 }, fontWeight: 700, lineHeight: 1 }}
+            sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 20, md: 26 }, fontWeight: 700, lineHeight: 1 }}
             color="text.primary"
           >
             {onTimeRate.toFixed(0)}%
@@ -125,7 +125,7 @@ function StatBadge({ icon, label, value, color }) {
           {label}
         </Typography>
       </Stack>
-      <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 15, md: 18 }, fontWeight: 700, lineHeight: 1 }} color="text.primary">
+      <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 15, md: 18 }, fontWeight: 700, lineHeight: 1 }} color="text.primary">
         {value}
       </Typography>
     </Box>

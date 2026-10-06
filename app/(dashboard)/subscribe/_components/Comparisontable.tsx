@@ -151,7 +151,7 @@ function MobileView() {
           borderColor: col.isPro ? PRO_BORDER : "divider",
         }}>
           <Typography sx={{
-            fontFamily: "'Cormorant Garamond', serif",
+            fontFamily: "var(--font-figtree), system-ui, sans-serif",
             fontSize: 22, fontWeight: 700,
             color: col.isPro ? PRO_TEXT : "text.primary",
             letterSpacing: "-0.5px",
@@ -281,7 +281,7 @@ export default function ComparisonTable() {
           Compare
         </Typography>
         <Typography sx={{
-          fontFamily: "'Cormorant Garamond', serif",
+          fontFamily: "var(--font-figtree), system-ui, sans-serif",
           fontSize: { xs: 28, sm: 34 }, fontWeight: 700, letterSpacing: "-1px",
         }} color="text.primary">
           Everything, side by side

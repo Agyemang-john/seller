@@ -27,7 +27,7 @@ export function DeliveryInfo({ options = [] }) {
   if (!options || options.length === 0) return null;
   return (
     <Box sx={{ p: { xs: 2.5, md: 3 }, borderRadius: '20px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
-      <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, letterSpacing: '-0.3px', mb: 2 }} color="text.primary">Delivery Options</Typography>
+      <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 18, fontWeight: 700, letterSpacing: '-0.3px', mb: 2 }} color="text.primary">Delivery Options</Typography>
       <Stack spacing={1}>
         {options.map((opt) => (
           <Stack key={opt.id} direction="row" alignItems="center" spacing={1.5} sx={{ p: '10px 14px', borderRadius: '10px', bgcolor: opt.default ? 'action.selected' : 'action.hover', border: '1px solid', borderColor: opt.default ? 'text.disabled' : 'transparent' }}>

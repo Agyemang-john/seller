@@ -44,7 +44,7 @@ export default function OrderStatusChart({ data }) {
     >
       <Stack direction="row" alignItems="baseline" spacing={1} sx={{ mb: 2 }}>
         <Typography
-          sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 16, md: 22 }, fontWeight: 700, letterSpacing: '-0.5px' }}
+          sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 16, md: 22 }, fontWeight: 700, letterSpacing: '-0.5px' }}
           color="text.primary"
         >
           Order Status
@@ -80,7 +80,7 @@ export default function OrderStatusChart({ data }) {
           }}
         >
           <Typography
-            sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 18, md: 24 }, fontWeight: 700, lineHeight: 1 }}
+            sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 18, md: 24 }, fontWeight: 700, lineHeight: 1 }}
             color="text.primary"
           >
             {total.toLocaleString()}
@@ -119,7 +119,7 @@ function EmptyCard() {
       bgcolor: 'background.paper', minHeight: 200,
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
     }}>
-      <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700 }} color="text.primary">Order Status</Typography>
+      <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 22, fontWeight: 700 }} color="text.primary">Order Status</Typography>
       <Typography variant="body2" color="text.disabled">No orders yet.</Typography>
     </Box>
   );

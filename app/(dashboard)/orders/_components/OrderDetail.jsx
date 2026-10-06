@@ -251,7 +251,7 @@ function ShipmentPanel({ orderId, existingShipments, onShipmentUpdated }) {
                 <Stack direction="row" spacing={1.5} alignItems="center">
                   <LocalShippingIcon fontSize="small" color="action" />
                   <Box>
-                    <Typography variant="body2" fontWeight={700} fontFamily="monospace">
+                    <Typography variant="body2" fontWeight={700} fontFamily="var(--font-mono-stack), ui-monospace, monospace">
                       {sh.shipment_id}
                     </Typography>
                     {sh.tracking_number && (

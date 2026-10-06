@@ -35,7 +35,7 @@ export default function BillingLayout({ children }) {
         <Box sx={{ pb: 10 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'flex-end' }} justifyContent="space-between" spacing={2} sx={{ mb: 3 }}>
             <Box>
-            <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 32, md: 40 }, fontWeight: 700, letterSpacing: '-1.5px', lineHeight: 1, mb: 0.5 }} color="text.primary">
+            <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 32, md: 40 }, fontWeight: 700, letterSpacing: '-1.5px', lineHeight: 1, mb: 0.5 }} color="text.primary">
                 Billing
             </Typography>
             <Typography variant="body2" color="text.secondary">

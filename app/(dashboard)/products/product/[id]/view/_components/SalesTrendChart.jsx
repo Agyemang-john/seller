@@ -14,7 +14,7 @@ export function SalesTrendChart({ data = [] }) {
     return (
       <Box sx={{ p: 3, borderRadius: '20px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', minHeight: 240, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
         <TrendingUpIcon sx={{ fontSize: 28, color: 'text.disabled' }} />
-        <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700 }} color="text.primary">Sales Trend</Typography>
+        <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 18, fontWeight: 700 }} color="text.primary">Sales Trend</Typography>
         <Typography variant="body2" color="text.disabled">No sales in the last 30 days</Typography>
       </Box>
     );
@@ -34,7 +34,7 @@ export function SalesTrendChart({ data = [] }) {
       {/* Header */}
       <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" spacing={1.5} sx={{ mb: 2.5 }}>
         <Stack direction="row" alignItems="baseline" spacing={1}>
-          <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, letterSpacing: '-0.5px' }} color="text.primary">
+          <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: '-0.5px' }} color="text.primary">
             Sales Trend
           </Typography>
           <Typography variant="caption" color="text.disabled" sx={{ letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: 10 }}>
@@ -45,11 +45,11 @@ export function SalesTrendChart({ data = [] }) {
         <Stack direction="row" spacing={2}>
           <Box sx={{ textAlign: 'right' }}>
             <Typography variant="caption" color="text.disabled" sx={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block' }}>Revenue</Typography>
-            <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, fontWeight: 700, lineHeight: 1 }} color="text.primary">{ghs(totalRevenue)}</Typography>
+            <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 16, fontWeight: 700, lineHeight: 1 }} color="text.primary">{ghs(totalRevenue)}</Typography>
           </Box>
           <Box sx={{ textAlign: 'right' }}>
             <Typography variant="caption" color="text.disabled" sx={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block' }}>Units</Typography>
-            <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, fontWeight: 700, lineHeight: 1 }} color="text.primary">{totalUnits.toLocaleString()}</Typography>
+            <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 16, fontWeight: 700, lineHeight: 1 }} color="text.primary">{totalUnits.toLocaleString()}</Typography>
           </Box>
         </Stack>
       </Stack>

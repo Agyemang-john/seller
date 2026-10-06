@@ -62,7 +62,7 @@ function UpgradeGate() {
       <Box sx={{ width: 72, height: 72, borderRadius: '20px', bgcolor: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
         <LockOutlinedIcon sx={{ fontSize: 32, color: 'warning.main' }} />
       </Box>
-      <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 28, md: 36 }, fontWeight: 700, letterSpacing: '-0.5px', mb: 1.5 }}>
+      <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 28, md: 36 }, fontWeight: 700, letterSpacing: '-0.5px', mb: 1.5 }}>
         Pro Feature
       </Typography>
       <Typography color="text.secondary" sx={{ maxWidth: 380, lineHeight: 1.75, mb: 4 }}>
@@ -328,7 +328,7 @@ function SlugLookupPanel({ title, items }) {
                 <Tooltip title="Click to copy slug">
                   <Typography
                     onClick={() => copyToClipboard(s.slug)}
-                    sx={{ fontSize: 11, fontFamily: 'monospace', color: 'text.disabled', ml: 1, flexShrink: 0, cursor: 'copy', '&:hover': { color: 'text.primary' } }}>
+                    sx={{ fontSize: 11, fontFamily: 'var(--font-mono-stack), ui-monospace, monospace', color: 'text.disabled', ml: 1, flexShrink: 0, cursor: 'copy', '&:hover': { color: 'text.primary' } }}>
                     {s.slug}
                   </Typography>
                 </Tooltip>
@@ -507,7 +507,7 @@ export default function BulkUploadPage() {
       {/* Header */}
       <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'flex-end' }} sx={{ mb: 1 }} spacing={2}>
         <Box>
-          <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: { xs: 32, md: 42 }, fontWeight: 700, letterSpacing: '-1px', lineHeight: 1, mb: 0.75 }}>
+          <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 32, md: 42 }, fontWeight: 700, letterSpacing: '-1px', lineHeight: 1, mb: 0.75 }}>
             Add products in bulk
           </Typography>
           <Typography color="text.secondary" sx={{ lineHeight: 1.7 }}>

@@ -202,7 +202,7 @@ export const getDesignTokens = (mode: PaletteMode) => {
       status: buildStatusPalette(mode),
     },
     typography: {
-      fontFamily: 'Inter, sans-serif',
+      fontFamily: 'var(--font-figtree), system-ui, sans-serif',
       h1: {
         fontSize: defaultTheme.typography.pxToRem(48),
         fontWeight: 600,
@@ -364,7 +364,7 @@ export const colorSchemes = {
 };
 
 export const typography = {
-  fontFamily: 'Inter, sans-serif',
+  fontFamily: 'var(--font-figtree), system-ui, sans-serif',
   h1: {
     fontSize: defaultTheme.typography.pxToRem(48),
     fontWeight: 600,

@@ -72,7 +72,7 @@ function SummaryCard({ icon, label, value, hue = 'blue', accent = false }) {
         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', fontSize: 10 }}>
           {label}
         </Typography>
-        <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: 24, lineHeight: 1.1 }} color="text.primary">
+        <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontWeight: 700, fontSize: 24, lineHeight: 1.1 }} color="text.primary">
           {value}
         </Typography>
       </Box>
@@ -161,7 +161,7 @@ const PayoutList = () => {
       <Card variant="outlined" sx={{ borderRadius: '20px', borderColor: 'divider', overflow: 'hidden' }}>
         <Stack direction="row" alignItems="center" spacing={1.5} sx={{ px: { xs: 2.5, sm: 3 }, py: 2.5 }}>
           <AccountBalanceWalletOutlinedIcon sx={{ color: 'brand.blue' }} />
-          <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px', flex: 1 }} color="text.primary">
+          <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px', flex: 1 }} color="text.primary">
             Your Payouts
           </Typography>
           <Tooltip title="Refresh">
@@ -177,7 +177,7 @@ const PayoutList = () => {
             <Box sx={{ width: 64, height: 64, borderRadius: '18px', bgcolor: 'action.selected', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
               <ReceiptLongOutlinedIcon sx={{ fontSize: 28, color: 'text.secondary' }} />
             </Box>
-            <Typography sx={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, mb: 0.5 }} color="text.primary">
+            <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 22, fontWeight: 700, mb: 0.5 }} color="text.primary">
               No payouts yet
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 320, mx: 'auto', lineHeight: 1.7 }}>
@@ -219,7 +219,7 @@ const PayoutList = () => {
                         <StatusChip status={payout.status} label={payout.status_display} />
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" fontFamily="monospace" color="text.secondary">{payout.transaction_id || 'N/A'}</Typography>
+                        <Typography variant="body2" fontFamily="var(--font-mono-stack), ui-monospace, monospace" color="text.secondary">{payout.transaction_id || 'N/A'}</Typography>
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" color="text.secondary">{orderNumbers(payout)}</Typography>
@@ -259,7 +259,7 @@ function Row({ label, value, mono }) {
   return (
     <Stack direction="row" justifyContent="space-between" alignItems="baseline" spacing={2}>
       <Typography variant="caption" color="text.disabled" sx={{ fontWeight: 600 }}>{label}</Typography>
-      <Typography variant="caption" color="text.secondary" fontFamily={mono ? 'monospace' : undefined} sx={{ textAlign: 'right', wordBreak: 'break-word' }}>
+      <Typography variant="caption" color="text.secondary" fontFamily={mono ? 'var(--font-mono-stack), ui-monospace, monospace' : undefined} sx={{ textAlign: 'right', wordBreak: 'break-word' }}>
         {value}
       </Typography>
     </Stack>
