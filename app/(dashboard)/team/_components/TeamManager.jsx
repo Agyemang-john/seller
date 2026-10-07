@@ -164,7 +164,9 @@ export default function TeamManager() {
             </Box>
           </Box>
           {canManage && (
-            <Tooltip title={full ? `Your team is full (${limits.max_members} people including pending invites).` : ''}>
+            <Tooltip title={!full ? '' : limits.max_members <= 1
+              ? 'Your plan includes only the store owner. Upgrade your plan to add team members.'
+              : `Your plan allows ${limits.max_members} people, including pending invites.`}>
               <span>
                 <Button
                   variant="contained"

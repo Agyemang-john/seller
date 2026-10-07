@@ -5,6 +5,7 @@ import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
 import PageContainer from '@/components/PageContainer';
 import AccountSettings from './_components/AccountSettings';
+import OperationsSettings from './_components/OperationsSettings';
 import SecuritySettings from './_components/SecuritySettings';
 import NotificationSettings from './_components/NotificationSettings';
 import AppearanceSettings from './_components/AppearanceSettings';
@@ -22,6 +23,7 @@ export default function SettingsPage() {
       <Box sx={{ maxWidth: 1200 }}>
         <Stack spacing={4} divider={<Divider />}>
           <AccountSettings />
+          <OperationsSettings />
           <SecuritySettings />
           <NotificationSettings />
           <AppearanceSettings />

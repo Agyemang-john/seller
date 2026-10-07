@@ -108,10 +108,21 @@ function ProductCard({ product, onEdit, onDelete, onView, index }) {
                 </Typography>
               </Stack>
             </Tooltip>
-            {p.sku && <Typography variant="caption" color="text.disabled" sx={{ fontSize: 10 }}>{p.sku}</Typography>}
+            {(p.seller_sku || p.sku) && (
+              <Typography variant="caption" color="text.disabled" sx={{ fontSize: 10 }}>{p.seller_sku || p.sku}</Typography>
+            )}
           </Stack>
         </Stack>
       </Box>
+
+      {p.status === 'rejected' && p.review_note && (
+        <Box sx={{ px: 1.75, py: 1.25, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'action.hover' }}>
+          <Typography variant="caption" sx={{ fontWeight: 600, color: 'error.main', display: 'block' }}>Changes needed</Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            {p.review_note}
+          </Typography>
+        </Box>
+      )}
 
       {/* Actions */}
       <Stack direction="row" sx={{ px: 1.5, py: 1.25, borderTop: '1px solid', borderColor: 'divider', gap: 0.75 }}>
@@ -167,7 +178,8 @@ export default function ProductList({ canBulkUpload = false }) {
 
   const [search,        setSearch]        = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [statusFilter,  setFilter]        = useState('all');
+  const [statusFilter,  setFilter]        = useState(searchParams.get('status') || 'all');
+  const [stockFilter,   setStockFilter]   = useState(searchParams.get('stock') || '');
   const [deleting,      setDeleting]      = useState(null);
   const [dialogOpen,    setDialogOpen]    = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
@@ -204,7 +216,7 @@ export default function ProductList({ canBulkUpload = false }) {
     if (isMount.current) { isMount.current = false; return; }
     if (currentPage !== 1) goToPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, statusFilter]);
+  }, [debouncedSearch, statusFilter, stockFilter]);
 
   // ── Fetch the current page from the server ─────────────────────────────────
   const reqSeq = useRef(0);
@@ -219,6 +231,7 @@ export default function ProductList({ canBulkUpload = false }) {
       params.set('page_size', String(PAGE_SIZE));
       if (debouncedSearch)           params.set('search', debouncedSearch);
       if (statusFilter !== 'all')    params.set('status', statusFilter);
+      if (stockFilter)               params.set('stock', stockFilter);
 
       const { data } = await client.get(`/api/v1/vendor/products/?${params.toString()}`);
       if (seq !== reqSeq.current) return; // a newer request superseded this one
@@ -246,7 +259,7 @@ export default function ProductList({ canBulkUpload = false }) {
         setHasLoaded(true);
       }
     }
-  }, [currentPage, debouncedSearch, statusFilter, goToPage]);
+  }, [currentPage, debouncedSearch, statusFilter, stockFilter, goToPage]);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
@@ -287,7 +300,7 @@ export default function ProductList({ canBulkUpload = false }) {
     setPendingDelete(null);
   }, []);
 
-  const isFiltered = !!debouncedSearch || statusFilter !== 'all';
+  const isFiltered = !!debouncedSearch || statusFilter !== 'all' || !!stockFilter;
 
   // Range label for current page (server-paginated)
   const rangeStart = count === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
@@ -375,13 +388,21 @@ export default function ProductList({ canBulkUpload = false }) {
         </Stack>
       )}
 
-      {/* Status chip quick-filters */}
-      {catalogTotal > 3 && (
+      {/* Status chip quick-filters (always shown while a stock filter is active) */}
+      {(catalogTotal > 3 || stockFilter) && (
         <Stack direction="row" spacing={0.75} sx={{ mb: 2.5, overflowX: 'auto', pb: 0.5, '&::-webkit-scrollbar': { display: 'none' } }}>
+          {stockFilter && (
+            <Chip
+              size="small"
+              label={stockFilter === 'out' ? 'Out of stock' : 'Low stock'}
+              onDelete={() => setStockFilter('')}
+              sx={{ borderRadius: '8px', fontWeight: 600, fontSize: 11, flexShrink: 0 }}
+            />
+          )}
           <Chip
             label={`All (${catalogTotal})`}
             size="small"
-            onClick={() => setFilter('all')}
+            onClick={() => { setFilter('all'); setStockFilter(''); }}
             sx={{ borderRadius: '8px', fontWeight: 600, fontSize: 11, flexShrink: 0, bgcolor: statusFilter === 'all' ? 'text.primary' : 'action.hover', color: statusFilter === 'all' ? 'background.paper' : 'text.secondary' }}
           />
           {Object.entries(statusCounts).map(([s, c]) => {

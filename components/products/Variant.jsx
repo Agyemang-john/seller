@@ -161,6 +161,13 @@ function VariantCard({ variant, index, formData, sizes, colors, imagePreview, on
                   onChange={(e) => onFieldChange(index, 'price', parseFloat(e.target.value) || 0)}
                   inputProps={{ min: 0, step: '0.01' }} />
               </Grid>
+
+              <Grid size={{ xs: 12 }}>
+                <TextField label="SKU (optional)" size="small" fullWidth sx={fieldSx}
+                  value={variant.seller_sku ?? ''}
+                  onChange={(e) => onFieldChange(index, 'seller_sku', e.target.value)}
+                  inputProps={{ maxLength: 64 }} />
+              </Grid>
             </Grid>
           </Grid>
         </Grid>
@@ -220,7 +227,7 @@ const VariantRow = ({
   }, [setVariantImagePreviews]);
 
   const handleAdd = () => {
-    setLocalVariants((prev) => [...prev, { id: null, size: null, color: null, image: null, title: '', quantity: 1, price: 0 }]);
+    setLocalVariants((prev) => [...prev, { id: null, size: null, color: null, image: null, title: '', quantity: 1, price: 0, seller_sku: '' }]);
   };
 
   const handleRemove = (index) => {

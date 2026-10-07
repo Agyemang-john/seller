@@ -18,6 +18,7 @@ const PROTECTED_PREFIXES = [
   '/store-analytics',
   '/subscription',
   '/team',
+  '/order-returns',
   '/logout',
 ];
 
@@ -105,6 +106,7 @@ export const config = {
     '/store-analytics/:path*',
     '/subscription/:path*',
     '/team/:path*',
+    '/order-returns/:path*',
     '/logout/:path*',
   ],
 };

@@ -14,6 +14,11 @@ import SearchIcon         from '@mui/icons-material/Search';
 import RefreshIcon        from '@mui/icons-material/Refresh';
 import ArrowForwardIcon   from '@mui/icons-material/ArrowForward';
 import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined';
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
+import useSWR from 'swr';
+import toast from 'react-hot-toast';
+import { fetcher } from '@/components/dashboard/DashboardUI';
+import { downloadCsv } from '@/libs/seller-ops';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { ORDER_STATUS, getStatusEntry, CATEGORICAL_COLORS } from '@/theme/designTokens';
@@ -22,8 +27,12 @@ dayjs.extend(relativeTime);
 
 // ── Status configs (sourced from the single design base) ────────────────────────
 
+// "f:" tabs are work queues served by ?filter= (order/fulfilment.py);
+// the rest filter by order status.
 const STATUS_TABS = [
   { value: '',           label: 'All orders'  },
+  { value: 'f:to_ship',  label: 'To ship'     },
+  { value: 'f:late',     label: 'Late'        },
   { value: 'pending',    label: 'Pending'     },
   { value: 'processing', label: 'Processing'  },
   { value: 'shipped',    label: 'Shipped'     },
@@ -98,6 +107,21 @@ function EmptyState({ filtered, onClear }) {
   );
 }
 
+/** Ship-by date; red and labelled when the order is late. */
+function ShipBy({ order }) {
+  if (!order.ship_by) return <Typography variant="caption" color="text.disabled">—</Typography>;
+  return (
+    <Box>
+      <Typography sx={{ fontSize: 12, whiteSpace: 'nowrap', color: order.is_late ? 'error.main' : 'text.primary', fontWeight: order.is_late ? 600 : 400 }}>
+        {dayjs(order.ship_by).format('MMM D, YYYY')}
+      </Typography>
+      {order.is_late && (
+        <Typography variant="caption" sx={{ color: 'error.main' }}>Late</Typography>
+      )}
+    </Box>
+  );
+}
+
 function MobileOrderCard({ order, onView }) {
   const amount = parseFloat(order.grand_total || 0);
   return (
@@ -121,6 +145,12 @@ function MobileOrderCard({ order, onView }) {
         </Box>
         <StatusBadge value={order.status} />
       </Stack>
+
+      {order.is_late && (
+        <Typography variant="caption" sx={{ display: 'block', color: 'error.main', fontWeight: 600, mb: 1 }}>
+          Late: ship-by date was {dayjs(order.ship_by).format('MMM D')}
+        </Typography>
+      )}
 
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0 }}>
@@ -159,7 +189,23 @@ export default function OrderList() {
   const page     = Math.max(1, parseInt(searchParams.get('page')      || '1',  10));
   const pageSize = parseInt(searchParams.get('page_size') || '10', 10);
   const status   = searchParams.get('status') || '';
+  const queue    = searchParams.get('filter') || '';
   const search   = searchParams.get('search') || '';
+  const tabValue = queue ? `f:${queue}` : status;
+
+  // Plan decides whether CSV export is available (payments/entitlements.py).
+  const { data: plan } = useSWR('/api/v1/vendor/plan/', fetcher, { revalidateOnFocus: false });
+  const [exporting, setExporting] = useState(false);
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await downloadCsv('/api/v1/vendor/orders/export.csv', {}, 'orders.csv');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const [data,        setData]       = useState([]);
   const [totalCount,  setTotalCount] = useState(0);
@@ -186,6 +232,7 @@ export default function OrderList() {
       const axiosClient = createAxiosClient();
       const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
       if (status) params.set('status', status);
+      if (queue) params.set('filter', queue);
       if (search) params.set('search', search);
       const res = await axiosClient.get('/api/v1/vendor/orders/', { params });
       setData(res.data.results || res.data.items || []);
@@ -197,7 +244,7 @@ export default function OrderList() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, pageSize, status, search]);
+  }, [page, pageSize, status, queue, search]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -214,7 +261,7 @@ export default function OrderList() {
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const rangeStart = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
   const rangeEnd   = Math.min(page * pageSize, totalCount);
-  const isFiltered = !!(status || search);
+  const isFiltered = !!(status || queue || search);
 
   const formatPayment = (method) =>
     (method || '—').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -242,7 +289,7 @@ export default function OrderList() {
               ? 'Loading…'
               : totalCount === 0
               ? 'No orders yet'
-              : `${totalCount.toLocaleString()} order${totalCount !== 1 ? 's' : ''}${status ? ` · ${STATUS_TABS.find(t => t.value === status)?.label}` : ''}`}
+              : `${totalCount.toLocaleString()} order${totalCount !== 1 ? 's' : ''}${tabValue ? ` · ${STATUS_TABS.find(t => t.value === tabValue)?.label}` : ''}`}
           </Typography>
         </Box>
 
@@ -268,6 +315,23 @@ export default function OrderList() {
               },
             }}
           />
+          <Tooltip
+            title={plan && !plan.can_export_reports ? 'CSV export is included in paid plans.' : ''}
+            placement="top"
+          >
+            <span>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 17 }} />}
+                onClick={handleExport}
+                disabled={exporting || (plan && !plan.can_export_reports)}
+                sx={{ height: 36, borderRadius: '10px', borderColor: 'divider', color: 'text.primary', whiteSpace: 'nowrap', textTransform: 'none' }}
+              >
+                Export CSV
+              </Button>
+            </span>
+          </Tooltip>
           <Tooltip title={isLoading ? 'Loading…' : 'Refresh'} placement="top">
             <span>
               <IconButton
@@ -296,8 +360,10 @@ export default function OrderList() {
       {/* ── Status filter tabs ───────────────────────────────────────────── */}
       <Box sx={{ borderBottom: '1px solid', borderColor: 'divider', mb: 2.5, overflowX: 'auto', '&::-webkit-scrollbar': { display: 'none' } }}>
         <Tabs
-          value={status}
-          onChange={(_, v) => navigate({ status: v, page: '' })}
+          value={tabValue}
+          onChange={(_, v) => navigate(
+            v.startsWith('f:') ? { filter: v.slice(2), status: '', page: '' } : { status: v, filter: '', page: '' },
+          )}
           variant="scrollable"
           scrollButtons={false}
           TabIndicatorProps={{ style: { height: 2, borderRadius: '2px' } }}
@@ -339,7 +405,7 @@ export default function OrderList() {
               </Paper>
             ))
           ) : data.length === 0 ? (
-            <EmptyState filtered={isFiltered} onClear={() => navigate({ status: '', search: '', page: '' })} />
+            <EmptyState filtered={isFiltered} onClear={() => navigate({ status: '', filter: '', search: '', page: '' })} />
           ) : (
             data.map((order) => (
               <MobileOrderCard key={order.id} order={order} onView={handleView} />
@@ -372,17 +438,17 @@ export default function OrderList() {
       {!isMobile && (
         <Paper variant="outlined" sx={{ borderRadius: '16px', overflow: 'hidden' }}>
           <TableContainer>
-            <Table sx={{ minWidth: 860 }}>
+            <Table sx={{ minWidth: 960 }}>
               <TableHead>
                 <TableRow sx={{ bgcolor: 'action.hover' }}>
-                  {['Order', 'Customer', 'Date', 'Amount', 'Payment', 'Status', 'Delivery', ''].map((h, i) => (
+                  {['Order', 'Customer', 'Date', 'Amount', 'Payment', 'Status', 'Ship by', 'Delivery', ''].map((h, i) => (
                     <TableCell
                       key={i}
-                      align={i === 7 ? 'right' : 'left'}
+                      align={i === 8 ? 'right' : 'left'}
                       sx={{
                         fontSize: 10.5, fontWeight: 700, letterSpacing: '0.07em',
                         color: 'text.disabled', textTransform: 'uppercase',
-                        py: 1.5, pr: i === 7 ? 2.5 : undefined,
+                        py: 1.5, pr: i === 8 ? 2.5 : undefined,
                         borderBottom: '1px solid', borderColor: 'divider',
                         whiteSpace: 'nowrap',
                       }}
@@ -398,10 +464,10 @@ export default function OrderList() {
                   <SkeletonRows count={Math.min(pageSize, 8)} />
                 ) : data.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} sx={{ p: 0, border: 0 }}>
+                    <TableCell colSpan={9} sx={{ p: 0, border: 0 }}>
                       <EmptyState
                         filtered={isFiltered}
-                        onClear={() => navigate({ status: '', search: '', page: '' })}
+                        onClear={() => navigate({ status: '', filter: '', search: '', page: '' })}
                       />
                     </TableCell>
                   </TableRow>
@@ -463,6 +529,11 @@ export default function OrderList() {
                         {/* Order status */}
                         <TableCell>
                           <StatusBadge value={order.status} />
+                        </TableCell>
+
+                        {/* Ship-by deadline */}
+                        <TableCell>
+                          <ShipBy order={order} />
                         </TableCell>
 
                         {/* Delivery status */}

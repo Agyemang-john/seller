@@ -110,6 +110,11 @@ const ProductGeneralInfo = ({
           error={!!formErrors.title} helperText={formErrors.title} fullWidth size="small" sx={fieldSx}
           placeholder="e.g. Premium Leather Wallet — Brown" />
 
+        <TextField label="Your SKU (optional)" value={formData.seller_sku || ''}
+          onChange={(e) => setFormData({ ...formData, seller_sku: e.target.value })}
+          error={!!formErrors.seller_sku} helperText={formErrors.seller_sku || 'Your own stock code. Must be unique in your store.'}
+          size="small" sx={{ ...fieldSx, maxWidth: { sm: 360 } }} inputProps={{ maxLength: 64 }} />
+
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Autocomplete

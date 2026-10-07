@@ -38,6 +38,7 @@ import LogoutRoundedIcon         from '@mui/icons-material/LogoutRounded';
 import LocationOnRoundedIcon     from '@mui/icons-material/LocationOnRounded';
 import VerifiedRoundedIcon       from '@mui/icons-material/VerifiedRounded';
 import BadgeRoundedIcon          from '@mui/icons-material/BadgeRounded';
+import AssignmentReturnRoundedIcon from '@mui/icons-material/AssignmentReturnRounded';
 import useVendorAccess, { CAP } from '@/hooks/useVendorAccess';
 
 import { usePathname } from 'next/navigation';
@@ -72,9 +73,10 @@ const mainListItems: NavItemDef[] = [
   { id: 'dashboard',       text: 'Dashboard',     icon: <DashboardRoundedIcon />,           path: '/dashboard',       capability: CAP.VIEW_ANALYTICS },
   { id: 'store-analytics', text: 'Store Traffic', icon: <TrendingUpRoundedIcon />,           path: '/store-analytics', capability: CAP.VIEW_ANALYTICS },
   { id: 'orders',          text: 'Orders',        icon: <LocalShippingRoundedIcon />,        path: '/orders',          capability: CAP.MANAGE_ORDERS },
+  { id: 'order-returns',   text: 'Returns',       icon: <AssignmentReturnRoundedIcon />,     path: '/order-returns',   capability: CAP.MANAGE_ORDERS },
   { id: 'products',      text: 'Products',      icon: <Inventory2RoundedIcon />,             path: '/products',      capability: CAP.MANAGE_CATALOG },
   { id: 'payment',       text: 'Payment',       icon: <AccountBalanceWalletRoundedIcon />,   path: '/payment',       capability: CAP.VIEW_FINANCE },
-  { id: 'payouts',       text: 'Payouts',       icon: <PaymentsRoundedIcon />,               path: '/payouts',       capability: CAP.VIEW_FINANCE },
+  { id: 'payouts',       text: 'Earnings',       icon: <PaymentsRoundedIcon />,               path: '/payouts',       capability: CAP.VIEW_FINANCE },
   { id: 'working-hours', text: 'Working Hours', icon: <ScheduleRoundedIcon />,               path: '/working-hours', capability: CAP.MANAGE_STORE },
   { id: 'profile',       text: 'Store Profile', icon: <StoreRoundedIcon />,                  path: '/profile',       capability: CAP.MANAGE_STORE },
   { id: 'reviews',       text: 'Reviews',       icon: <StarRoundedIcon />,                   path: '/reviews',       capability: CAP.MANAGE_CATALOG },

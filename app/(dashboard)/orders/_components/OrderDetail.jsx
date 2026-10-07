@@ -87,10 +87,6 @@ function ShipmentPanel({ orderId, existingShipments, onShipmentUpdated }) {
   };
 
   const handleCreateShipment = async () => {
-    if (!form.carrier) {
-      Swal.fire('Missing field', 'Carrier name is required.', 'warning');
-      return;
-    }
     // Guard: each vendor can only have one shipment per order
     if (shipments.length > 0) {
       Swal.fire('Already Exists', 'You already have a shipment for this order. Update it instead of creating a new one.', 'info');
@@ -98,13 +94,16 @@ function ShipmentPanel({ orderId, existingShipments, onShipmentUpdated }) {
     }
     setSubmitting(true);
     try {
-      const res = await axiosClient.post(`/api/v1/vendor/orders/${orderId}/shipment/`, form);
+      // Negromart Delivery books the collection and assigns the tracking number.
+      const res = await axiosClient.post(`/api/v1/vendor/orders/${orderId}/shipment/`, {
+        estimated_delivery_date: form.estimated_delivery_date || undefined,
+      });
       const created = res.data;
       setShipments((prev) => [...prev, created]);
       setShowCreateForm(false);
       setForm({ carrier: '', carrier_code: '', tracking_number: '', tracking_url: '', status: 'label_created', estimated_delivery_date: '', is_international: false });
       onShipmentUpdated && onShipmentUpdated();
-      Swal.fire({ title: 'Shipment Created', icon: 'success', timer: 1500, showConfirmButton: false });
+      Swal.fire({ title: 'Ready for pickup', text: 'Negromart Delivery will collect this order.', icon: 'success', timer: 1800, showConfirmButton: false });
     } catch (err) {
       // Handle 409 Conflict from backend duplicate check
       if (err.response?.status === 409) {
@@ -160,7 +159,7 @@ function ShipmentPanel({ orderId, existingShipments, onShipmentUpdated }) {
             variant={showCreateForm ? 'outlined' : 'contained'}
             disableElevation
           >
-            {showCreateForm ? 'Cancel' : 'Create Shipment'}
+            {showCreateForm ? 'Cancel' : 'Ready for pickup'}
           </Button>
         )}
       </Stack>
@@ -168,47 +167,22 @@ function ShipmentPanel({ orderId, existingShipments, onShipmentUpdated }) {
       {/* Create shipment form */}
       <Collapse in={showCreateForm}>
         <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-          <Typography variant="subtitle2" gutterBottom>New Shipment Details</Typography>
+          <Typography variant="subtitle2" gutterBottom>Hand over to Negromart Delivery</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Pack the items in this order and confirm they're ready. Negromart Delivery will collect the parcel,
+            assign a tracking number and keep the customer updated.
+          </Typography>
           <Grid container spacing={2}>
-            {[
-              { field: 'carrier',          label: 'Carrier (e.g. DHL)',   required: true },
-              { field: 'carrier_code',     label: 'Carrier Code (e.g. dhl)' },
-              { field: 'tracking_number',  label: 'Tracking Number' },
-              { field: 'tracking_url',     label: 'Tracking URL' },
-            ].map(({ field, label, required }) => (
-              <Grid key={field} size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label={label}
-                  required={required}
-                  value={form[field]}
-                  onChange={(e) => setForm((p) => ({ ...p, [field]: e.target.value }))}
-                />
-              </Grid>
-            ))}
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 size="small"
-                label="Estimated Delivery Date"
+                label="Estimated delivery date (optional)"
                 type="date"
                 InputLabelProps={{ shrink: true }}
                 value={form.estimated_delivery_date}
                 onChange={(e) => setForm((p) => ({ ...p, estimated_delivery_date: e.target.value }))}
               />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <Select
-                fullWidth
-                size="small"
-                value={form.status}
-                onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
-              >
-                {Object.entries(SHIPMENT_STATUS).map(([v, { label }]) => (
-                  <MenuItem key={v} value={v}>{label}</MenuItem>
-                ))}
-              </Select>
             </Grid>
           </Grid>
           <Stack direction="row" justifyContent="flex-end" sx={{ mt: 2 }}>
@@ -219,7 +193,7 @@ function ShipmentPanel({ orderId, existingShipments, onShipmentUpdated }) {
               onClick={handleCreateShipment}
               startIcon={submitting ? <CircularProgress size={14} /> : null}
             >
-              {submitting ? 'Creating…' : 'Create Shipment'}
+              {submitting ? 'Confirming…' : 'Confirm ready for pickup'}
             </Button>
           </Stack>
         </Paper>
@@ -230,7 +204,7 @@ function ShipmentPanel({ orderId, existingShipments, onShipmentUpdated }) {
         <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
           <LocalShippingIcon sx={{ fontSize: 36, color: 'text.disabled', mb: 1 }} />
           <Typography variant="body2" color="text.secondary">
-            No shipments yet. Click "Create Shipment" to add one.
+            Not dispatched yet. When the order is packed, choose "Ready for pickup".
           </Typography>
         </Paper>
       ) : (
@@ -302,6 +276,12 @@ function ShipmentPanel({ orderId, existingShipments, onShipmentUpdated }) {
 
                   <Divider sx={{ mb: 2 }} />
 
+                  {sh.fulfilled_by && sh.fulfilled_by !== 'seller' ? (
+                    <Typography variant="body2" color="text.secondary">
+                      Negromart Delivery updates this shipment. Tracking events appear here as they happen.
+                    </Typography>
+                  ) : (
+                  <>
                   {/* Add tracking event form */}
                   <Typography variant="subtitle2" gutterBottom>Add Tracking Event</Typography>
                   <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
@@ -370,6 +350,8 @@ function ShipmentPanel({ orderId, existingShipments, onShipmentUpdated }) {
                       Add Event
                     </Button>
                   </Stack>
+                  </>
+                  )}
 
                   {/* Existing events */}
                   {sh.tracking_events?.length > 0 && (

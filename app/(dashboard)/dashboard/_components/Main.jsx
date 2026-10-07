@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import ActivityHeartbeat from '@/components/dashboard/ActivityHeartbeat';
 import InactivityBanner from '@/components/dashboard/InactivityBanner';
+import ActionCenter from '@/components/operations/ActionCenter';
 import Link from 'next/link';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers';
@@ -120,6 +121,9 @@ export default function Dashboard() {
             </Button>
           </Stack>
         </Box>
+
+        {/* ── Work to do (orders to ship, returns, stock, payouts) ─────── */}
+        <ActionCenter />
 
         {/* Date range error */}
         {invalidRange && (

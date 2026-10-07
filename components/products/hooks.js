@@ -43,6 +43,7 @@ export const useProductForm = (id = null) => {
     specifications: "",
     delivery_returns: "",
     total_quantity: "10",
+    seller_sku: "",
     weight: "1.0",
     volume: "1.0",
     mfd: null,
@@ -114,6 +115,7 @@ export const useProductForm = (id = null) => {
         image: v.image || null, // Keep null for formData
         quantity: v.quantity || 1,
         price: v.price || 0,
+        seller_sku: v.seller_sku || '',
       }));
 
       // For variants state: image holds URLs for display
@@ -125,6 +127,7 @@ export const useProductForm = (id = null) => {
         image: v.image || null, // URL for existing variants
         quantity: v.quantity || 1,
         price: v.price || 0,
+        seller_sku: v.seller_sku || '',
       }));
 
       const newFormData = {
@@ -141,6 +144,7 @@ export const useProductForm = (id = null) => {
         specifications: data.specifications,
         delivery_returns: data.delivery_returns,
         total_quantity: data.total_quantity,
+        seller_sku: data.seller_sku || '',
         weight: data.weight,
         volume: data.volume,
         mfd: data.mfd ? dayjs(data.mfd) : null,

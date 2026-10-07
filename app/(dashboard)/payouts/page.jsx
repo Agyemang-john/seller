@@ -1,10 +1,10 @@
 'use client';
 
-import PayoutList from './_components/PayoutList';
+import Earnings from './_components/Earnings';
 import PageContainer from '@/components/PageContainer';
 
 export default function Page() {
-    const pageTitle = "Payouts";
+    const pageTitle = "Earnings & payouts";
 
   return (
     <PageContainer
@@ -14,7 +14,7 @@ export default function Page() {
           { title: pageTitle },
         ]}
       >
-      <PayoutList />
+      <Earnings />
     </PageContainer>
   );
 }

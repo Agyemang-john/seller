@@ -33,7 +33,7 @@ export default function UpgradeLock({
 }) {
   const router     = useRouter();
   const tierLabel  = TIER_LABELS[requiredTier] ?? requiredTier;
-  const goToPlans  = () => router.push('/subscrice');
+  const goToPlans  = () => router.push('/subscribe');
 
   // ── Compact / inline variant ──────────────────────────────────────────────
   if (compact) {
