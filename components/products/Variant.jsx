@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import {
   Box, TextField, MenuItem, IconButton, Tooltip, Button,
   Typography, Stack, Chip, Grid,
@@ -179,22 +179,18 @@ function VariantCard({ variant, index, formData, sizes, colors, imagePreview, on
 // ── Main component ────────────────────────────────────────────────────────────
 const VariantRow = ({
   formData, setFormData,
-  variants: propVariants = [], setVariants,
+  variants: localVariants, setVariants: setLocalVariants,
   sizes = [], colors = [],
   variantImagePreviews = {}, setVariantImagePreviews,
 }) => {
-  const [localVariants, setLocalVariants] = useState(propVariants);
-
-  useEffect(() => { setLocalVariants(propVariants); }, [propVariants]);
-
-  // Sync up to parent
+  // Parent `variants` state is the single source of truth; mirror it one-way into formData.
+  // (Two-way syncing with a local copy ping-ponged into an infinite update loop — React #185.)
   useEffect(() => {
     setFormData((prev) => ({
       ...prev,
       variants: localVariants.map((v) => ({ ...v, image: v.image instanceof File ? v.image : null })),
     }));
-    if (setVariants) setVariants(localVariants);
-  }, [localVariants]);
+  }, [localVariants, setFormData]);
 
   const handleFieldChange = useCallback((index, field, value) => {
     setLocalVariants((prev) => {
@@ -202,7 +198,7 @@ const VariantRow = ({
       updated[index] = { ...updated[index], [field]: value === '' ? null : value };
       return updated;
     });
-  }, []);
+  }, [setLocalVariants]);
 
   const handleImageChange = useCallback(async (index, file) => {
     if (!file) return;
@@ -224,7 +220,7 @@ const VariantRow = ({
       });
     };
     reader.readAsDataURL(squaredFile);
-  }, [setVariantImagePreviews]);
+  }, [setVariantImagePreviews, setLocalVariants]);
 
   const handleAdd = () => {
     setLocalVariants((prev) => [...prev, { id: null, size: null, color: null, image: null, title: '', quantity: 1, price: 0, seller_sku: '' }]);
