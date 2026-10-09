@@ -39,6 +39,7 @@ import LocationOnRoundedIcon     from '@mui/icons-material/LocationOnRounded';
 import VerifiedRoundedIcon       from '@mui/icons-material/VerifiedRounded';
 import BadgeRoundedIcon          from '@mui/icons-material/BadgeRounded';
 import AssignmentReturnRoundedIcon from '@mui/icons-material/AssignmentReturnRounded';
+import BoltRoundedIcon           from '@mui/icons-material/BoltRounded';
 import useVendorAccess, { CAP } from '@/hooks/useVendorAccess';
 
 import { usePathname } from 'next/navigation';
@@ -75,6 +76,7 @@ const mainListItems: NavItemDef[] = [
   { id: 'orders',          text: 'Orders',        icon: <LocalShippingRoundedIcon />,        path: '/orders',          capability: CAP.MANAGE_ORDERS },
   { id: 'order-returns',   text: 'Returns',       icon: <AssignmentReturnRoundedIcon />,     path: '/order-returns',   capability: CAP.MANAGE_ORDERS },
   { id: 'products',      text: 'Products',      icon: <Inventory2RoundedIcon />,             path: '/products',      capability: CAP.MANAGE_CATALOG },
+  { id: 'flash-sales',   text: 'Flash Sales',   icon: <BoltRoundedIcon />,                   path: '/flash-sales',   capability: CAP.MANAGE_CATALOG },
   { id: 'payment',       text: 'Payment',       icon: <AccountBalanceWalletRoundedIcon />,   path: '/payment',       capability: CAP.VIEW_FINANCE },
   { id: 'payouts',       text: 'Earnings',       icon: <PaymentsRoundedIcon />,               path: '/payouts',       capability: CAP.VIEW_FINANCE },
   { id: 'working-hours', text: 'Working Hours', icon: <ScheduleRoundedIcon />,               path: '/working-hours', capability: CAP.MANAGE_STORE },
