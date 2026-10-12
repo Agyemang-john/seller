@@ -7,7 +7,10 @@
 
 import { apiClient } from "./client";
 import type {
-  SubscriptionPlan,
+  PlansResponse,
+  PlanChangeQuote,
+  ChargeSavedCardRequest,
+  SubscriptionChangeResponse,
   InitiateSubscriptionRequest,
   InitiateSubscriptionResponse,
   VerifySubscriptionResponse,
@@ -31,16 +34,41 @@ import type {
  * Used to populate the plan cards on the subscription page.
  * No authentication required.
  *
- * @returns Array of SubscriptionPlan ordered by price (cheapest first).
- *
- * @example
- * const plans = await fetchPlans();
- * // plans[0] = { id: 1, name: "Free", tier: "free", price: "0.00", ... }
+ * @returns Plans ordered by price (cheapest first) plus the vendor's current
+ * subscription (null when signed out or on no plan).
  */
-export async function fetchPlans(): Promise<SubscriptionPlan[]> {
-  return apiClient.get<SubscriptionPlan[]>("/api/v1/payments/plans/", {
-    public: true,   // no JWT — this is a public endpoint
-  });
+export async function fetchPlans(): Promise<PlansResponse> {
+  return apiClient.get<PlansResponse>("/api/v1/payments/plans/");
+}
+
+/**
+ * GET /api/v1/payments/quote/?plan_id=&billing=
+ * What switching to a plan costs today (prorated) and when it takes effect.
+ */
+export async function fetchPlanQuote(planId: number, billing: BillingCycle): Promise<PlanChangeQuote> {
+  return apiClient.get<PlanChangeQuote>(
+    `/api/v1/payments/quote/?plan_id=${planId}&billing=${billing}`
+  );
+}
+
+/**
+ * POST /api/v1/payments/charge-card/
+ * Pays for a plan with a saved card — no Paystack redirect.
+ */
+export async function chargeSavedCard(
+  data: ChargeSavedCardRequest
+): Promise<InitiateSubscriptionResponse> {
+  return apiClient.post<InitiateSubscriptionResponse>("/api/v1/payments/charge-card/", data);
+}
+
+/** POST /api/v1/payments/resume/ — undo a cancellation before the period ends. */
+export async function resumeSubscription(): Promise<SubscriptionChangeResponse> {
+  return apiClient.post<SubscriptionChangeResponse>("/api/v1/payments/resume/", {});
+}
+
+/** DELETE /api/v1/payments/scheduled-change/ — keep the current plan after all. */
+export async function clearScheduledChange(): Promise<SubscriptionChangeResponse> {
+  return apiClient.delete<SubscriptionChangeResponse>("/api/v1/payments/scheduled-change/");
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -1,42 +1,58 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Typography, Stack, Divider, Chip, useTheme } from "@mui/material";
+import { Box, Typography, Stack, Divider, Chip } from "@mui/material";
 import CheckIcon from "@mui/icons-material/Check";
 import RemoveIcon from "@mui/icons-material/Remove";
-import type { UIPlan, BillingCycle } from "@/types/subscription";
+import type { UIPlan, ActiveSubscription } from "@/types/subscription";
+import { planRelation, formatLongDate, type PlanRelation } from "@/libs/utils/planBuilder";
 
 interface PlansGridProps {
   plans: UIPlan[];
-  billing: BillingCycle;
   selectedPlanKey: string | null;
-  /** Composite key: "free" | "{tier}-{billing_cycle}" e.g. "pro-monthly" */
-  activePlanKey: string;
+  currentSubscription: ActiveSubscription | null;
+  /** Yearly saving per tier in percent, e.g. { pro: 20 } */
+  yearlySavings: Record<string, number>;
   onSelectPlan: (key: string) => void;
 }
 
+// Pro card uses a fixed near-black surface — intentionally off-theme.
+// Everything else defers to the MUI theme so light/dark modes both work.
+const PRO_BG         = "#111111";
+const PRO_BG_ACTIVE  = "#0a0a0a";
+const PRO_TEXT       = "#ffffff";
+const PRO_TEXT_DIM   = "rgba(255,255,255,0.5)";
+const PRO_TEXT_FAINT = "rgba(255,255,255,0.2)";
+const PRO_BORDER     = "rgba(255,255,255,0.12)";
+
+function ctaLabel(relation: PlanRelation, uiPlan: UIPlan, sub: ActiveSubscription | null): string {
+  const { plan } = uiPlan;
+  const scheduledHere = sub?.scheduled_plan?.id === plan.id;
+  switch (relation) {
+    case "current":
+      return "Your current plan";
+    case "cancel":
+      return sub?.cancel_at_period_end ? `Free from ${formatLongDate(sub.end_date)}` : "Cancel to move to Free";
+    case "downgrade":
+      return scheduledHere ? `Starts ${formatLongDate(sub!.end_date)}` : `Switch at renewal`;
+    case "upgrade":
+      return sub?.plan_tier === plan.tier ? "Switch to yearly" : `Upgrade to ${plan.name}`;
+    default:
+      return `Choose ${plan.name}`;
+  }
+}
+
 export default function PlansGrid({
-  plans, billing, selectedPlanKey, activePlanKey, onSelectPlan,
+  plans, selectedPlanKey, currentSubscription, yearlySavings, onSelectPlan,
 }: PlansGridProps) {
   const [hovered, setHovered] = useState<string | null>(null);
-  const theme = useTheme();
-
-  // ── Two fixed surfaces: Pro (always dark) and Default (theme-driven) ───────
-  // Pro card uses hardcoded near-black — it's intentionally off-theme.
-  // Everything else defers to the MUI theme so light/dark modes both work.
-  const PRO_BG         = "#111111";
-  const PRO_BG_ACTIVE  = "#0a0a0a";
-  const PRO_TEXT       = "#ffffff";
-  const PRO_TEXT_DIM   = "rgba(255,255,255,0.5)";
-  const PRO_TEXT_FAINT = "rgba(255,255,255,0.2)";
-  const PRO_BORDER     = "rgba(255,255,255,0.12)";
 
   return (
-    <Box component="section" sx={{ pb: 9 }}>
+    <Box component="section" sx={{ pb: 6 }}>
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "repeat(2,1fr)", md: "repeat(4,1fr)" },
+          gridTemplateColumns: { xs: "1fr", sm: "repeat(2,1fr)", md: `repeat(${Math.min(plans.length, 4)},1fr)` },
           border: 1,
           borderColor: "divider",
           borderRadius: "20px",
@@ -46,27 +62,25 @@ export default function PlansGrid({
         {plans.map((uiPlan, i) => {
           const { plan, features, isPro } = uiPlan;
           const planKey    = uiPlan.key;
-          const isSelected = selectedPlanKey === planKey;
+          const relation   = planRelation(plan, currentSubscription);
+          const isCurrent  = relation === "current";
+          const isSelected = selectedPlanKey === planKey && !isCurrent;
           const isHovered  = hovered === planKey;
-          const isActive   = isSelected || isHovered;
+          const isActive   = isSelected || (isHovered && !isCurrent);
           const isFree     = planKey === "free";
-          // ── Subscription state for this card ──────────────────────
-          // cardKey: exact match (tier + billing_cycle both match)
-          const cardKey    = isFree ? "free" : `${planKey}-${plan.billing_cycle}`;
-          // isCurrent: vendor is on THIS exact plan (tier + billing cycle)
-          const isCurrent  = activePlanKey === cardKey;
-          // isSameTier: vendor is on the same tier but DIFFERENT billing cycle
-          // e.g. vendor has Basic Monthly, this card is Basic Yearly
-          const activeTier = activePlanKey === "free" ? "free" : activePlanKey.split("-")[0];
-          const isSameTier = !isCurrent && activeTier === planKey && !isFree;
+          const isScheduled = currentSubscription?.scheduled_plan?.id === plan.id;
+          const clickable  = !isCurrent && !(relation === "cancel" && currentSubscription?.cancel_at_period_end) && !isScheduled;
+
           const price      = parseFloat(plan.price);
+          const isYearly   = plan.billing_cycle === "yearly";
+          const saving     = isYearly ? yearlySavings[planKey] : undefined;
           const maxP       = plan.max_products;
           const maxDisplay = maxP >= 999_999 ? "∞" : String(maxP);
 
           return (
             <Box
-              key={planKey}
-              onClick={() => onSelectPlan(planKey)}
+              key={`${planKey}-${plan.billing_cycle}`}
+              onClick={() => clickable && onSelectPlan(planKey)}
               onMouseEnter={() => setHovered(planKey)}
               onMouseLeave={() => setHovered(null)}
               sx={{
@@ -74,10 +88,10 @@ export default function PlansGrid({
                 display: "flex",
                 flexDirection: "column",
                 p: "32px 26px 26px",
-                cursor: isCurrent && isFree ? "default" : "pointer",
-                borderRight: i < plans.length - 1 ? 1 : 0,
-                borderColor: "divider",
-                // Pro: fixed dark surface. Others: theme background with hover state.
+                cursor: clickable ? "pointer" : "default",
+                borderRight: { md: i < plans.length - 1 ? 1 : 0 },
+                borderBottom: { xs: i < plans.length - 1 ? 1 : 0, md: 0 },
+                borderColor: { xs: "divider", md: "divider" },
                 bgcolor: isPro
                   ? isActive ? PRO_BG_ACTIVE : PRO_BG
                   : isActive ? "action.hover" : "background.paper",
@@ -87,67 +101,35 @@ export default function PlansGrid({
               {/* ── Top accent bar ──────────────────────────────────────── */}
               <Box
                 sx={{
-                  position: "absolute",
-                  top: 0, left: 0, right: 0,
-                  height: "2px",
-                  // Pro: always white. Current plan: primary colour. Others: theme divider → primary on hover.
+                  position: "absolute", top: 0, left: 0, right: 0, height: isCurrent || isSelected ? "3px" : "2px",
                   bgcolor: isPro
                     ? PRO_TEXT
-                    : isCurrent
-                    ? "primary.main"
-                    : isSameTier
-                    ? "text.disabled"         // muted — not their current cycle
-                    : isActive ? "text.primary" : "divider",
+                    : isCurrent ? "primary.main" : isActive ? "text.primary" : "divider",
                   transition: "background-color 0.2s",
                 }}
               />
 
               {/* ── Badges row ──────────────────────────────────────────── */}
-              <Stack direction="row" spacing={0.75} sx={{ mb: 2, minHeight: 22 }}>
-                {/* Exact match — vendor IS on this plan */}
+              <Stack direction="row" spacing={0.75} sx={{ mb: 2, minHeight: 22, flexWrap: "wrap", rowGap: 0.5 }}>
                 {isCurrent && (
-                  <Chip
-                    label="Current plan"
-                    size="small"
-                    sx={{
-                      height: 20,
-                      fontSize: 10,
-                      fontWeight: 700,
-                      letterSpacing: "0.04em",
-                      bgcolor: isPro ? "rgba(255,255,255,0.15)" : "text.primary",
-                      color: isPro ? PRO_TEXT : "background.paper",
-                      borderRadius: "5px",
-                      "& .MuiChip-label": { px: 1 },
-                    }}
-                  />
+                  <Chip label="Current plan" size="small" sx={{
+                    height: 20, fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", borderRadius: "5px",
+                    bgcolor: isPro ? "rgba(255,255,255,0.15)" : "text.primary",
+                    color: isPro ? PRO_TEXT : "background.paper",
+                    "& .MuiChip-label": { px: 1 },
+                  }} />
                 )}
-                {/* Same tier, different billing cycle — inform without confusing */}
-                {isSameTier && (
-                  <Chip
-                    label={`You have ${plan.tier_display} (${
-                      activePlanKey.endsWith("yearly") ? "monthly" : "yearly"
-                    })`}
-                    size="small"
-                    sx={{
-                      height: 20,
-                      fontSize: 10,
-                      fontWeight: 600,
-                      letterSpacing: "0.03em",
-                      bgcolor: isPro ? "rgba(255,255,255,0.08)" : "action.selected",
-                      color: isPro ? "rgba(255,255,255,0.55)" : "text.secondary",
-                      borderRadius: "5px",
-                      "& .MuiChip-label": { px: 1 },
-                    }}
-                  />
+                {isScheduled && (
+                  <Chip label="Scheduled" size="small" sx={{
+                    height: 20, fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", borderRadius: "5px",
+                    bgcolor: isPro ? "rgba(255,255,255,0.15)" : "action.selected",
+                    color: isPro ? PRO_TEXT : "text.primary",
+                    "& .MuiChip-label": { px: 1 },
+                  }} />
                 )}
-                {isPro && !isCurrent && !isSameTier && (
-                  <Typography variant="overline" sx={{ letterSpacing: "0.14em", color: PRO_TEXT_DIM, lineHeight: 1.4 }}>
-                    ★ Most Popular
-                  </Typography>
-                )}
-                {!isPro && !isCurrent && !isSameTier && (
-                  <Typography variant="overline" sx={{ letterSpacing: "0.14em", color: "text.secondary", lineHeight: 1.4 }}>
-                    {plan.tier_display}
+                {!isCurrent && !isScheduled && (
+                  <Typography variant="overline" sx={{ letterSpacing: "0.14em", color: isPro ? PRO_TEXT_DIM : "text.secondary", lineHeight: 1.4 }}>
+                    {isPro ? "★ Most popular" : plan.tier_display}
                   </Typography>
                 )}
               </Stack>
@@ -155,20 +137,22 @@ export default function PlansGrid({
               {/* ── Price ───────────────────────────────────────────────── */}
               <Box sx={{ mb: 2.75 }}>
                 {isFree ? (
-                  <Typography sx={{
-                    fontFamily: "var(--font-figtree), system-ui, sans-serif",
-                    fontSize: 38, fontWeight: 700, lineHeight: 1, letterSpacing: "-1px",
-                    color: isPro ? PRO_TEXT : "text.primary",
-                  }}>
-                    Free
-                  </Typography>
+                  <>
+                    <Typography sx={{
+                      fontFamily: "var(--font-figtree), system-ui, sans-serif",
+                      fontSize: 38, fontWeight: 700, lineHeight: 1, letterSpacing: "-1px",
+                      color: isPro ? PRO_TEXT : "text.primary",
+                    }}>
+                      Free
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: "text.secondary", mt: 0.6, display: "block" }}>
+                      forever
+                    </Typography>
+                  </>
                 ) : (
                   <>
                     <Stack direction="row" alignItems="flex-start" spacing={0.4}>
-                      <Typography component="sup" sx={{
-                        fontSize: 15, fontWeight: 500, mt: 1,
-                        color: isPro ? "rgba(255,255,255,0.6)" : "text.secondary",
-                      }}>
+                      <Typography component="sup" sx={{ fontSize: 15, fontWeight: 500, mt: 1, color: isPro ? "rgba(255,255,255,0.6)" : "text.secondary" }}>
                         GHS
                       </Typography>
                       <Typography sx={{
@@ -176,14 +160,13 @@ export default function PlansGrid({
                         fontSize: 48, fontWeight: 700, lineHeight: 1, letterSpacing: "-2px",
                         color: isPro ? PRO_TEXT : "text.primary",
                       }}>
-                        {price}
+                        {price.toLocaleString("en-GH")}
                       </Typography>
                     </Stack>
-                    <Typography variant="caption" sx={{
-                      color: isPro ? "rgba(255,255,255,0.4)" : "text.secondary",
-                      mt: 0.6, display: "block",
-                    }}>
-                      per {plan.billing_cycle === "yearly" ? "year" : "month"}
+                    <Typography variant="caption" sx={{ color: isPro ? "rgba(255,255,255,0.45)" : "text.secondary", mt: 0.6, display: "block" }}>
+                      {isYearly
+                        ? `per year · GHS ${(price / 12).toLocaleString("en-GH", { maximumFractionDigits: 2 })}/mo${saving ? ` · save ${saving}%` : ""}`
+                        : "per month"}
                     </Typography>
                   </>
                 )}
@@ -203,26 +186,31 @@ export default function PlansGrid({
                 fontWeight: 300, lineHeight: 1.6, mb: 2.75, flex: 1,
                 color: isPro ? PRO_TEXT_DIM : "text.secondary",
               }}>
-                {plan.description ??
-                  `Up to ${maxDisplay} products at ${plan.commission_display} commission.`}
+                {plan.description ||
+                  `Up to ${maxDisplay === "∞" ? "unlimited" : maxDisplay} products at ${plan.commission_display} commission.`}
               </Typography>
 
               <Divider sx={{ borderColor: isPro ? PRO_BORDER : "divider", mb: 2.25 }} />
 
-              {/* ── Product count ────────────────────────────────────────── */}
-              <Stack direction="row" alignItems="baseline" spacing={0.75} sx={{ mb: 2 }}>
-                <Typography sx={{
-                  fontFamily: "var(--font-figtree), system-ui, sans-serif",
-                  fontSize: 28, fontWeight: 700, lineHeight: 1,
-                  color: isPro ? PRO_TEXT : "text.primary",
-                }}>
-                  {maxDisplay}
-                </Typography>
-                <Typography variant="body2" fontWeight={500} sx={{
-                  color: isPro ? "rgba(255,255,255,0.4)" : "text.secondary",
-                }}>
-                  products
-                </Typography>
+              {/* ── Key numbers ─────────────────────────────────────────── */}
+              <Stack direction="row" spacing={2.5} sx={{ mb: 2.25 }}>
+                {[
+                  [maxDisplay, "products"],
+                  [plan.commission_display, "commission"],
+                ].map(([value, label]) => (
+                  <Box key={label}>
+                    <Typography sx={{
+                      fontFamily: "var(--font-figtree), system-ui, sans-serif",
+                      fontSize: 24, fontWeight: 700, lineHeight: 1,
+                      color: isPro ? PRO_TEXT : "text.primary",
+                    }}>
+                      {value}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: isPro ? "rgba(255,255,255,0.4)" : "text.secondary" }}>
+                      {label}
+                    </Typography>
+                  </Box>
+                ))}
               </Stack>
 
               {/* ── Features list ────────────────────────────────────────── */}
@@ -232,23 +220,18 @@ export default function PlansGrid({
                     <Box sx={{
                       width: 16, height: 16, borderRadius: "4px", flexShrink: 0, mt: "2px",
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      bgcolor: feat.on
-                        ? isPro ? "rgba(255,255,255,0.1)" : "action.selected"
-                        : "transparent",
+                      bgcolor: feat.on ? (isPro ? "rgba(255,255,255,0.1)" : "action.selected") : "transparent",
                       border: feat.on ? "none" : "1px solid",
-                      borderColor: feat.on
-                        ? "transparent"
-                        : isPro ? PRO_BORDER : "divider",
+                      borderColor: feat.on ? "transparent" : isPro ? PRO_BORDER : "divider",
                     }}>
                       {feat.on
-                        ? <CheckIcon sx={{ fontSize: 9, color: isPro ? PRO_TEXT : "text.primary", fontWeight: 700 }} />
-                        : <RemoveIcon sx={{ fontSize: 9, color: isPro ? PRO_TEXT_FAINT : "text.disabled" }} />
-                      }
+                        ? <CheckIcon sx={{ fontSize: 10, color: isPro ? PRO_TEXT : "text.primary" }} />
+                        : <RemoveIcon sx={{ fontSize: 10, color: isPro ? PRO_TEXT_FAINT : "text.disabled" }} />}
                     </Box>
                     <Typography variant="body2" sx={{
                       lineHeight: 1.45,
                       color: feat.on
-                        ? isPro ? "rgba(255,255,255,0.7)" : "text.secondary"
+                        ? isPro ? "rgba(255,255,255,0.75)" : "text.secondary"
                         : isPro ? PRO_TEXT_FAINT : "text.disabled",
                     }}>
                       {feat.label}
@@ -260,57 +243,45 @@ export default function PlansGrid({
               {/* ── CTA button ───────────────────────────────────────────── */}
               <Box
                 component="button"
+                type="button"
+                disabled={!clickable}
+                onClick={(e: React.MouseEvent) => { e.stopPropagation(); if (clickable) onSelectPlan(planKey); }}
                 sx={{
                   width: "100%", py: 1.6, px: 2,
                   borderRadius: "10px",
-                  fontFamily: "inherit", fontSize: 13, fontWeight: 600,
-                  letterSpacing: "0.04em",
-                  cursor: isCurrent && isFree ? "default" : "pointer",
+                  fontFamily: "inherit", fontSize: 13, fontWeight: 600, letterSpacing: "0.02em",
+                  cursor: clickable ? "pointer" : "default",
                   display: "flex", alignItems: "center", justifyContent: "space-between",
                   transition: "all 0.2s",
-                  // Pro card CTA
                   ...(isPro && {
-                    bgcolor: isCurrent
-                      ? "rgba(255,255,255,0.12)"
-                      : isSelected ? PRO_TEXT : "rgba(255,255,255,0.08)",
-                    color: isCurrent
-                      ? PRO_TEXT_DIM
-                      : isSelected ? "#111111" : "rgba(255,255,255,0.6)",
-                    border: `1px solid ${isCurrent || isSelected ? PRO_TEXT : PRO_BORDER}`,
+                    bgcolor: isSelected ? PRO_TEXT : "rgba(255,255,255,0.08)",
+                    color: isSelected ? "#111111" : isCurrent ? PRO_TEXT_DIM : "rgba(255,255,255,0.75)",
+                    border: `1px solid ${isSelected ? PRO_TEXT : PRO_BORDER}`,
                   }),
-                  // Light card CTA
                   ...(!isPro && {
-                    bgcolor: isCurrent || isSelected ? "text.primary" : "transparent",
-                    color: isCurrent || isSelected ? "background.paper" : "text.secondary",
+                    bgcolor: isSelected ? "text.primary" : "transparent",
+                    color: isSelected ? "background.paper" : isCurrent ? "text.disabled" : "text.primary",
                     border: "1px solid",
-                    borderColor: isCurrent || isSelected ? "text.primary" : "divider",
+                    borderColor: isSelected ? "text.primary" : "divider",
                   }),
-                  // Danger state — hovering the current paid plan
-                  ...(isCurrent && !isFree && isHovered && !isPro && {
-                    bgcolor: "error.lighter",
-                    color: "error.main",
-                    borderColor: "error.light",
-                  }),
-                  ...(isCurrent && !isFree && isHovered && isPro && {
-                    bgcolor: "rgba(220,38,38,0.15)",
-                    color: "#fca5a5",
-                    borderColor: "rgba(220,38,38,0.4)",
+                  ...(relation === "cancel" && clickable && isHovered && {
+                    color: "error.main", borderColor: "error.main",
                   }),
                 }}
               >
-                <span>
-                  {isCurrent
-                    ? isFree ? "Your current plan" : "Manage · Cancel"
-                    : isSameTier
-                    ? `Switch to ${plan.billing_cycle === "yearly" ? "yearly" : "monthly"}`
-                    : isSelected ? `Upgrade to ${plan.name}` : `Select ${plan.name}`}
-                </span>
-                {!(isCurrent && isFree) && (
-                  <span style={{ fontSize: 13 }}>
-                    {isCurrent ? "✕" : "→"}
-                  </span>
-                )}
+                <span>{ctaLabel(relation, uiPlan, currentSubscription)}</span>
+                {clickable && <span aria-hidden>→</span>}
               </Box>
+              {relation === "downgrade" && !isScheduled && currentSubscription && (
+                <Typography variant="caption" sx={{ mt: 1, textAlign: "center", color: isPro ? PRO_TEXT_DIM : "text.secondary" }}>
+                  Keeps your current plan until {formatLongDate(currentSubscription.end_date)}
+                </Typography>
+              )}
+              {relation === "upgrade" && (
+                <Typography variant="caption" sx={{ mt: 1, textAlign: "center", color: isPro ? PRO_TEXT_DIM : "text.secondary" }}>
+                  Pay only the difference for the days left
+                </Typography>
+              )}
             </Box>
           );
         })}

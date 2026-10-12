@@ -6,130 +6,115 @@ import type { BillingCycle } from "@/types/subscription";
 interface HeroSectionProps {
   billing: BillingCycle;
   onBillingChange: (b: BillingCycle) => void;
+  /** Best yearly saving across tiers, in percent (0 when no yearly plans) */
+  yearlySaving: number;
 }
 
-export default function HeroSection({ billing, onBillingChange }: HeroSectionProps) {
+export default function HeroSection({ billing, onBillingChange, yearlySaving }: HeroSectionProps) {
   const isYearly = billing === "yearly";
 
   return (
     <Box
       component="section"
-      sx={{ py: { xs: 6, md: 10 }, position: "relative", overflow: "hidden" }}
+      sx={{
+        pt: { xs: 4, md: 6 }, pb: { xs: 3, md: 4 },
+        display: "flex", flexDirection: { xs: "column", md: "row" },
+        alignItems: { md: "flex-end" }, justifyContent: "space-between", gap: 3,
+      }}
     >
-      {/* Ghost number */}
-      <Typography
-        aria-hidden
-        sx={{
-          position: "absolute", right: -20, top: 20,
-          fontFamily: "var(--font-figtree), system-ui, sans-serif", fontWeight: 700,
-          fontSize: { xs: "120px", md: "220px" },
-          lineHeight: 1, letterSpacing: "-8px",
-          color: "transparent",
-          WebkitTextStroke: "1px",
-          WebkitTextStrokeColor: "divider",
-          pointerEvents: "none", userSelect: "none",
-        }}
-      >
-        4
-      </Typography>
+      <Box>
+        <Typography
+          component="h1"
+          sx={{
+            fontFamily: "var(--font-figtree), system-ui, sans-serif", fontWeight: 700,
+            fontSize: { xs: "30px", md: "42px" },
+            lineHeight: 1.05, letterSpacing: "-1.5px",
+            color: "text.primary", mb: 1,
+          }}
+        >
+          Subscription
+        </Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.6, maxWidth: 480 }}>
+          Upgrade any time and pay only for the days left. Downgrades and cancellations
+          take effect at the end of the period you&apos;ve paid for.
+        </Typography>
+      </Box>
 
-      <Box sx={{ position: "relative" }}>
-        {/* Heading */}
-        <Box sx={{ mb: 4 }}>
-          <Typography
-            component="h1"
-            sx={{
-              fontFamily: "var(--font-figtree), system-ui, sans-serif", fontWeight: 700,
-              fontSize: { xs: "30px", md: "50px", lg: "50px" },
-              lineHeight: 1.02, letterSpacing: "-2px",
-              color: "text.primary", mb: 2,
-            }}
-          >
-            Grow your store<br />on Negromart.
-          </Typography>
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            sx={{ fontWeight: 300, lineHeight: 1.65, maxWidth: 440 }}
-          >
-            Choose the plan that fits your business. Upgrade or cancel anytime.
-          </Typography>
-        </Box>
-
-        {/* Billing toggle */}
-        <Stack direction="row" alignItems="center" spacing={1.75}>
-          <Typography variant="body2" color="text.secondary">Bill me</Typography>
-
+      {/* Billing toggle */}
+      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ flexShrink: 0 }}>
+        <Box
+          role="radiogroup"
+          aria-label="Billing cycle"
+          sx={{
+            position: "relative",
+            width: 200, height: 42,
+            bgcolor: "action.hover",
+            border: 1, borderColor: "divider",
+            borderRadius: "10px",
+            display: "flex", p: "3px",
+            userSelect: "none",
+          }}
+        >
+          {/* Sliding pill */}
           <Box
-            onClick={() => onBillingChange(isYearly ? "monthly" : "yearly")}
             sx={{
-              position: "relative",
-              width: 186, height: 42,
-              bgcolor: "action.hover",
-              border: 1, borderColor: "divider",
-              borderRadius: "10px",
-              display: "flex", p: "3px",
-              cursor: "pointer", userSelect: "none",
+              position: "absolute", top: "3px", left: "3px",
+              width: "calc(50% - 3px)", height: "calc(100% - 6px)",
+              bgcolor: "text.primary",
+              borderRadius: "7px",
+              transition: "transform 0.25s cubic-bezier(0.34,1.56,0.64,1)",
+              transform: isYearly ? "translateX(100%)" : "translateX(0)",
             }}
-          >
-            {/* Sliding pill */}
-            <Box
-              sx={{
-                position: "absolute", top: "3px", left: "3px",
-                width: "calc(50% - 3px)", height: "calc(100% - 6px)",
-                bgcolor: "text.primary",
-                borderRadius: "7px",
-                transition: "transform 0.25s cubic-bezier(0.34,1.56,0.64,1)",
-                transform: isYearly ? "translateX(100%)" : "translateX(0)",
-              }}
-            />
-            {["Monthly", "Yearly"].map((label) => {
-              const active = (label === "Yearly") === isYearly;
-              return (
-                <Stack
-                  key={label}
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="center"
-                  spacing={0.5}
-                  sx={{ flex: 1, position: "relative", zIndex: 1 }}
+          />
+          {(["monthly", "yearly"] as const).map((cycle) => {
+            const active = cycle === billing;
+            return (
+              <Stack
+                key={cycle}
+                component="button"
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => onBillingChange(cycle)}
+                direction="row"
+                alignItems="center"
+                justifyContent="center"
+                spacing={0.5}
+                sx={{
+                  flex: 1, position: "relative", zIndex: 1,
+                  border: 0, bgcolor: "transparent", cursor: "pointer", font: "inherit", p: 0,
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  fontWeight={600}
+                  sx={{
+                    letterSpacing: "0.04em",
+                    color: active ? "background.paper" : "text.secondary",
+                    transition: "color 0.2s",
+                  }}
                 >
-                  <Typography
-                    variant="caption"
-                    fontWeight={600}
+                  {cycle === "monthly" ? "Monthly" : "Yearly"}
+                </Typography>
+                {cycle === "yearly" && yearlySaving > 0 && (
+                  <Box
+                    component="span"
                     sx={{
-                      letterSpacing: "0.04em",
-                      color: active ? "background.paper" : "text.secondary",
-                      transition: "color 0.2s",
+                      bgcolor: active ? "background.paper" : "text.primary",
+                      color: active ? "text.primary" : "background.paper",
+                      fontSize: "9px", fontWeight: 700,
+                      px: 0.6, py: 0.2,
+                      borderRadius: "4px", letterSpacing: "0.04em",
                     }}
                   >
-                    {label}
-                  </Typography>
-                  {label === "Yearly" && isYearly && (
-                    <Box
-                      sx={{
-                        bgcolor: "background.paper",
-                        color: "text.primary",
-                        fontSize: "9px", fontWeight: 700,
-                        px: 0.6, py: 0.2,
-                        borderRadius: "4px", letterSpacing: "0.04em",
-                      }}
-                    >
-                      −20%
-                    </Box>
-                  )}
-                </Stack>
-              );
-            })}
-          </Box>
-
-          {!isYearly && (
-            <Typography variant="caption" color="text.secondary">
-              Switch to yearly and save 20%
-            </Typography>
-          )}
-        </Stack>
-      </Box>
+                    −{yearlySaving}%
+                  </Box>
+                )}
+              </Stack>
+            );
+          })}
+        </Box>
+      </Stack>
     </Box>
   );
 }

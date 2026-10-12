@@ -63,6 +63,8 @@ export interface SubscriptionPlan {
   /** Pre-formatted e.g. "8%" */
   commission_display: string;
   payout_delay_days: number;
+  max_team_members: number;
+  can_export_reports: boolean;
 
   // ── Metadata ─────────────────────────────────────────────────────────────
   is_active: boolean;
@@ -94,8 +96,12 @@ export interface VendorSubscription {
   is_active: boolean;
   is_on_trial: boolean;
 
-  /** Price of the next renewal charge */
+  /** Price of the next renewal charge (the scheduled plan's, if one is waiting) */
   renewal_amount: number;
+  /** Cancelled: keeps the plan until end_date, then moves to Free */
+  cancel_at_period_end: boolean;
+  /** Downgrade waiting for the next renewal */
+  scheduled_plan: ScheduledPlan | null;
 
   created_at: string;
   updated_at: string;
@@ -112,6 +118,16 @@ export interface ActiveSubscription {
   end_date: string;
   auto_renew: boolean;
   days_remaining: number;
+  cancel_at_period_end: boolean;
+  scheduled_plan: ScheduledPlan | null;
+}
+
+export interface ScheduledPlan {
+  id: number;
+  name: string;
+  tier: PlanTier;
+  billing_cycle: BillingCycle;
+  price: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -191,27 +207,45 @@ export interface UpdateAutoRenewRequest {
 // API Response shapes
 // ─────────────────────────────────────────────────────────────────────────────
 
-export interface UpgradeInfo {
-  from_plan: string;
-  to_plan: string;
-  /** String decimal e.g. "400.00" */
-  charged_today: string;
-  current_plan_ends_now: boolean;
-  new_plan_starts_today: boolean;
+/**
+ * GET /api/v1/payments/quote/ — what a plan change costs today.
+ * upgrade: pay the prorated difference now. downgrade: switch at effective_date,
+ * nothing to pay. cancel: moving to Free means cancelling.
+ */
+export type PlanChangeType = "initial" | "upgrade" | "downgrade" | "current" | "cancel";
+
+export interface PlanChangeQuote {
+  plan_id: number;
+  plan_name: string;
+  billing_cycle: BillingCycle;
+  change_type: PlanChangeType;
+  /** Decimal strings */
+  price: string;
+  credit: string;
+  amount_due: string;
+  current_plan: string | null;
+  current_billing_cycle: BillingCycle | null;
+  effective_date: string | null;
+  period_end: string | null;
 }
 
+/**
+ * Paystack checkout when a payment is needed; otherwise the change was
+ * applied straight away (activated) or queued for the next renewal (scheduled).
+ */
 export interface InitiateSubscriptionResponse {
-  /** Paystack-hosted checkout URL — redirect vendor here */
-  authorization_url: string;
-  reference: string;
-  access_code: string;
-  /** "initial" | "upgrade" | "downgrade" — set by the backend */
-  transaction_type: TransactionType;
-  /**
-   * Present only when transaction_type is "upgrade" or "downgrade".
-   * Used by CheckoutPanel to show the confirmation warning banner.
-   */
-  upgrade_info?: UpgradeInfo;
+  authorization_url?: string;
+  reference?: string;
+  access_code?: string;
+  transaction_type?: TransactionType;
+  activated?: boolean;
+  scheduled?: boolean;
+  plan?: string;
+  effective_date?: string;
+}
+
+export interface ChargeSavedCardRequest extends InitiateSubscriptionRequest {
+  card_id: number;
 }
 
 export interface VerifySubscriptionResponse {
@@ -240,6 +274,11 @@ export interface PlansResponse {
 export interface CancelSubscriptionResponse {
   message: string;
   access_until: string;
+  subscription: ActiveSubscription;
+}
+
+export interface SubscriptionChangeResponse {
+  message: string;
   subscription: ActiveSubscription;
 }
 

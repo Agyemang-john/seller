@@ -1,156 +1,172 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Box, Container, Typography, CircularProgress, Alert, Button } from "@mui/material";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { Box, Container, Typography, CircularProgress, Alert, Button, Snackbar } from "@mui/material";
 import HeroSection from "./_components/Herosection";
+import CurrentPlanCard from "./_components/CurrentPlanCard";
 import PlansGrid from "./_components/PlansGrid";
 import CheckoutPanel from "./_components/Checkoutpanel";
 import ComparisonTable from "./_components/Comparisontable";
 import FAQSection from "./_components/Faqsection";
 import CancelDialog from "./_components/Canceldialog";
-import { usePlans, useCancelSubscription } from "@/hooks/useSubscription";
-import type { UIPlan, BillingCycle } from "@/types/subscription";
+import {
+  usePlans, useCurrentSubscription, useCancelSubscription, usePlanActions,
+} from "@/hooks/useSubscription";
+import { planRelation, formatLongDate } from "@/libs/utils/planBuilder";
+import type { UIPlan, BillingCycle, InitiateSubscriptionResponse } from "@/types/subscription";
 
 export default function SubscriptionPage() {
   const [billing, setBilling]                 = useState<BillingCycle>("monthly");
   const [selectedPlanKey, setSelectedPlanKey] = useState<string | null>(null);
   const [showCancel, setShowCancel]           = useState(false);
+  const [toast, setToast]                     = useState<string | null>(null);
   const checkoutRef = useRef<HTMLDivElement>(null);
+  const billingInitialised = useRef(false);
 
-  // ── Data fetching ──────────────────────────────────────────────────────────
-  // Both run in parallel on mount
-  // usePlans now returns currentTier + currentSubscription alongside the plan
-  // list — no need for a separate useCurrentSubscription() call on this page.
   const {
-    plans,
-    currentTier,
-    activePlanKey,
-    currentSubscription,
-    loading: plansLoading,
-    error: plansError,
-    refetch: refetchPlans,
+    plans, allPlans, currentSubscription, yearlySavings, bestYearlySaving,
+    loading: plansLoading, error: plansError, refetch: refetchPlans,
   } = usePlans(billing);
+  const { subscription, usage, refetch: refetchCurrent } = useCurrentSubscription();
 
-  // ── Pre-select the vendor's current plan tier on load ──────────────────────
+  const refreshAll = useCallback(() => {
+    refetchPlans();
+    refetchCurrent();
+  }, [refetchPlans, refetchCurrent]);
+
+  // Open on the cycle the seller already pays, so their plan is highlighted.
   useEffect(() => {
-    if (!plansLoading && selectedPlanKey === null) {
-      setSelectedPlanKey(currentTier ?? "free");
-    }
-  }, [plansLoading, currentTier]);
+    if (billingInitialised.current || plansLoading) return;
+    billingInitialised.current = true;
+    if (currentSubscription?.plan_billing_cycle === "yearly") setBilling("yearly");
+  }, [plansLoading, currentSubscription]);
 
-  // ── Cancel subscription ────────────────────────────────────────────────────
-  const { cancel, loading: cancelling, error: cancelError } = useCancelSubscription(() => {
-    refetchPlans();         // reload plans + subscription state after cancel
-    setShowCancel(false);
-  });
+  const planActions = usePlanActions(refreshAll);
+  const { cancel, loading: cancelling, error: cancelError } = useCancelSubscription(
+    useCallback(() => {
+      refreshAll();
+      setShowCancel(false);
+      setToast("Subscription cancelled. You keep your plan until the end of the period.");
+    }, [refreshAll])
+  );
 
-  // ── Plan selection ─────────────────────────────────────────────────────────
+  const freePlan = allPlans.find((p: UIPlan) => p.key === "free")?.plan ?? null;
+  const freeMaxProducts = freePlan?.max_products ?? null;
+
+  // One plan per tier for the comparison table (monthly where there's a choice).
+  const comparisonPlans = useMemo(() => {
+    const seen = new Set<string>();
+    return [...allPlans]
+      .sort((a: UIPlan, b: UIPlan) => Number(a.plan.billing_cycle !== "monthly") - Number(b.plan.billing_cycle !== "monthly"))
+      .filter((p: UIPlan) => (seen.has(p.key) ? false : (seen.add(p.key), true)))
+      .sort((a: UIPlan, b: UIPlan) => parseFloat(a.plan.price) - parseFloat(b.plan.price));
+  }, [allPlans]);
+
   const handleSelectPlan = (planKey: string) => {
-    const isCurrentPlan = (currentTier ?? "free") === planKey;
-
-    if (isCurrentPlan) {
-      // Clicking the current plan opens the cancel dialog instead of checkout
-      if (planKey !== "free") setShowCancel(true);
-      return;
-    }
+    const uiPlan = plans.find((p: UIPlan) => p.key === planKey);
+    if (!uiPlan) return;
+    const relation = planRelation(uiPlan.plan, currentSubscription);
+    if (relation === "current") return;
+    if (relation === "cancel") { setShowCancel(true); return; }
 
     setSelectedPlanKey(planKey);
-    if (planKey !== "free") {
-      setTimeout(() => {
-        checkoutRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 80);
-    }
+    setTimeout(() => checkoutRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   };
 
-  // currentPlan for CheckoutPanel — always matches billing + tier
-  const currentPlan: UIPlan | null = plans.find((p) => p.key === selectedPlanKey) ?? null;
+  const handleChanged = useCallback((result: InitiateSubscriptionResponse) => {
+    setSelectedPlanKey(null);
+    refreshAll();
+    if (result.scheduled) {
+      setToast(`Switch to ${result.plan} scheduled for ${formatLongDate(result.effective_date)}.`);
+    } else {
+      setToast(`You're now on ${result.plan ?? "your new plan"}.`);
+    }
+  }, [refreshAll]);
 
-  // activePlanKey is the composite key from the hook — used by PlansGrid
-  // to highlight exactly one card (tier + billing_cycle must both match).
-
-  const isLoading = plansLoading;
+  const selectedPlan: UIPlan | null = plans.find((p: UIPlan) => p.key === selectedPlanKey) ?? null;
+  const cancelTarget = subscription && parseFloat(subscription.plan.price) > 0
+    ? { plan_name: subscription.plan.name, end_date: subscription.end_date, days_remaining: subscription.days_remaining }
+    : null;
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
       <Container maxWidth="lg">
-        <HeroSection billing={billing} onBillingChange={setBilling} />
+        <HeroSection billing={billing} onBillingChange={setBilling} yearlySaving={bestYearlySaving} />
 
-        {/* Loading */}
-        {isLoading && (
+        {plansLoading && (
           <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1.5, py: 10 }}>
             <CircularProgress size={20} thickness={5} />
             <Typography variant="body2" color="text.secondary">Loading plans…</Typography>
           </Box>
         )}
 
-        {/* Error */}
-        {plansError && !isLoading && (
+        {plansError && !plansLoading && (
           <Alert
             severity="error"
-            action={<Button color="inherit" size="small" onClick={() => window.location.reload()}>Retry</Button>}
+            action={<Button color="inherit" size="small" onClick={refreshAll}>Retry</Button>}
             sx={{ mb: 4, borderRadius: 2 }}
           >
             {plansError}
           </Alert>
         )}
 
-        {/* Plans grid */}
-        {!isLoading && !plansError && plans.length > 0 && (
-          <PlansGrid
-            plans={plans}
-            billing={billing}
-            selectedPlanKey={selectedPlanKey}
-            activePlanKey={activePlanKey}
-            onSelectPlan={handleSelectPlan}
-          />
-        )}
+        {!plansLoading && !plansError && (
+          <>
+            <CurrentPlanCard
+              subscription={subscription}
+              usage={usage}
+              freeMaxProducts={freeMaxProducts}
+              busy={planActions.busy as "resume" | "keep" | null}
+              error={planActions.error}
+              onCancel={() => setShowCancel(true)}
+              onResume={async () => { if (await planActions.resume()) setToast("Your plan will renew as normal."); }}
+              onKeepCurrentPlan={async () => { if (await planActions.keepCurrentPlan()) setToast("Scheduled change removed."); }}
+            />
 
-        {/* Checkout — only shown when selecting a DIFFERENT (non-current) plan */}
-        <div ref={checkoutRef}>
-          {selectedPlanKey &&
-            selectedPlanKey !== "free" &&
-            selectedPlanKey !== currentTier &&
-            currentPlan && (
-              <CheckoutPanel plan={currentPlan} billing={billing} />
+            {plans.length > 0 && (
+              <PlansGrid
+                plans={plans}
+                selectedPlanKey={selectedPlanKey}
+                currentSubscription={currentSubscription}
+                yearlySavings={yearlySavings}
+                onSelectPlan={handleSelectPlan}
+              />
             )}
-        </div>
 
-        <ComparisonTable />
-        <FAQSection />
+            <div ref={checkoutRef} style={{ scrollMarginTop: 80 }}>
+              {selectedPlan && (
+                <CheckoutPanel
+                  key={`${selectedPlan.plan.id}`}
+                  plan={selectedPlan}
+                  billing={billing}
+                  onChanged={handleChanged}
+                  onCancel={() => setSelectedPlanKey(null)}
+                />
+              )}
+            </div>
 
-        <Box
-          component="footer"
-          sx={{
-            borderTop: 1, borderColor: "divider",
-            py: 3.5,
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            flexWrap: "wrap", gap: 1.5,
-          }}
-        >
-          <Typography variant="caption" color="text.disabled">
-            © 2026 Negromart Ghana. All rights reserved.
-          </Typography>
-          <Box sx={{ display: "flex", gap: 3 }}>
-            {["Terms", "Privacy", "Contact"].map((l) => (
-              <Typography
-                key={l} component="a" href="#" variant="caption" color="text.disabled"
-                sx={{ textDecoration: "none", "&:hover": { color: "text.primary" }, transition: "color 0.18s" }}
-              >
-                {l}
-              </Typography>
-            ))}
-          </Box>
-        </Box>
+            <ComparisonTable plans={comparisonPlans} />
+            <FAQSection />
+          </>
+        )}
       </Container>
 
-      {/* Cancel dialog — shown when vendor clicks their current paid plan */}
       <CancelDialog
         open={showCancel}
-        subscription={currentSubscription}
+        subscription={cancelTarget}
+        freeMaxProducts={freeMaxProducts}
         loading={cancelling}
         error={cancelError}
         onConfirm={(reason) => cancel(reason)}
         onClose={() => setShowCancel(false)}
+      />
+
+      <Snackbar
+        open={!!toast}
+        autoHideDuration={5000}
+        onClose={() => setToast(null)}
+        message={toast}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       />
     </Box>
   );

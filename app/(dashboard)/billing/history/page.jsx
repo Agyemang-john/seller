@@ -2,11 +2,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Typography, Stack, Chip, IconButton, Skeleton, Alert, Tooltip } from '@mui/material';
+import { Box, Typography, Stack, Chip, IconButton, Skeleton, Alert } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { TXN_STATUS, getStatusEntry } from '@/theme/designTokens';
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
-import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useBillingHistory } from '@/hooks/useBilling';
@@ -40,9 +39,9 @@ export default function BillingHistoryPage() {
 
       <Box sx={{ borderRadius: '16px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', overflow: 'hidden' }}>
         {/* Header row */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: '140px 1fr 130px 100px 40px', px: 3, py: 1.5, bgcolor: 'action.hover', borderBottom: '1px solid', borderColor: 'divider' }}>
-          {['Date', 'Description', 'Amount', 'Status', ''].map((h) => (
-            <Typography key={h} variant="caption" sx={{ fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.disabled', fontSize: 10 }}>{h}</Typography>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '96px 1fr 110px', sm: '140px 1fr 130px 110px' }, px: 3, py: 1.5, bgcolor: 'action.hover', borderBottom: '1px solid', borderColor: 'divider' }}>
+          {['Date', 'Description', 'Amount', 'Status'].map((h, i) => (
+            <Typography key={h} variant="caption" sx={{ fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.disabled', fontSize: 10, display: i === 3 ? { xs: 'none', sm: 'block' } : 'block' }}>{h}</Typography>
           ))}
         </Box>
 
@@ -58,22 +57,20 @@ export default function BillingHistoryPage() {
             const date = new Date(txn.created_at).toLocaleDateString('en-GH', { month: 'short', day: 'numeric', year: 'numeric' });
             return (
               <Box key={txn.id} sx={{
-                display: 'grid', gridTemplateColumns: '140px 1fr 130px 100px 40px', alignItems: 'center',
+                display: 'grid', gridTemplateColumns: { xs: '96px 1fr 110px', sm: '140px 1fr 130px 110px' }, alignItems: 'center',
                 px: 3, py: 1.75, borderBottom: i < txns.length - 1 ? '1px solid' : 'none', borderColor: 'divider',
                 transition: 'background-color 0.15s', '&:hover': { bgcolor: 'action.hover' },
               }}>
                 <Typography variant="body2" color="text.secondary">{date}</Typography>
                 <Box>
                   <Typography variant="body2" fontWeight={600} color="text.primary">{txn.type_display}</Typography>
-                  <Typography variant="caption" color="text.disabled">{txn.plan_name}{txn.card_last4 ? ` · ${txn.card_last4}` : ''}</Typography>
+                  <Typography variant="caption" color="text.disabled">
+                    {txn.plan_name}{txn.card_last4 ? ` · ${txn.card_last4}` : ''}
+                    <Box component="span" sx={{ display: { sm: 'none' }, color: sc.text, fontWeight: 700 }}> · {scEntry.label}</Box>
+                  </Typography>
                 </Box>
                 <Typography variant="body2" fontWeight={700} color="text.primary">{txn.amount_formatted}</Typography>
-                <Chip label={scEntry.label} size="small" sx={{ height: 20, fontSize: 10, fontWeight: 700, bgcolor: sc.bg, color: sc.text, borderRadius: '5px', '& .MuiChip-label': { px: 1 }, width: 'fit-content' }} />
-                <Tooltip title="Download receipt">
-                  <IconButton size="small" sx={{ borderRadius: '6px', color: 'text.disabled', '&:hover': { bgcolor: 'action.selected', color: 'text.primary' } }}>
-                    <DownloadOutlinedIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
-                </Tooltip>
+                <Chip label={scEntry.label} size="small" sx={{ height: 20, fontSize: 10, fontWeight: 700, bgcolor: sc.bg, color: sc.text, borderRadius: '5px', '& .MuiChip-label': { px: 1 }, width: 'fit-content', display: { xs: 'none', sm: 'inline-flex' } }} />
               </Box>
             );
           })

@@ -8,27 +8,27 @@ import RemoveIcon from "@mui/icons-material/Remove";
 const FAQS = [
   {
     q: "Can I cancel anytime?",
-    a: "Yes. Cancel from your vendor dashboard at any time. You keep full access until the end of your current billing period, then your account moves to Free automatically. No cancellation fees.",
+    a: "Yes. Cancel from this page and you won't be charged again. You keep your plan until the end of the period you've paid for, then your store moves to Free. Changed your mind? Choose “Keep my plan” any time before that date.",
   },
   {
-    q: "What happens if my payment fails?",
-    a: "We retry the charge over 3 consecutive days and email you each time. If all retries fail, your account enters a grace period before downgrading to Free. Your products and data are never deleted.",
+    q: "How do upgrades work?",
+    a: "Upgrades start straight away. Unused days on your current plan are credited, so you only pay the difference for the days left, and your renewal date stays the same. Switching from monthly to yearly starts a new yearly period today, minus your credit.",
   },
   {
-    q: "Can I upgrade mid-cycle?",
-    a: "Absolutely. When you upgrade, the unused days on your current plan are credited toward the new one. You only pay the prorated difference for the remainder of the billing cycle.",
+    q: "How do downgrades work?",
+    a: "Nothing is charged when you downgrade. You keep your current plan until your renewal date, and the new plan starts then at its own price. You can cancel a scheduled downgrade before it happens.",
   },
   {
-    q: "Is my card stored securely?",
-    a: "We never store your card details on our servers. All card data is handled exclusively by Paystack, which is PCI-DSS Level 1 compliant. We only keep a reusable authorization token that Paystack issues.",
+    q: "What happens if a renewal payment fails?",
+    a: "We email you straight away and try again once a day for a few days. If every attempt fails, your store moves to the Free plan. Your products and data are never deleted.",
   },
   {
-    q: "What payment methods do you accept?",
-    a: "Visa and Mastercard cards, MTN Mobile Money, Vodafone Cash, AirtelTigo Money, and direct bank transfer. All payments are processed in Ghanaian Cedis (GHS).",
+    q: "What happens to my products if I move to a smaller plan?",
+    a: "Products you've already listed stay live. You just can't add new ones until you're under the new plan's listing limit.",
   },
   {
-    q: "What happens to my products if I downgrade?",
-    a: "Existing products beyond your new plan's limit are hidden from buyers but never deleted. Once you upgrade again, they all become visible immediately. You can also choose which products to keep active.",
+    q: "Which payment methods can I use?",
+    a: "Visa, Mastercard and Verve cards, MTN Mobile Money, Vodafone Cash and AirtelTigo Money, all in Ghana Cedis. Cards are processed by Paystack; we only keep a token to charge renewals, never your card number.",
   },
 ];
 

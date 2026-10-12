@@ -11,7 +11,6 @@ const TABS = [
   { label: 'Overview',  path: '/billing'           },
   { label: 'History',   path: '/billing/history'   },
   { label: 'Cards & MoMo', path: '/billing/cards'  },
-  { label: 'Plans',     path: '/billing/plans'     },
   { label: 'Settings',  path: '/billing/settings'  },
 ];
 const PAGE_TITLE = 'Billing';

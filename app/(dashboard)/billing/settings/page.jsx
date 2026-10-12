@@ -1,11 +1,10 @@
 'use client';
 // app/vendor/billing/settings/page.jsx
-// Settings tab: billing details, auto-renew, notification preferences.
+// Settings tab: billing details and auto-renew.
 
 import { useState, useEffect } from 'react';
-import { Box, Typography, Stack, Button, Switch, FormControlLabel, Alert, Skeleton, Divider } from '@mui/material';
+import { Box, Typography, Stack, Button, Alert, Skeleton } from '@mui/material';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
-import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined';
 import BillingDetailsForm from '../../subscribe/_components/Billingdetailsform';
 import { useBillingOverview } from '@/hooks/useBilling';
 import { createAxiosClient } from '@/utils/clientFetch';
@@ -30,15 +29,16 @@ function SectionCard({ children, sx }) {
   );
 }
 
+// The Free plan has a 100-year record; it isn't a subscription to manage.
+const paidOnly = (sub) => (sub && parseFloat(sub.plan?.price) > 0 ? sub : null);
+
 export default function BillingSettingsPage() {
   const { overview, loading, error, refetch } = useBillingOverview();
   const { data: profile, mutate: refetchProfile } = useSWR('/api/v1/payments/billing/profile/', fetcher, { revalidateOnFocus: false });
 
   const [togglingRenew, setTogglingRenew] = useState(false);
-  const [emailOnRenew,  setEmailOnRenew]  = useState(true);
-  const [emailOnFail,   setEmailOnFail]   = useState(true);
 
-  const sub = overview?.subscription;
+  const sub = paidOnly(overview?.subscription);
 
   const handleToggleAutoRenew = async () => {
     if (!sub) return;
@@ -71,7 +71,7 @@ export default function BillingSettingsPage() {
         Billing Settings
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-        Manage your billing details, renewal preferences, and notifications
+        Manage your billing details and renewal preferences
       </Typography>
 
       {/* ── 1. Billing details ───────────────────────────────────────── */}
@@ -89,7 +89,7 @@ export default function BillingSettingsPage() {
 
       {/* ── 2. Auto-renewal ──────────────────────────────────────────── */}
       <SectionLabel>Renewal settings</SectionLabel>
-      <SectionCard sx={{ mb: 4 }}>
+      <SectionCard>
         {!sub ? (
           <Typography variant="body2" color="text.disabled">No active subscription to configure.</Typography>
         ) : (
@@ -117,59 +117,19 @@ export default function BillingSettingsPage() {
                   '&:hover': { borderColor: sub.auto_renew ? 'error.main' : 'text.primary', color: sub.auto_renew ? 'error.main' : 'text.primary' },
                 }}
               >
-                {togglingRenew ? 'Updating…' : sub.auto_renew ? 'Turn off auto-renew' : 'Enable auto-renew'}
+                {togglingRenew ? 'Updating…' : sub.auto_renew ? 'Turn off auto-renew' : sub.cancel_at_period_end ? 'Keep my plan' : 'Turn on auto-renew'}
               </Button>
             </Stack>
 
             {!sub.auto_renew && (
-              <Box sx={{ px: 2, py: 1.5, borderRadius: '10px', bgcolor: 'warning.lighter', border: '1px solid', borderColor: 'warning.light' }}>
-                <Typography variant="caption" sx={{ fontWeight: 600, color: 'warning.dark', lineHeight: 1.6 }}>
-                  ⚠ Auto-renew is off. Your subscription will expire on {fmtDate(sub.end_date)}. You will need to manually renew to keep your vendor access.
-                </Typography>
-              </Box>
+              <Alert severity="warning" sx={{ borderRadius: '10px' }}>
+                Auto-renew is off. Your {sub.plan.name} plan ends on {fmtDate(sub.end_date)}, then your store moves to Free.
+              </Alert>
             )}
           </>
         )}
       </SectionCard>
 
-      {/* ── 3. Notification preferences ─────────────────────────────── */}
-      <SectionLabel>Email notifications</SectionLabel>
-      <SectionCard>
-        <Stack direction="row" alignItems="flex-start" spacing={2} sx={{ mb: 0.5 }}>
-          <Box sx={{ width: 36, height: 36, borderRadius: '10px', bgcolor: 'action.selected', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <NotificationsOutlinedIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-          </Box>
-          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, flex: 1 }}>
-            Control which billing emails you receive. These are sent to your billing email address.
-          </Typography>
-        </Stack>
-
-        <Divider sx={{ my: 2.5 }} />
-
-        <Stack spacing={2}>
-          {[
-            { label: 'Renewal reminder',       desc: 'Receive a reminder 7 days before your subscription renews.',     state: emailOnRenew, set: setEmailOnRenew },
-            { label: 'Payment failed',         desc: 'Get notified immediately when a payment attempt fails.',          state: emailOnFail,  set: setEmailOnFail  },
-          ].map(({ label, desc, state, set }) => (
-            <Stack key={label} direction="row" alignItems="flex-start" justifyContent="space-between" spacing={2}>
-              <Box>
-                <Typography variant="body2" fontWeight={600} color="text.primary">{label}</Typography>
-                <Typography variant="caption" color="text.secondary">{desc}</Typography>
-              </Box>
-              <Switch
-                checked={state}
-                onChange={(e) => set(e.target.checked)}
-                size="small"
-                sx={{ flexShrink: 0, mt: 0.25, '& .MuiSwitch-track': { borderRadius: '10px' } }}
-              />
-            </Stack>
-          ))}
-        </Stack>
-
-        <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 2.5 }}>
-          Note: Critical security and billing notifications cannot be disabled.
-        </Typography>
-      </SectionCard>
     </Box>
   );
 }

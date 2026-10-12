@@ -118,3 +118,44 @@ export function getMonthlyEquivalent(plan: SubscriptionPlan): string {
   }
   return plan.price_formatted;
 }
+const TIER_RANK: Record<PlanTier, number> = { free: 0, basic: 1, pro: 2, enterprise: 3 };
+const CYCLE_DAYS: Record<string, number> = { monthly: 30, yearly: 365 };
+
+/**
+ * How a plan card relates to the vendor's current plan. Mirrors
+ * payments/services.quote_change so the button label matches what the
+ * backend will do:
+ *   upgrade   — higher tier, or same tier monthly → yearly: pay prorated now
+ *   downgrade — lower tier, or yearly → monthly: switches at renewal
+ *   cancel    — the Free card while on a paid plan (moving to Free = cancel)
+ */
+export type PlanRelation = "new" | "current" | "upgrade" | "downgrade" | "cancel";
+
+export function planRelation(
+  plan: SubscriptionPlan,
+  current: { plan_tier: PlanTier; plan_billing_cycle: string } | null
+): PlanRelation {
+  const onPaid = !!current && current.plan_tier !== "free";
+  if (plan.tier === "free") return onPaid ? "cancel" : "current";
+  if (!onPaid) return "new";
+  if (current.plan_tier === plan.tier && current.plan_billing_cycle === plan.billing_cycle) return "current";
+
+  const rankUp = TIER_RANK[plan.tier] - TIER_RANK[current.plan_tier];
+  if (rankUp > 0) return "upgrade";
+  if (rankUp < 0) return "downgrade";
+  return (CYCLE_DAYS[plan.billing_cycle] ?? 30) > (CYCLE_DAYS[current.plan_billing_cycle] ?? 30)
+    ? "upgrade"
+    : "downgrade";
+}
+
+/** "GHS 1,250.00" from a decimal string or number. */
+export function formatGHS(value: string | number): string {
+  const n = typeof value === "number" ? value : parseFloat(value || "0");
+  return `GHS ${n.toLocaleString("en-GH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/** "11 April 2026" */
+export function formatLongDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+}

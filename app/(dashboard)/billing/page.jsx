@@ -29,6 +29,9 @@ function SectionLabel({ children }) {
   );
 }
 
+// The Free plan has a 100-year record; it isn't a subscription to manage.
+const paidOnly = (sub) => (sub && parseFloat(sub.plan?.price) > 0 ? sub : null);
+
 export default function BillingOverviewPage() {
   const theme = useTheme();
   const router = useRouter();
@@ -36,7 +39,7 @@ export default function BillingOverviewPage() {
   const [paying, setPaying] = useState(false);
   const [togglingRenew, setTogglingRenew] = useState(false);
 
-  const sub   = overview?.subscription;
+  const sub   = paidOnly(overview?.subscription);
   const usage = overview?.usage;
   const txns  = overview?.recent_transactions || [];
   const cards = overview?.saved_cards || [];
@@ -52,7 +55,7 @@ export default function BillingOverviewPage() {
       const msg = err?.response?.data?.detail || err?.response?.data?.error || 'Payment failed.';
       if (err?.response?.data?.error === 'no_default_card') {
         Swal.fire({ icon: 'warning', title: 'No payment card', text: 'Add a card first from the Cards tab.', confirmButtonText: 'Go to Cards' })
-          .then((r) => { if (r.isConfirmed) router.push('/vendor/billing/cards'); });
+          .then((r) => { if (r.isConfirmed) router.push('/billing/cards'); });
       } else {
         Swal.fire({ icon: 'error', title: 'Payment failed', text: msg });
       }
@@ -80,50 +83,60 @@ export default function BillingOverviewPage() {
 
   const subEntry = sub ? getStatusEntry(SUBSCRIPTION_STATUS, sub.status) : null;
   const st = subEntry ? theme.palette.status[subEntry.hue] : null;
+  const cancelledSt = theme.palette.status.amber;
 
   return (
     <Box>
       {/* ── Current plan card ────────────────────────────────────────── */}
       <Box sx={{ borderRadius: '20px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', overflow: 'hidden', mb: 3 }}>
-        {/* Dark header */}
-        <Box sx={{ bgcolor: 'action.main', px: { xs: 2.5, md: 3 }, py: { xs: 2.5, md: 3 } }}>
+        <Box sx={{ px: { xs: 2.5, md: 3 }, py: { xs: 2.5, md: 3 } }}>
           {sub ? (
             <Grid container alignItems="flex-start" spacing={2}>
               <Grid size={{ xs: 12, md: 8 }}>
-                <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1.5 }}>
-                  <Chip label={subEntry.label} size="small" sx={{ height: 20, fontSize: 10, fontWeight: 700, bgcolor: st.bg, color: st.dot, borderRadius: '5px', '& .MuiChip-label': { px: 1 } }} />
-                  {sub.auto_renew && <Chip label="Auto-renew on" size="small" sx={{ height: 20, fontSize: 10, fontWeight: 600, bgcolor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', borderRadius: '5px', '& .MuiChip-label': { px: 1 } }} />}
+                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5, flexWrap: 'wrap', rowGap: 0.75 }}>
+                  <Chip label={sub.cancel_at_period_end ? 'Cancelled' : subEntry.label} size="small" sx={{ height: 20, fontSize: 10, fontWeight: 700, bgcolor: (sub.cancel_at_period_end ? cancelledSt : st).bg, color: (sub.cancel_at_period_end ? cancelledSt : st).text, borderRadius: '5px', '& .MuiChip-label': { px: 1 } }} />
+                  {sub.auto_renew && <Chip label="Auto-renew on" size="small" variant="outlined" sx={{ height: 20, fontSize: 10, fontWeight: 600, borderRadius: '5px', '& .MuiChip-label': { px: 1 } }} />}
                 </Stack>
-                <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 26, md: 34 }, fontWeight: 700, letterSpacing: '-1px', color: 'common.white', lineHeight: 1.1, mb: 0.75 }}>
+                <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 26, md: 34 }, fontWeight: 700, letterSpacing: '-1px', lineHeight: 1.1, mb: 0.75 }} color="text.primary">
                   {sub.plan.name}
                 </Typography>
-                <Typography sx={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>
-                  {ghs(sub.plan.price)} / {sub.plan.billing_cycle_display.toLowerCase()} · {sub.plan.commission_display} commission · {sub.plan.payout_delay_days}d payout
+                <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                  {ghs(sub.plan.price)} / {sub.plan.billing_cycle_display.toLowerCase()} · {sub.plan.commission_display} commission · {sub.plan.payout_delay_days}-day payouts
                 </Typography>
+                {sub.scheduled_plan && !sub.cancel_at_period_end && (
+                  <Typography variant="body2" color="text.primary" sx={{ mt: 1.25 }}>
+                    Switching to <strong>{sub.scheduled_plan.name}</strong> on {fmtDate(sub.end_date)} ({ghs(sub.scheduled_plan.price)} / {sub.scheduled_plan.billing_cycle_display.toLowerCase()}).
+                  </Typography>
+                )}
+                {sub.cancel_at_period_end && (
+                  <Typography variant="body2" color="text.primary" sx={{ mt: 1.25 }}>
+                    Your plan ends on <strong>{fmtDate(sub.end_date)}</strong>, then your store moves to Free.
+                  </Typography>
+                )}
               </Grid>
               <Grid size={{ xs: 12, md: 4 }}>
-                <Stack spacing={1} alignItems={{ md: 'flex-end' }}>
+                <Stack spacing={1.25} alignItems={{ md: 'flex-end' }}>
                   <Box sx={{ textAlign: { md: 'right' } }}>
-                    <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', mb: 0.25 }}>
-                      {sub.status === 'active' ? 'Renews' : 'Expires'}
+                    <Typography variant="caption" color="text.disabled" sx={{ fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', mb: 0.25 }}>
+                      {sub.status === 'past_due' ? 'Was due' : sub.cancel_at_period_end || !sub.auto_renew ? 'Ends' : 'Renews'}
                     </Typography>
-                    <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 20, fontWeight: 700, color: 'common.white', lineHeight: 1 }}>
+                    <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 20, fontWeight: 700, lineHeight: 1 }} color="text.primary">
                       {fmtDate(sub.end_date)}
                     </Typography>
-                    <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', mt: 0.3 }}>
-                      {sub.days_remaining} days remaining
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.3 }}>
+                      {sub.days_remaining} days remaining{sub.auto_renew && sub.renewal_amount ? ` · next charge ${ghs(sub.renewal_amount)}` : ''}
                     </Typography>
                   </Box>
                   <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 0.75 }}>
                     {sub.status === 'past_due' && (
-                      <Button size="small" variant="contained" disableElevation onClick={handlePayNow} disabled={paying}
-                        sx={{ bgcolor: 'error.main', color: 'common.white', borderRadius: '8px', fontWeight: 700, fontSize: 12, '&:hover': { bgcolor: 'error.dark' } }}>
+                      <Button size="small" variant="contained" color="error" disableElevation onClick={handlePayNow} disabled={paying}
+                        sx={{ borderRadius: '8px', fontWeight: 700, fontSize: 12 }}>
                         {paying ? 'Processing…' : 'Pay now'}
                       </Button>
                     )}
-                    <Button size="small" variant="outlined" onClick={() => router.push('/billing/plans')}
+                    <Button size="small" variant="outlined" onClick={() => router.push('/subscribe')}
                       endIcon={<ArrowForwardIcon sx={{ fontSize: 12 }} />}
-                      sx={{ borderRadius: '8px', borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: 600, '&:hover': { borderColor: 'common.white', color: 'common.white' } }}>
+                      sx={{ borderRadius: '8px', borderColor: 'divider', color: 'text.primary', fontSize: 12, fontWeight: 600, '&:hover': { borderColor: 'text.primary' } }}>
                       Change plan
                     </Button>
                   </Stack>
@@ -133,12 +146,12 @@ export default function BillingOverviewPage() {
           ) : (
             <Stack alignItems="flex-start" spacing={2}>
               <Box>
-                <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 28, fontWeight: 700, color: 'text.primary', letterSpacing: '-0.5px', mb: 0.5 }}>No active plan</Typography>
-                <Typography sx={{ color: 'text.primary', fontSize: 14 }}>Subscribe to unlock all vendor features and start selling.</Typography>
+                <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 28, fontWeight: 700, color: 'text.primary', letterSpacing: '-0.5px', mb: 0.5 }}>You&apos;re on Free</Typography>
+                <Typography variant="body2" color="text.secondary">Upgrade for more listings, lower commission and faster payouts.</Typography>
               </Box>
-              <Button variant="contained" disableElevation onClick={() => router.push('/billing/plans')}
-                sx={{ bgcolor: 'action.main', color: 'action.main', borderRadius: '10px', fontWeight: 700, '&:hover': { bgcolor: 'rgba(255,255,255,0.88)', color: 'text.primary' } }}>
-                View plans
+              <Button variant="contained" disableElevation onClick={() => router.push('/subscribe')}
+                sx={{ bgcolor: 'text.primary', color: 'background.paper', borderRadius: '10px', fontWeight: 700, '&:hover': { bgcolor: 'text.secondary' } }}>
+                See plans
               </Button>
             </Stack>
           )}
@@ -149,7 +162,7 @@ export default function BillingOverviewPage() {
           <Grid container sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
             {[
               { label: 'Plan tier',    value: sub.plan.tier_display },
-              { label: 'Max products', value: sub.plan.max_products === 999999 ? 'Unlimited' : sub.plan.max_products },
+              { label: 'Max products', value: sub.plan.max_products >= 999999 ? 'Unlimited' : sub.plan.max_products },
               { label: 'Commission',   value: sub.plan.commission_display },
               { label: 'Payout delay', value: `${sub.plan.payout_delay_days} days` },
             ].map((m, i, arr) => (
@@ -169,12 +182,12 @@ export default function BillingOverviewPage() {
         <Grid size={{ xs: 12, md: 7 }}>
 
           {/* Usage */}
-          {usage && sub && (
+          {usage && (
             <Box sx={{ p: { xs: 2.5, md: 3 }, borderRadius: '16px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', mb: 3 }}>
               <SectionLabel>Product usage</SectionLabel>
               <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.25 }}>
                 <Typography variant="body2" color="text.secondary">
-                  <strong style={{ color: 'inherit', fontWeight: 700 }}>{usage.active_products_count}</strong> of {usage.max_products === 999999 ? 'unlimited' : usage.max_products} products used
+                  <strong style={{ color: 'inherit', fontWeight: 700 }}>{usage.active_products_count}</strong> of {usage.max_products >= 999999 ? 'unlimited' : usage.max_products} products used
                 </Typography>
                 <Typography variant="caption" color={usage.usage_pct > 80 ? 'error.main' : 'text.disabled'} fontWeight={700}>
                   {usage.usage_pct}%
@@ -184,7 +197,7 @@ export default function BillingOverviewPage() {
               {usage.usage_pct > 80 && (
                 <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 1.5 }}>
                   <Typography variant="caption" color="error.main">Running low — consider upgrading your plan.</Typography>
-                  <Button size="small" onClick={() => router.push('/billing/plans')} sx={{ fontSize: 11, fontWeight: 600, color: 'text.primary', p: 0 }}>Upgrade →</Button>
+                  <Button size="small" onClick={() => router.push('/subscribe')} sx={{ fontSize: 11, fontWeight: 600, color: 'text.primary', p: 0 }}>Upgrade →</Button>
                 </Stack>
               )}
             </Box>
@@ -239,13 +252,13 @@ export default function BillingOverviewPage() {
                   <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.6 }}>
                     {sub.auto_renew
                       ? `Your plan renews automatically on ${fmtDate(sub.end_date)}.`
-                      : 'Your plan will expire on the end date and not renew.'}
+                      : `Your plan ends on ${fmtDate(sub.end_date)} and won't renew.`}
                   </Typography>
                 </Box>
                 <Button size="small" variant="outlined" onClick={handleToggleAutoRenew} disabled={togglingRenew}
                   startIcon={sub.auto_renew ? <CancelOutlinedIcon sx={{ fontSize: 14 }} /> : <AutorenewIcon sx={{ fontSize: 14 }} />}
                   sx={{ flexShrink: 0, borderRadius: '8px', borderColor: 'divider', color: 'text.secondary', fontWeight: 600, fontSize: 12, '&:hover': { borderColor: 'text.primary', color: 'text.primary' } }}>
-                  {sub.auto_renew ? 'Turn off' : 'Enable'}
+                  {sub.auto_renew ? 'Turn off' : sub.cancel_at_period_end ? 'Keep my plan' : 'Turn on'}
                 </Button>
               </Stack>
             </Box>
