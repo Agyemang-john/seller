@@ -50,6 +50,15 @@ export default function SubscriptionPage() {
     }, [refreshAll])
   );
 
+  // The exact plan record being paid for (either cycle); null on Free.
+  const currentPlan = currentSubscription && currentSubscription.plan_tier !== "free"
+    ? allPlans.find((p: UIPlan) => p.key === currentSubscription.plan_tier
+        && p.plan.billing_cycle === currentSubscription.plan_billing_cycle)?.plan ?? null
+    : null;
+  const handleResume = async () => {
+    if (await planActions.resume()) setToast("Your plan will renew as normal.");
+  };
+
   const freePlan = allPlans.find((p: UIPlan) => p.key === "free")?.plan ?? null;
   const freeMaxProducts = freePlan?.max_products ?? null;
 
@@ -119,7 +128,7 @@ export default function SubscriptionPage() {
               busy={planActions.busy as "resume" | "keep" | null}
               error={planActions.error}
               onCancel={() => setShowCancel(true)}
-              onResume={async () => { if (await planActions.resume()) setToast("Your plan will renew as normal."); }}
+              onResume={handleResume}
               onKeepCurrentPlan={async () => { if (await planActions.keepCurrentPlan()) setToast("Scheduled change removed."); }}
             />
 
@@ -129,7 +138,12 @@ export default function SubscriptionPage() {
                 selectedPlanKey={selectedPlanKey}
                 currentSubscription={currentSubscription}
                 yearlySavings={yearlySavings}
+                billing={billing}
+                currentPlan={currentPlan}
                 onSelectPlan={handleSelectPlan}
+                onCancel={() => setShowCancel(true)}
+                onResume={handleResume}
+                resuming={planActions.busy === "resume"}
               />
             )}
 

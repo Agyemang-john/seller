@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Box, Typography, Stack, Divider, Chip } from "@mui/material";
 import CheckIcon from "@mui/icons-material/Check";
 import RemoveIcon from "@mui/icons-material/Remove";
-import type { UIPlan, ActiveSubscription } from "@/types/subscription";
+import type { UIPlan, ActiveSubscription, BillingCycle, SubscriptionPlan } from "@/types/subscription";
 import { planRelation, formatLongDate, type PlanRelation } from "@/libs/utils/planBuilder";
 
 interface PlansGridProps {
@@ -13,7 +13,15 @@ interface PlansGridProps {
   currentSubscription: ActiveSubscription | null;
   /** Yearly saving per tier in percent, e.g. { pro: 20 } */
   yearlySavings: Record<string, number>;
+  /** Cycle picked in the toggle; a tier without that cycle shows its other price. */
+  billing: BillingCycle;
+  /** The plan record the seller pays for now (either cycle), or null on Free. */
+  currentPlan: SubscriptionPlan | null;
   onSelectPlan: (key: string) => void;
+  /** Current-plan card actions: cancel, or undo a cancellation. */
+  onCancel: () => void;
+  onResume: () => void;
+  resuming: boolean;
 }
 
 // Pro card uses a fixed near-black surface — intentionally off-theme.
@@ -30,7 +38,8 @@ function ctaLabel(relation: PlanRelation, uiPlan: UIPlan, sub: ActiveSubscriptio
   const scheduledHere = sub?.scheduled_plan?.id === plan.id;
   switch (relation) {
     case "current":
-      return "Your current plan";
+      if (plan.tier === "free") return "Your current plan";
+      return sub?.cancel_at_period_end ? `Keep ${plan.name}` : "Cancel plan";
     case "cancel":
       return sub?.cancel_at_period_end ? `Free from ${formatLongDate(sub.end_date)}` : "Cancel to move to Free";
     case "downgrade":
@@ -43,7 +52,8 @@ function ctaLabel(relation: PlanRelation, uiPlan: UIPlan, sub: ActiveSubscriptio
 }
 
 export default function PlansGrid({
-  plans, selectedPlanKey, currentSubscription, yearlySavings, onSelectPlan,
+  plans, selectedPlanKey, currentSubscription, yearlySavings, billing, currentPlan,
+  onSelectPlan, onCancel, onResume, resuming,
 }: PlansGridProps) {
   const [hovered, setHovered] = useState<string | null>(null);
 
@@ -64,12 +74,28 @@ export default function PlansGrid({
           const planKey    = uiPlan.key;
           const relation   = planRelation(plan, currentSubscription);
           const isCurrent  = relation === "current";
+          // Same tier as the paid plan but the other cycle: still the seller's plan.
+          const isCurrentTier = !isCurrent && !!currentPlan && currentPlan.tier === planKey && planKey !== "free";
+          const isMine     = isCurrent || isCurrentTier;
           const isSelected = selectedPlanKey === planKey && !isCurrent;
           const isHovered  = hovered === planKey;
           const isActive   = isSelected || (isHovered && !isCurrent);
           const isFree     = planKey === "free";
           const isScheduled = currentSubscription?.scheduled_plan?.id === plan.id;
-          const clickable  = !isCurrent && !(relation === "cancel" && currentSubscription?.cancel_at_period_end) && !isScheduled;
+          // The exact paid plan: its button cancels it, or undoes a cancellation.
+          const manageCurrent = isCurrent && !isFree;
+          const clickable  = manageCurrent
+            ? !resuming
+            : !isCurrent && !(relation === "cancel" && currentSubscription?.cancel_at_period_end) && !isScheduled;
+          const handleClick = () => {
+            if (!clickable) return;
+            if (manageCurrent) {
+              if (currentSubscription?.cancel_at_period_end) onResume(); else onCancel();
+              return;
+            }
+            onSelectPlan(planKey);
+          };
+          const cycleMissing = !isFree && plan.billing_cycle !== billing;
 
           const price      = parseFloat(plan.price);
           const isYearly   = plan.billing_cycle === "yearly";
@@ -80,7 +106,7 @@ export default function PlansGrid({
           return (
             <Box
               key={`${planKey}-${plan.billing_cycle}`}
-              onClick={() => clickable && onSelectPlan(planKey)}
+              onClick={manageCurrent ? undefined : handleClick}
               onMouseEnter={() => setHovered(planKey)}
               onMouseLeave={() => setHovered(null)}
               sx={{
@@ -88,7 +114,7 @@ export default function PlansGrid({
                 display: "flex",
                 flexDirection: "column",
                 p: "32px 26px 26px",
-                cursor: clickable ? "pointer" : "default",
+                cursor: clickable && !manageCurrent ? "pointer" : "default",
                 borderRight: { md: i < plans.length - 1 ? 1 : 0 },
                 borderBottom: { xs: i < plans.length - 1 ? 1 : 0, md: 0 },
                 borderColor: { xs: "divider", md: "divider" },
@@ -101,18 +127,24 @@ export default function PlansGrid({
               {/* ── Top accent bar ──────────────────────────────────────── */}
               <Box
                 sx={{
-                  position: "absolute", top: 0, left: 0, right: 0, height: isCurrent || isSelected ? "3px" : "2px",
-                  bgcolor: isPro
-                    ? PRO_TEXT
-                    : isCurrent ? "primary.main" : isActive ? "text.primary" : "divider",
+                  position: "absolute", top: 0, left: 0, right: 0, height: isMine || isSelected ? "4px" : "2px",
+                  bgcolor: isMine
+                    ? "primary.main"
+                    : isPro ? PRO_TEXT : isActive ? "text.primary" : "divider",
                   transition: "background-color 0.2s",
                 }}
               />
 
               {/* ── Badges row ──────────────────────────────────────────── */}
               <Stack direction="row" spacing={0.75} sx={{ mb: 2, minHeight: 22, flexWrap: "wrap", rowGap: 0.5 }}>
-                {isCurrent && (
-                  <Chip label="Current plan" size="small" sx={{
+                {isMine && (
+                  <Chip label={
+                    currentSubscription?.cancel_at_period_end && !isFree
+                      ? `Your plan · ends ${formatLongDate(currentSubscription.end_date)}`
+                      : isCurrentTier
+                        ? `Your plan · billed ${currentPlan!.billing_cycle}`
+                        : "Your plan"
+                  } size="small" sx={{
                     height: 20, fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", borderRadius: "5px",
                     bgcolor: isPro ? "rgba(255,255,255,0.15)" : "text.primary",
                     color: isPro ? PRO_TEXT : "background.paper",
@@ -127,7 +159,7 @@ export default function PlansGrid({
                     "& .MuiChip-label": { px: 1 },
                   }} />
                 )}
-                {!isCurrent && !isScheduled && (
+                {!isMine && !isScheduled && (
                   <Typography variant="overline" sx={{ letterSpacing: "0.14em", color: isPro ? PRO_TEXT_DIM : "text.secondary", lineHeight: 1.4 }}>
                     {isPro ? "★ Most popular" : plan.tier_display}
                   </Typography>
@@ -167,7 +199,13 @@ export default function PlansGrid({
                       {isYearly
                         ? `per year · GHS ${(price / 12).toLocaleString("en-GH", { maximumFractionDigits: 2 })}/mo${saving ? ` · save ${saving}%` : ""}`
                         : "per month"}
+                      {cycleMissing && ` · no ${billing} option`}
                     </Typography>
+                    {isCurrentTier && (
+                      <Typography variant="caption" sx={{ display: "block", mt: 0.5, fontWeight: 600, color: isPro ? PRO_TEXT : "text.primary" }}>
+                        You pay GHS {parseFloat(currentPlan!.price).toLocaleString("en-GH")} per {currentPlan!.billing_cycle === "yearly" ? "year" : "month"} now
+                      </Typography>
+                    )}
                   </>
                 )}
               </Box>
@@ -245,7 +283,7 @@ export default function PlansGrid({
                 component="button"
                 type="button"
                 disabled={!clickable}
-                onClick={(e: React.MouseEvent) => { e.stopPropagation(); if (clickable) onSelectPlan(planKey); }}
+                onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleClick(); }}
                 sx={{
                   width: "100%", py: 1.6, px: 2,
                   borderRadius: "10px",
@@ -264,12 +302,16 @@ export default function PlansGrid({
                     border: "1px solid",
                     borderColor: isSelected ? "text.primary" : "divider",
                   }),
+                  ...(manageCurrent && !currentSubscription?.cancel_at_period_end && {
+                    color: isPro ? PRO_TEXT_DIM : "text.secondary",
+                    "&:hover": { color: "error.main", borderColor: "error.main" },
+                  }),
                   ...(relation === "cancel" && clickable && isHovered && {
                     color: "error.main", borderColor: "error.main",
                   }),
                 }}
               >
-                <span>{ctaLabel(relation, uiPlan, currentSubscription)}</span>
+                <span>{manageCurrent && resuming ? "Saving…" : ctaLabel(relation, uiPlan, currentSubscription)}</span>
                 {clickable && <span aria-hidden>→</span>}
               </Box>
               {relation === "downgrade" && !isScheduled && currentSubscription && (
