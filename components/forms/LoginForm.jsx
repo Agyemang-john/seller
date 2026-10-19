@@ -6,6 +6,7 @@ import { useAppDispatch } from '@/redux/hooks';
 import { setAuth } from '@/redux/features/authSlice';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { safeRedirect } from '@/utils/safeRedirect';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import BlackButton from '@/components/BlackButton';
 import { Box, TextField, Typography, CircularProgress, IconButton, InputAdornment, Alert } from '@mui/material';
@@ -25,16 +26,7 @@ export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const rawRedirect = searchParams.get('redirect');
-  const redirectPath = (() => {
-    if (!rawRedirect) return '/dashboard';
-    try {
-      const decoded = decodeURIComponent(rawRedirect);
-      if (decoded.startsWith('/') && !decoded.startsWith('//') && !decoded.includes('://')) {
-        return decoded;
-      }
-    } catch { /* ignore */ }
-    return '/dashboard';
-  })();
+  const redirectPath = safeRedirect(rawRedirect);
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);

@@ -11,6 +11,7 @@ import DialogsProvider from "@/hooks/useDialogs/DialogsProvider";
 import DashboardLayout from "@/components/DashboardLayout";
 import EmotionCacheProvider from "@/utils/EmotionCacheProvider";
 import { useAppSelector } from "@/redux/hooks";
+import { loginHref } from "@/utils/safeRedirect";
 
 import {
   dataGridCustomizations,
@@ -33,7 +34,10 @@ export default function ClientProviders({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push(`/auth/login?redirect=${encodeURIComponent(pathname ?? '/dashboard')}`);
+      // Read the query string at redirect time (useSearchParams would force a
+      // Suspense boundary around the whole dashboard) so filters, tabs and
+      // record ids survive the trip through login.
+      router.push(loginHref(`${window.location.pathname}${window.location.search}`));
     }
   }, [isAuthenticated, isLoading, router, pathname]);
 

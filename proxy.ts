@@ -46,7 +46,8 @@ export function proxy(request: NextRequest) {
 
   const redirectToLogin = (extra?: Record<string, string>) => {
     const loginUrl = new URL('/auth/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
+    // Keep the query string too, so e.g. /orders?status=pending resumes intact.
+    loginUrl.searchParams.set('redirect', pathname + request.nextUrl.search);
     if (extra) {
       for (const [k, v] of Object.entries(extra)) loginUrl.searchParams.set(k, v);
     }

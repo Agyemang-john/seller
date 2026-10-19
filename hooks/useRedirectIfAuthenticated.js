@@ -4,6 +4,7 @@
 import { useEffect } from 'react';
 import { useAppSelector } from '@/redux/hooks';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { safeRedirect } from '@/utils/safeRedirect';
 
 export default function useRedirectIfAuthenticated() {
   const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
@@ -12,17 +13,7 @@ export default function useRedirectIfAuthenticated() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      const rawRedirect = searchParams.get('redirect');
-      if (rawRedirect) {
-        try {
-          const decoded = decodeURIComponent(rawRedirect);
-          if (decoded.startsWith('/') && !decoded.startsWith('//') && !decoded.includes('://')) {
-            router.replace(decoded);
-            return;
-          }
-        } catch { /* ignore */ }
-      }
-      router.replace('/dashboard');
+      router.replace(safeRedirect(searchParams.get('redirect')));
     }
   }, [isAuthenticated, router, searchParams]);
 }

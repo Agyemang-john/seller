@@ -6,6 +6,7 @@ import { useAppDispatch } from '@/redux/hooks';
 import { setAuth } from '@/redux/features/authSlice';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { safeRedirect } from '@/utils/safeRedirect';
 import BlackButton from '@/components/BlackButton';
 import { Box, TextField, Typography, CircularProgress, Alert } from '@mui/material';
 import { toast } from 'react-toastify';
@@ -22,16 +23,7 @@ export default function OtpForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const rawRedirect = searchParams.get('redirect');
-  const redirectPath = (() => {
-    if (!rawRedirect) return '/dashboard';
-    try {
-      const decoded = decodeURIComponent(rawRedirect);
-      if (decoded.startsWith('/') && !decoded.startsWith('//') && !decoded.includes('://')) {
-        return decoded;
-      }
-    } catch { /* ignore */ }
-    return '/dashboard';
-  })();
+  const redirectPath = safeRedirect(rawRedirect);
 
   useEffect(() => {
     const masked = sessionStorage.getItem('otp_masked_identifier');
@@ -57,7 +49,7 @@ export default function OtpForm() {
       sessionStorage.removeItem('otp_masked_identifier');
       setMessage({ type: 'success', text: 'Logged in successfully!' });
       toast.success('Logged in successfully!');
-      window.location.href = redirectPath || '/dashboard';
+      window.location.href = redirectPath;
     } catch (err) {
       const status = err?.status;
       const data = err?.data || {};
