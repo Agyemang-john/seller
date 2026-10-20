@@ -14,12 +14,18 @@ import Link from 'next/link';
 const PageContentHeader = styled('div')(({ theme }) => ({
   display: 'flex',
   flexDirection: 'row',
+  flexWrap: 'wrap',
+  alignItems: 'center',
   justifyContent: 'space-between',
-  gap: theme.spacing(2),
+  gap: theme.spacing(1.5, 2),
 }));
 
 const PageHeaderBreadcrumbs = styled(Breadcrumbs)(({ theme }) => ({
   margin: theme.spacing(1, 0),
+  [theme.breakpoints.down('sm')]: {
+    margin: theme.spacing(0.5, 0),
+    fontSize: 13,
+  },
   [`& .${breadcrumbsClasses.separator}`]: {
     color: (theme.vars || theme).palette.action.disabled,
     margin: 1,
@@ -32,9 +38,16 @@ const PageHeaderBreadcrumbs = styled(Breadcrumbs)(({ theme }) => ({
 const PageHeaderToolbar = styled('div')(({ theme }) => ({
   display: 'flex',
   flexDirection: 'row',
+  flexWrap: 'wrap',
   gap: theme.spacing(1),
   // Ensure the toolbar is always on the right side, even after wrapping
   marginLeft: 'auto',
+  [theme.breakpoints.down('sm')]: {
+    // On phones actions drop under the title and share the full width.
+    width: '100%',
+    marginLeft: 0,
+    '& > *': { flex: '1 1 auto' },
+  },
 }));
 
 export interface Breadcrumb {
@@ -52,8 +65,8 @@ export default function PageContainer(props: PageContainerProps) {
   const { children, breadcrumbs, title, actions = null } = props;
 
   return (
-    <Container sx={{ flex: 1, display: 'flex', flexDirection: 'column', px: { xs: 2, sm: 3 }, minWidth: 0 }}>
-      <Stack sx={{ flex: 1, my: 2 }} spacing={2}>
+    <Container sx={{ flex: 1, display: 'flex', flexDirection: 'column', px: { xs: 1.5, sm: 3 }, minWidth: 0 }}>
+      <Stack sx={{ flex: 1, my: { xs: 1.5, sm: 2 } }} spacing={{ xs: 1.5, sm: 2 }}>
         <Stack>
           <PageHeaderBreadcrumbs
             aria-label="breadcrumb"
@@ -79,8 +92,12 @@ export default function PageContainer(props: PageContainerProps) {
               : null}
           </PageHeaderBreadcrumbs>
           <PageContentHeader>
-            {title ? <Typography variant="h4">{title}</Typography> : null}
-            <PageHeaderToolbar>{actions}</PageHeaderToolbar>
+            {title ? (
+              <Typography variant="h4" sx={{ fontSize: { xs: 20, sm: 24 }, minWidth: 0 }}>
+                {title}
+              </Typography>
+            ) : null}
+            {actions ? <PageHeaderToolbar>{actions}</PageHeaderToolbar> : null}
           </PageContentHeader>
         </Stack>
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>

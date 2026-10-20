@@ -28,6 +28,20 @@ export const feedbackCustomizations: Components<Theme> = {
           border: '1px solid',
           borderColor: (theme.vars || theme).palette.divider,
         },
+        // Phones: use the screen instead of MUI's 32px gutters, which leave
+        // form dialogs cramped and push their buttons below the keyboard.
+        [theme.breakpoints.down('sm')]: {
+          '& .MuiDialog-paper:not(.MuiDialog-paperFullScreen)': {
+            margin: theme.spacing(1.5),
+            width: `calc(100% - ${theme.spacing(3)})`,
+            maxHeight: `calc(100% - ${theme.spacing(3)})`,
+          },
+          '& .MuiDialog-paperFullScreen': {
+            borderRadius: 0,
+            border: 0,
+            paddingBottom: 'env(safe-area-inset-bottom)',
+          },
+        },
       }),
     },
   },

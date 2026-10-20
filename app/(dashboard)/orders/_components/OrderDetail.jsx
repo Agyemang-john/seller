@@ -491,58 +491,58 @@ export default function OrderDetailPage({ id }) {
 
     return order ? (
       <Box sx={{ flexGrow: 1, width: '100%' }}>
-        <Grid container spacing={2} sx={{ width: '100%' }}>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Paper sx={{ px: 2, py: 1 }}>
+        <Grid container spacing={{ xs: 1.25, sm: 2 }} sx={{ width: '100%' }}>
+          <Grid size={{ xs: 6 }}>
+            <Paper sx={{ px: { xs: 1.5, sm: 2 }, py: 1, height: '100%' }}>
               <Typography variant="overline">Order Number</Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
+              <Typography variant="body1" sx={{ mb: 1, overflowWrap: 'anywhere' }}>
                 {order.order_number} (ID: {order.id})
               </Typography>
             </Paper>
           </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Paper sx={{ px: 2, py: 1 }}>
+          <Grid size={{ xs: 6 }}>
+            <Paper sx={{ px: { xs: 1.5, sm: 2 }, py: 1, height: '100%' }}>
               <Typography variant="overline">Date Ordered</Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
+              <Typography variant="body1" sx={{ mb: 1, overflowWrap: 'anywhere' }}>
                 {dayjs(order.date_created).format('MMMM D, YYYY, h:mm A')}
               </Typography>
             </Paper>
           </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Paper sx={{ px: 2, py: 1 }}>
+          <Grid size={{ xs: 6 }}>
+            <Paper sx={{ px: { xs: 1.5, sm: 2 }, py: 1, height: '100%' }}>
               <Typography variant="overline">Amount</Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
+              <Typography variant="body1" sx={{ mb: 1, overflowWrap: 'anywhere' }}>
                 GHS {order.vendor_total != null ? parseFloat(order.vendor_total).toFixed(2) : '—'}
               </Typography>
             </Paper>
           </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Paper sx={{ px: 2, py: 1 }}>
+          <Grid size={{ xs: 6 }}>
+            <Paper sx={{ px: { xs: 1.5, sm: 2 }, py: 1, height: '100%' }}>
               <Typography variant="overline">Delivery Cost</Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
+              <Typography variant="body1" sx={{ mb: 1, overflowWrap: 'anywhere' }}>
                 {order.vendor_delivery_cost != null
                   ? `GHS ${parseFloat(order.vendor_delivery_cost).toFixed(2)}`
                   : 'Not available'}
               </Typography>
             </Paper>
           </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Paper sx={{ px: 2, py: 1 }}>
+          <Grid size={{ xs: 6 }}>
+            <Paper sx={{ px: { xs: 1.5, sm: 2 }, py: 1, height: '100%' }}>
               <Typography variant="overline">Payment Method</Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
+              <Typography variant="body1" sx={{ mb: 1, overflowWrap: 'anywhere' }}>
                 {(order.payment_method || '').replace(/_/g, ' ').toUpperCase() || '—'}
               </Typography>
             </Paper>
           </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Paper sx={{ px: 2, py: 1 }}>
-              <Typography variant="overline" sx={{ mr: 3 }}>Status</Typography>
+          <Grid size={{ xs: 6 }}>
+            <Paper sx={{ px: { xs: 1.5, sm: 2 }, py: 1, height: '100%' }}>
+              <Typography variant="overline" sx={{ mr: 3, display: { xs: 'block', sm: 'inline' } }}>Status</Typography>
               <Select
                 value={order.status}
                 onChange={(e) => handleStatusChange(e.target.value)}
                 disabled={statusUpdating}
                 size="small"
-                sx={{ minWidth: 120, mt: 1 }}
+                sx={{ minWidth: 120, mt: { xs: 0, sm: 1 }, width: { xs: '100%', sm: 'auto' } }}
               >
                 <MenuItem value="pending">Pending</MenuItem>
                 <MenuItem value="processing">Processing</MenuItem>
@@ -574,8 +574,10 @@ export default function OrderDetailPage({ id }) {
             <Grid size={{ xs: 12, sm: 6 }}>
               <Paper sx={{ px: 2, py: 1 }}>
                 <Typography variant="overline">Email</Typography>
-                <Typography variant="body1" sx={{ mb: 1 }}>
-                  {order.address.email || '—'}
+                <Typography variant="body1" sx={{ mb: 1, overflowWrap: 'anywhere' }}>
+                  {order.address.email
+                    ? <a href={`mailto:${order.address.email}`} style={{ color: 'inherit' }}>{order.address.email}</a>
+                    : '—'}
                 </Typography>
               </Paper>
             </Grid>
@@ -583,7 +585,9 @@ export default function OrderDetailPage({ id }) {
               <Paper sx={{ px: 2, py: 1 }}>
                 <Typography variant="overline">Mobile</Typography>
                 <Typography variant="body1" sx={{ mb: 1 }}>
-                  {order.address.mobile || '—'}
+                  {order.address.mobile
+                    ? <a href={`tel:${order.address.mobile.replace(/[^\d+]/g, '')}`} style={{ color: 'inherit' }}>{order.address.mobile}</a>
+                    : '—'}
                 </Typography>
               </Paper>
             </Grid>
@@ -595,6 +599,21 @@ export default function OrderDetailPage({ id }) {
                     .filter(Boolean).join(', ') || '—'}
                   {order.address.gps_address && `, GPS: ${order.address.gps_address}`}
                 </Typography>
+                {(order.address.address || order.address.town || order.address.gps_address) && (
+                  <Button
+                    size="small"
+                    component="a"
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                      [order.address.address, order.address.town, order.address.region, order.address.country]
+                        .filter(Boolean).join(', ') || order.address.gps_address,
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{ mb: 1, ml: -0.75, textTransform: 'none' }}
+                  >
+                    Open in Maps
+                  </Button>
+                )}
               </Paper>
             </Grid>
           </Grid>
@@ -617,7 +636,48 @@ export default function OrderDetailPage({ id }) {
         <Typography variant="h6" gutterBottom>
           Product Details
         </Typography>
-        <Box sx={{ overflowX: 'auto' }}>
+        {/* Phones: one card per item instead of an 8-column table */}
+        <Stack spacing={1.25} sx={{ display: { xs: 'flex', md: 'none' } }}>
+          {order.order_products.map((product) => {
+            const variant = product.variant
+              ? [product.variant.size_name, product.variant.color_name].filter(Boolean).join(' / ')
+              : '';
+            return (
+              <Paper key={product.id} variant="outlined" sx={{ p: 1.5, borderRadius: '12px' }}>
+                <Stack direction="row" spacing={1.5}>
+                  <Box
+                    component="img"
+                    src={product?.variant?.image || product?.product?.image || '/logo-1.png'}
+                    alt={product.product.title}
+                    sx={{ width: 64, height: 64, borderRadius: '8px', objectFit: 'cover', flexShrink: 0, bgcolor: 'action.hover' }}
+                  />
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography sx={{ fontWeight: 600, fontSize: 14, lineHeight: 1.3 }}>
+                      {product.product.title}
+                    </Typography>
+                    {variant && (
+                      <Typography variant="caption" color="text.secondary">{variant}</Typography>
+                    )}
+                    <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mt: 0.5 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        {product.quantity} × GHS {product.price}
+                      </Typography>
+                      <Typography sx={{ fontWeight: 700, fontSize: 14 }}>GHS {product.amount}</Typography>
+                    </Stack>
+                  </Box>
+                </Stack>
+                <Divider sx={{ my: 1 }} />
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                  {product.selected_delivery_option?.name || 'No delivery option selected'}
+                  {' · '}
+                  {product.delivery_date_range || 'Delivery range not available'}
+                </Typography>
+              </Paper>
+            );
+          })}
+        </Stack>
+
+        <Box sx={{ overflowX: 'auto', display: { xs: 'none', md: 'block' } }}>
           <Table>
             <TableHead>
               <TableRow>
@@ -673,7 +733,7 @@ export default function OrderDetailPage({ id }) {
         />
 
         <Divider sx={{ my: 3 }} />
-        <Stack direction="row" spacing={2} justifyContent="space-between">
+        <Stack direction="row" spacing={2} justifyContent="space-between" sx={{ flexWrap: 'wrap', rowGap: 1 }}>
           <Button
             variant="contained"
             startIcon={<ArrowBackIcon />}

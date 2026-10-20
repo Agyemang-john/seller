@@ -45,7 +45,7 @@ import useVendorAccess, { CAP } from '@/hooks/useVendorAccess';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import DashboardSidebarContext from '@/context/DashboardSidebarContext';
-import { DRAWER_WIDTH, MINI_DRAWER_WIDTH } from '../constants';
+import { DRAWER_WIDTH, MINI_DRAWER_WIDTH, MOBILE_NAV_HEIGHT } from '../constants';
 import { getDrawerSxTransitionMixin, getDrawerWidthTransitionMixin } from '../mixins';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -119,7 +119,7 @@ function NavItem({ item, mini, pathname, onPageItemClick }: NavItemProps) {
           selected={isActive}
           onClick={onPageItemClick}
           sx={{
-            height: 40,
+            height: { xs: 44, sm: 40 },
             borderRadius: '10px',
             px: mini ? 0 : 1.25,
             justifyContent: mini ? 'center' : 'flex-start',
@@ -423,7 +423,13 @@ export default function DashboardSidebar({
         </Box>
 
         {/* Pinned bottom items */}
-        <Box sx={{ flexShrink: 0, px: 0.75, pb: 0.75, pt: 0.5, borderTop: '1px solid', borderColor: 'divider' }}>
+        <Box
+          sx={{
+            flexShrink: 0, px: 0.75, pt: 0.5, borderTop: '1px solid', borderColor: 'divider',
+            // On phones the bottom bar sits over the drawer; keep Log out reachable.
+            pb: viewport === 'phone' ? `calc(${MOBILE_NAV_HEIGHT}px + env(safe-area-inset-bottom) + 6px)` : 0.75,
+          }}
+        >
           <List dense disablePadding>
             {bottomListItems.map((item) => (
               <NavItem key={item.id} item={item} mini={mini} pathname={pathname} onPageItemClick={handlePageItemClick} />

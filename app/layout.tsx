@@ -1,7 +1,7 @@
 // app/layout.tsx
 
 import React from "react";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { figtree, mono } from './fonts';
 import Provider from '@/redux/provider';
 import { Setup } from '@/utils';
@@ -32,6 +32,17 @@ export const metadata: Metadata = {
   ],
   icons: {
     icon: "/favicon.ico",
+    apple: "/icons/apple-icon-180.png",
+  },
+  // Lets sellers "Add to Home Screen" and run the dashboard like an app.
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    title: "Seller Center",
+    statusBarStyle: "default",
+  },
+  formatDetection: {
+    telephone: false,
   },
   openGraph: {
     title: "Negromart Seller Center",
@@ -49,6 +60,18 @@ export const metadata: Metadata = {
     locale: "en_US",
     type: "website",
   },
+};
+
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // Draw under the iPhone home indicator; the bottom nav pads for it.
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
 };
 
 

@@ -131,8 +131,9 @@ export default function NotificationBell() {
         PaperProps={{
           elevation: 4,
           sx: {
-            width: 380,
-            maxHeight: 520,
+            width: { xs: 'calc(100vw - 24px)', sm: 380 },
+            maxWidth: 380,
+            maxHeight: { xs: 'calc(100dvh - 140px)', sm: 520 },
             borderRadius: '14px',
             overflow: 'hidden',
             border: `1px solid ${P.border}`,

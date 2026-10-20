@@ -171,6 +171,11 @@ export const navigationCustomizations: Components<Theme> = {
     },
   },
   MuiTabs: {
+    // Tab rows overflow a phone screen; let them scroll sideways by default.
+    defaultProps: {
+      variant: 'scrollable',
+      scrollButtons: false,
+    },
     styleOverrides: {
       root: { minHeight: 'fit-content' },
       indicator: ({ theme }) => ({

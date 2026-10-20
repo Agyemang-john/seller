@@ -15,7 +15,7 @@ import useSWR from 'swr';
 import {
   Alert, Autocomplete, Avatar, Box, Button, Card, Chip, CircularProgress, Dialog, DialogActions,
   DialogContent, DialogTitle, Divider, InputAdornment, LinearProgress, MenuItem, Skeleton, Stack,
-  Tab, Tabs, TextField, Typography,
+  Tab, Tabs, TextField, Typography, useMediaQuery,
 } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import BoltRoundedIcon from '@mui/icons-material/BoltRounded';
@@ -321,9 +321,11 @@ function CreateDialog({ open, limits, onClose, onCreated }) {
 
   const fieldError = (key) => (Array.isArray(errors[key]) ? errors[key][0] : errors[key]);
   const generalError = fieldError('non_field_errors');
+  // A long form: give it the whole screen on phones.
+  const fullScreen = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" fullScreen={fullScreen}>
       <DialogTitle>New flash sale</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>

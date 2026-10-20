@@ -1,8 +1,12 @@
 {
-  "name": "Seller",
+  "id": "/dashboard",
+  "name": "Negromart Seller Center",
+  "short_name": "Seller",
   "description": "Connecting you to global buyers. Sell millions of affordable products from around the world on NegroMart",
-  "start_url": "/",
+  "start_url": "/dashboard",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#ffffff",
   "theme_color": "#0d9488",
   "icons": [
@@ -29,6 +33,25 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Orders to ship",
+      "short_name": "To ship",
+      "url": "/orders?filter=to_ship",
+      "icons": [{ "src": "/icons/manifest-icon-192.maskable.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Add a product",
+      "short_name": "Add product",
+      "url": "/products/product",
+      "icons": [{ "src": "/icons/manifest-icon-192.maskable.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Earnings",
+      "url": "/payouts",
+      "icons": [{ "src": "/icons/manifest-icon-192.maskable.png", "sizes": "192x192" }]
     }
   ]
 }

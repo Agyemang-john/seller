@@ -368,12 +368,16 @@ export const inputsCustomizations: Components<Theme> = {
       root: {
         border: 'none',
       },
-      input: {
+      input: ({ theme }) => ({
         '&::placeholder': {
           opacity: 0.7,
           color: gray[500],
         },
-      },
+        // iOS Safari zooms the page into any field under 16px on focus.
+        [theme.breakpoints.down('sm')]: {
+          fontSize: 16,
+        },
+      }),
     },
   },
   MuiOutlinedInput: {

@@ -95,7 +95,7 @@ export default function Earnings() {
           <Typography sx={{ fontWeight: 700, fontSize: 16 }}>Statement</Typography>
           <Stack direction="row" spacing={1}>
             <TextField select size="small" value={type} onChange={(e) => { setType(e.target.value); setPage(1); }}
-                       sx={{ minWidth: 170 }}>
+                       sx={{ minWidth: 170, flex: { xs: 1, sm: 'none' } }}>
               {ENTRY_TYPES.map((t) => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
             </TextField>
             <Tooltip title={plan && !plan.can_export_reports ? 'Statement downloads are included in paid plans.' : ''}>
@@ -111,7 +111,48 @@ export default function Earnings() {
         </Stack>
         <Divider />
 
-        <TableContainer>
+        {/* Phones: one compact row per statement line instead of a wide table */}
+        <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
+          {ledgerLoading && !ledger ? (
+            [0, 1, 2, 3].map((i) => <Box key={i} sx={{ px: 2, py: 1 }}><Skeleton height={44} /></Box>)
+          ) : !ledger?.results?.length ? (
+            <Typography sx={{ px: 2, py: 4, color: 'text.secondary', fontSize: 14 }}>
+              No activity yet. Sales appear here once an order is delivered.
+            </Typography>
+          ) : (
+            ledger.results.map((line, i) => {
+              const st = LINE_STATUS[line.status] ?? LINE_STATUS.pending;
+              const amount = Number(line.amount);
+              return (
+                <Box key={line.id} sx={{ px: 2, py: 1.5, borderTop: i ? '1px solid' : 0, borderColor: 'divider' }}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1.5}>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{line.description}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {formatDate(line.created_at)} · {line.type_label}
+                        {line.order_number ? ` · ${line.order_number}` : ''}
+                      </Typography>
+                    </Box>
+                    <Typography sx={{ whiteSpace: 'nowrap', fontWeight: 700, fontSize: 14,
+                                      color: amount < 0 ? 'text.secondary' : 'text.primary' }}>
+                      {amount < 0 ? '−' : ''}{formatMoney(Math.abs(amount), line.currency)}
+                    </Typography>
+                  </Stack>
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.75 }}>
+                    <Chip size="small" variant="outlined" label={st.label} color={st.color} />
+                    {line.status === 'pending' && (
+                      <Typography variant="caption" color="text.secondary">
+                        until {formatDate(line.available_at)}
+                      </Typography>
+                    )}
+                  </Stack>
+                </Box>
+              );
+            })
+          )}
+        </Box>
+
+        <TableContainer sx={{ display: { xs: 'none', sm: 'block' } }}>
           <Table size="small" sx={{ minWidth: 720 }}>
             <TableHead>
               <TableRow>
