@@ -17,6 +17,7 @@ import Avatar from '@mui/material/Avatar';
 import Skeleton from '@mui/material/Skeleton';
 import Tooltip from '@mui/material/Tooltip';
 import Divider from '@mui/material/Divider';
+import Badge from '@mui/material/Badge';
 import type {} from '@mui/material/themeCssVarsAugmentation';
 
 import DashboardRoundedIcon      from '@mui/icons-material/DashboardRounded';
@@ -40,6 +41,8 @@ import VerifiedRoundedIcon       from '@mui/icons-material/VerifiedRounded';
 import BadgeRoundedIcon          from '@mui/icons-material/BadgeRounded';
 import AssignmentReturnRoundedIcon from '@mui/icons-material/AssignmentReturnRounded';
 import BoltRoundedIcon           from '@mui/icons-material/BoltRounded';
+import ForumRoundedIcon          from '@mui/icons-material/ForumRounded';
+import useUnreadChats from '@/components/chat/useUnreadChats';
 import useVendorAccess, { CAP } from '@/hooks/useVendorAccess';
 
 import { usePathname } from 'next/navigation';
@@ -74,6 +77,7 @@ const mainListItems: NavItemDef[] = [
   { id: 'dashboard',       text: 'Dashboard',     icon: <DashboardRoundedIcon />,           path: '/dashboard',       capability: CAP.VIEW_ANALYTICS },
   { id: 'store-analytics', text: 'Store Traffic', icon: <TrendingUpRoundedIcon />,           path: '/store-analytics', capability: CAP.VIEW_ANALYTICS },
   { id: 'orders',          text: 'Orders',        icon: <LocalShippingRoundedIcon />,        path: '/orders',          capability: CAP.MANAGE_ORDERS },
+  { id: 'messages',        text: 'Messages',      icon: <ForumRoundedIcon />,                path: '/messages',        capability: CAP.MANAGE_MESSAGES },
   { id: 'order-returns',   text: 'Returns',       icon: <AssignmentReturnRoundedIcon />,     path: '/order-returns',   capability: CAP.MANAGE_ORDERS },
   { id: 'products',      text: 'Products',      icon: <Inventory2RoundedIcon />,             path: '/products',      capability: CAP.MANAGE_CATALOG },
   { id: 'flash-sales',   text: 'Flash Sales',   icon: <BoltRoundedIcon />,                   path: '/flash-sales',   capability: CAP.MANAGE_CATALOG },
@@ -104,9 +108,11 @@ interface NavItemProps {
   mini: boolean;
   pathname: string;
   onPageItemClick: () => void;
+  /** Count shown on the icon (e.g. unread chats). */
+  badge?: number;
 }
 
-function NavItem({ item, mini, pathname, onPageItemClick }: NavItemProps) {
+function NavItem({ item, mini, pathname, onPageItemClick, badge = 0 }: NavItemProps) {
   const isActive  = pathname === item.path || (item.path !== '/dashboard' && pathname.startsWith(item.path));
   const isLogout  = item.id === 'logout';
 
@@ -145,7 +151,10 @@ function NavItem({ item, mini, pathname, onPageItemClick }: NavItemProps) {
               transition: 'color 0.15s',
             }}
           >
-            {React.cloneElement(item.icon, { sx: { fontSize: mini ? 22 : 20 } })}
+            <Badge badgeContent={badge} color="error" max={99}
+                   sx={{ '& .MuiBadge-badge': { fontSize: 10, height: 16, minWidth: 16, px: 0.5 } }}>
+              {React.cloneElement(item.icon, { sx: { fontSize: mini ? 22 : 20 } })}
+            </Badge>
           </ListItemIcon>
 
           {!mini && (
@@ -364,6 +373,7 @@ export default function DashboardSidebar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [capabilities],
   );
+  const unreadChats = useUnreadChats('vendor', can(CAP.MANAGE_MESSAGES));
   const visibleSubscribe = React.useMemo(
     () => subscribeListItems.filter((i) => !i.capability || can(i.capability)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -405,7 +415,8 @@ export default function DashboardSidebar({
         >
           <List dense disablePadding>
             {visibleMain.map((item) => (
-              <NavItem key={item.id} item={item} mini={mini} pathname={pathname} onPageItemClick={handlePageItemClick} />
+              <NavItem key={item.id} item={item} mini={mini} pathname={pathname} onPageItemClick={handlePageItemClick}
+                       badge={item.id === 'messages' ? unreadChats : 0} />
             ))}
           </List>
 

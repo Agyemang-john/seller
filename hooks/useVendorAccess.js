@@ -43,6 +43,7 @@ export const CAP = {
   MANAGE_FINANCE: 'manage_finance',
   MANAGE_TEAM: 'manage_team',
   CLOSE_STORE: 'close_store',
+  MANAGE_MESSAGES: 'manage_messages',
 };
 
 export default function useVendorAccess() {

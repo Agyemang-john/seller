@@ -18,6 +18,7 @@ import useSWR from 'swr';
 import useVendorAccess, { CAP } from '@/hooks/useVendorAccess';
 import { createAxiosClient } from '@/utils/clientFetch';
 import { MOBILE_NAV_HEIGHT } from '../constants';
+import useUnreadChats from '@/components/chat/useUnreadChats';
 
 interface TabDef {
   id: string;
@@ -53,6 +54,9 @@ export default function MobileBottomNav({ moreOpen, onMore }: MobileBottomNavPro
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [capabilities],
   );
+
+  // Messages lives under "More" on phones; show unread chats there.
+  const unreadChats = useUnreadChats('vendor', can(CAP.MANAGE_MESSAGES));
 
   const { data: toShip } = useSWR(
     can(CAP.MANAGE_ORDERS) ? '/api/v1/vendor/orders/?filter=to_ship&page_size=1' : null,
@@ -141,7 +145,12 @@ export default function MobileBottomNav({ moreOpen, onMore }: MobileBottomNavPro
         <BottomNavigationAction
           value="more"
           label="More"
-          icon={<MenuRoundedIcon />}
+          icon={
+            <Badge badgeContent={unreadChats} color="error" max={99}
+                   sx={{ '& .MuiBadge-badge': { top: 4, right: 8, fontSize: 10, height: 16, minWidth: 16 } }}>
+              <MenuRoundedIcon />
+            </Badge>
+          }
           onClick={onMore}
         />
       </BottomNavigation>
