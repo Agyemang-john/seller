@@ -23,10 +23,12 @@ import PersonAddAlt1RoundedIcon from '@mui/icons-material/PersonAddAlt1Rounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
+import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded';
 import toast from 'react-hot-toast';
 import { createAxiosClient } from '@/utils/clientFetch';
 import { useDialogs } from '@/hooks/useDialogs/useDialogs';
 import { resetVendorAccess } from '@/hooks/useVendorAccess';
+import { ActivityLine, MemberActivityDialog } from './MemberActivity';
 
 const ROLE_INFO = {
   owner: { label: 'Owner', color: 'primary', desc: 'Full access, including payouts, billing, team and closing the store.' },
@@ -56,6 +58,7 @@ export default function TeamManager() {
   const [team, setTeam] = useState(null);
   const [error, setError] = useState('');
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [activityFor, setActivityFor] = useState(null);
   const dialogs = useDialogs();
 
   const load = useCallback(async () => {
@@ -210,7 +213,15 @@ export default function TeamManager() {
                     <Typography sx={{ fontSize: 12, color: 'text.secondary', wordBreak: 'break-all' }}>
                       {m.email} · joined {fmtDate(m.created_at)}
                     </Typography>
+                    <ActivityLine activity={m.activity} />
                   </Box>
+                  {m.activity && (
+                    <Tooltip title="Sign-in history">
+                      <IconButton size="small" onClick={() => setActivityFor(m)} aria-label="Sign-in history">
+                        <HistoryRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
                   {canEditRole ? (
                     <Select
                       size="small"
@@ -292,6 +303,8 @@ export default function TeamManager() {
           </Stack>
         </CardContent>
       </Card>
+
+      <MemberActivityDialog member={activityFor} onClose={() => setActivityFor(null)} />
 
       <InviteDialog
         open={inviteOpen}
