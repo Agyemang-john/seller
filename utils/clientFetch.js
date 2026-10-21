@@ -3,7 +3,7 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { store } from '@/redux/store';
-import { setAuth } from '@/redux/features/authSlice';
+import { logout, setAuth } from '@/redux/features/authSlice';
 
 export const createAxiosClient = () => {
   const axiosClient = axios.create({
@@ -60,6 +60,9 @@ export const createAxiosClient = () => {
           store.dispatch(setAuth());
           return axiosClient(originalRequest);
         } catch (refreshError) {
+          // 400/401: the session was ended (e.g. signed out from another device).
+          const status = refreshError.response?.status;
+          if (status === 400 || status === 401) store.dispatch(logout());
           return Promise.reject(refreshError);
         }
       }

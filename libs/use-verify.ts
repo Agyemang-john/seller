@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useAppDispatch } from '@/redux/hooks';
-import { setAuth, finishInitialLoad } from '@/redux/features/authSlice';
+import { setAuth, finishInitialLoad, logout } from '@/redux/features/authSlice';
 import { useVerifyMutation, useRefreshMutation } from '@/redux/features/authApiSlice';
 
 const logInDev = (...args: any[]) => {
@@ -31,7 +31,13 @@ export default function useVerify() {
           await refresh(undefined).unwrap();
           await verify(undefined).unwrap();
           dispatch(setAuth());
-        } catch (refreshErr) {
+        } catch (refreshErr: any) {
+          // The server refused the session (signed out from another device,
+          // password changed, removed from the team): it is gone for good.
+          if (refreshErr?.status === 400 || refreshErr?.status === 401) {
+            dispatch(logout());
+            return;
+          }
           // Do NOT log the user out on a transient failure (network blip,
           // server hiccup, throttling, or a race right as the 1h access token
           // expires). Forcing logout here flips `isAuthenticated` to false and
