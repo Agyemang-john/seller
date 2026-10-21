@@ -35,10 +35,14 @@ export const emptyPaneBg = (t: Theme) => ({
   ...t.applyStyles('dark', { backgroundColor: pal(t).background.default }),
 });
 
-/** Own message bubble. */
+/**
+ * Own message bubble. An app can set --chat-own-bubble on a wrapper to use a
+ * brand colour (the storefront does: ChatBrandTheme.tsx); otherwise it is a
+ * tint of the theme's primary.
+ */
 export const ownBubble = (t: Theme) => ({
-  backgroundColor: primaryTint(t, 0.14),
-  ...t.applyStyles('dark', { backgroundColor: primaryTint(t, 0.38) }),
+  backgroundColor: `var(--chat-own-bubble, ${primaryTint(t, 0.14)})`,
+  ...t.applyStyles('dark', { backgroundColor: `var(--chat-own-bubble-dark, ${primaryTint(t, 0.38)})` }),
 });
 
 /** The other side's bubble. */
