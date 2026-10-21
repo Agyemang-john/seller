@@ -31,7 +31,7 @@ import {
   DEFAULT_POLICY, errorOf, getConversation, getMessages, markRead, mediaUrl, newClientId, sendMessage,
   type ChatConversation, type ChatErrorBody, type ChatMessage, type ChatPolicy, type ChatSide,
 } from './chatApi';
-import { sendTyping, useChatEvents } from './chatSocket';
+import { sendTyping, setActiveConversation, useChatEvents } from './chatSocket';
 import { dayLabel, lastSeenLabel, sameDay, timeLabel } from './chatFormat';
 import { fieldBg, noticeBg, otherBubble, ownBubble, threadBg } from './chatTheme';
 
@@ -116,6 +116,12 @@ export default function ChatThread({
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [side, id]);
+
+  // Tell the socket which chat is on screen (sound choice, "missed" badges).
+  useEffect(() => {
+    setActiveConversation(side, id);
+    return () => setActiveConversation(side, null);
   }, [side, id]);
 
   // Presence refresh while open.

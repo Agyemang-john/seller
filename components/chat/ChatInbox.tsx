@@ -16,13 +16,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Route } from 'next';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
-  Avatar, Badge, Box, Chip, CircularProgress, InputBase, Stack, Typography, useMediaQuery,
+  Avatar, Badge, Box, Chip, CircularProgress, IconButton, InputBase, Stack, Tooltip, Typography, useMediaQuery,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
 import DoneAllRoundedIcon from '@mui/icons-material/DoneAllRounded';
 import ForumOutlinedIcon from '@mui/icons-material/ForumOutlined';
+import VolumeUpRoundedIcon from '@mui/icons-material/VolumeUpRounded';
+import VolumeOffRoundedIcon from '@mui/icons-material/VolumeOffRounded';
 import ChatThread from './ChatThread';
 import {
   cursorOf, DEFAULT_POLICY, getConversation, listConversations, mediaUrl,
@@ -31,6 +33,7 @@ import {
 import { useChatEvents } from './chatSocket';
 import { listLabel } from './chatFormat';
 import { emptyPaneBg, fieldBg } from './chatTheme';
+import { isChatSoundMuted, onChatSoundMutedChange, setChatSoundMuted } from './chatSound';
 
 type Props = {
   side: ChatSide;
@@ -152,7 +155,10 @@ export default function ChatInbox({ side, title = 'Chats', emptyHint, counterpar
         <Box sx={{ width: { xs: '100%', md: 380, lg: 420 }, flexShrink: 0, display: 'flex', flexDirection: 'column',
                    borderRight: { md: 1 }, borderColor: { md: 'divider' }, minHeight: 0 }}>
           <Box sx={{ px: 2, pt: 2, pb: 1 }}>
-            <Typography component="h1" sx={{ fontSize: 22, fontWeight: 800, mb: 1.5 }}>{title}</Typography>
+            <Stack direction="row" alignItems="center" sx={{ mb: 1.5 }}>
+              <Typography component="h1" sx={{ flex: 1, fontSize: 22, fontWeight: 800, color: 'text.primary', m: 0 }}>{title}</Typography>
+              <SoundToggle />
+            </Stack>
             <Stack direction="row" spacing={1} alignItems="center"
                    sx={[{ px: 1.5, py: 0.75, borderRadius: 5 }, fieldBg]}>
               <SearchRoundedIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
@@ -227,6 +233,22 @@ export default function ChatInbox({ side, title = 'Chats', emptyHint, counterpar
         </Box>
       )}
     </Box>
+  );
+}
+
+function SoundToggle() {
+  const [muted, setMuted] = useState(false);
+  useEffect(() => {
+    setMuted(isChatSoundMuted());
+    return onChatSoundMutedChange(setMuted);
+  }, []);
+  return (
+    <Tooltip title={muted ? 'Turn message sounds on' : 'Mute message sounds'}>
+      <IconButton onClick={() => setChatSoundMuted(!muted)} aria-pressed={muted}
+                  aria-label={muted ? 'Turn message sounds on' : 'Mute message sounds'} sx={{ color: 'text.secondary' }}>
+        {muted ? <VolumeOffRoundedIcon /> : <VolumeUpRoundedIcon />}
+      </IconButton>
+    </Tooltip>
   );
 }
 
