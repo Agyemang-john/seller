@@ -19,6 +19,7 @@ import useVendorAccess, { CAP } from '@/hooks/useVendorAccess';
 import { createAxiosClient } from '@/utils/clientFetch';
 import { MOBILE_NAV_HEIGHT } from '../constants';
 import useUnreadChats from '@/components/chat/useUnreadChats';
+import useMessagingPlan from '@/components/chat/useMessagingPlan';
 
 interface TabDef {
   id: string;
@@ -56,7 +57,8 @@ export default function MobileBottomNav({ moreOpen, onMore }: MobileBottomNavPro
   );
 
   // Messages lives under "More" on phones; show unread chats there.
-  const unreadChats = useUnreadChats('vendor', can(CAP.MANAGE_MESSAGES));
+  const messagingPlan = useMessagingPlan();
+  const unreadChats = useUnreadChats('vendor', can(CAP.MANAGE_MESSAGES) && messagingPlan.allowed);
 
   const { data: toShip } = useSWR(
     can(CAP.MANAGE_ORDERS) ? '/api/v1/vendor/orders/?filter=to_ship&page_size=1' : null,

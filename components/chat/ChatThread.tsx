@@ -20,7 +20,6 @@ import type { Route } from 'next';
 import {
   Alert, Avatar, Badge, Box, CircularProgress, IconButton, InputBase, Stack, Tooltip, Typography,
 } from '@mui/material';
-import { alpha, useTheme } from '@mui/material/styles';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
@@ -34,6 +33,7 @@ import {
 } from './chatApi';
 import { sendTyping, useChatEvents } from './chatSocket';
 import { dayLabel, lastSeenLabel, sameDay, timeLabel } from './chatFormat';
+import { fieldBg, noticeBg, otherBubble, ownBubble, threadBg } from './chatTheme';
 
 type Props = {
   side: ChatSide;
@@ -64,7 +64,6 @@ function upsert(list: ChatMessage[], m: ChatMessage) {
 export default function ChatThread({
   side, conversation, policy = DEFAULT_POLICY, onBack, hideHeader, counterpartHref, productHref, onConversationChange,
 }: Props) {
-  const theme = useTheme();
   const id = conversation.id;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [hasMore, setHasMore] = useState(false);
@@ -251,9 +250,6 @@ export default function ChatThread({
   const muted = error?.code === 'muted' && !!error.muted_until && new Date(error.muted_until) > new Date();
 
   // ── Render ──────────────────────────────────────────────────────────────
-  const dark = theme.palette.mode === 'dark';
-  const mine = alpha(theme.palette.primary.main, dark ? 0.38 : 0.14);
-  const theirs = theme.palette.background.paper;
   const cp = conversation.counterpart;
   const status = typing ? 'typing…' : lastSeenLabel(presence.online, presence.last_seen);
 
@@ -288,11 +284,10 @@ export default function ChatThread({
 
       {/* Messages */}
       <Box ref={scrollRef} onScroll={onScroll}
-           sx={{ flex: 1, minHeight: 0, overflowY: 'auto', px: { xs: 1.25, sm: 3 }, py: 1.5,
-                 bgcolor: dark ? 'background.default' : '#f2efe9' }}>
+           sx={[{ flex: 1, minHeight: 0, overflowY: 'auto', px: { xs: 1.25, sm: 3 }, py: 1.5 }, threadBg]}>
         <Stack alignItems="center" sx={{ mb: 1.5 }}>
           <Stack direction="row" spacing={0.75} alignItems="flex-start"
-                 sx={{ maxWidth: 460, px: 1.5, py: 1, borderRadius: 2, bgcolor: dark ? alpha('#ffb300', 0.12) : '#fff5c4' }}>
+                 sx={[{ maxWidth: 460, px: 1.5, py: 1, borderRadius: 2 }, noticeBg]}>
             <LockRoundedIcon sx={{ fontSize: 15, mt: '2px', color: 'text.secondary' }} />
             <Typography sx={{ fontSize: 12.5, color: 'text.secondary', lineHeight: 1.45 }}>
               Keep chats, payments and deliveries on Negromart so your purchase stays protected. Phone numbers,
@@ -326,11 +321,11 @@ export default function ChatThread({
                 </Stack>
               )}
               <Stack alignItems={own ? 'flex-end' : 'flex-start'} sx={{ mt: grouped ? 0.4 : 1.25 }}>
-                <Box sx={{
+                <Box sx={[{
                   maxWidth: { xs: '85%', sm: '70%' }, px: 1.25, pt: 0.75, pb: 0.5, borderRadius: 2,
                   borderTopRightRadius: own && !grouped ? 4 : 16, borderTopLeftRadius: !own && !grouped ? 4 : 16,
-                  bgcolor: own ? mine : theirs, boxShadow: '0 1px 1px rgba(0,0,0,.08)',
-                }}>
+                  boxShadow: '0 1px 1px rgba(0,0,0,.08)',
+                }, own ? ownBubble : otherBubble]}>
                   {m.side === 'vendor' && side === 'vendor' && m.sender_name && !grouped && (
                     <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'primary.main', mb: 0.25 }}>{m.sender_name}</Typography>
                   )}
@@ -356,7 +351,7 @@ export default function ChatThread({
 
         {typing && (
           <Stack alignItems="flex-start" sx={{ mt: 1 }}>
-            <Box sx={{ px: 1.5, py: 1, borderRadius: 2, bgcolor: theirs, boxShadow: '0 1px 1px rgba(0,0,0,.08)' }}>
+            <Box sx={[{ px: 1.5, py: 1, borderRadius: 2, boxShadow: '0 1px 1px rgba(0,0,0,.08)' }, otherBubble]}>
               <TypingDots />
             </Box>
           </Stack>
@@ -375,7 +370,7 @@ export default function ChatThread({
           </Alert>
         )}
         <Stack direction="row" spacing={1} alignItems="flex-end">
-          <Box sx={{ flex: 1, px: 1.75, py: 1, borderRadius: 3, bgcolor: dark ? 'action.hover' : 'grey.100' }}>
+          <Box sx={[{ flex: 1, px: 1.75, py: 1, borderRadius: 3 }, fieldBg]}>
             <InputBase
               inputRef={inputRef}
               value={text}

@@ -43,6 +43,7 @@ import AssignmentReturnRoundedIcon from '@mui/icons-material/AssignmentReturnRou
 import BoltRoundedIcon           from '@mui/icons-material/BoltRounded';
 import ForumRoundedIcon          from '@mui/icons-material/ForumRounded';
 import useUnreadChats from '@/components/chat/useUnreadChats';
+import useMessagingPlan from '@/components/chat/useMessagingPlan';
 import useVendorAccess, { CAP } from '@/hooks/useVendorAccess';
 
 import { usePathname } from 'next/navigation';
@@ -108,17 +109,19 @@ interface NavItemProps {
   mini: boolean;
   pathname: string;
   onPageItemClick: () => void;
-  /** Count shown on the icon (e.g. unread chats). */
+  /** Counter for things waiting on the seller (e.g. chats with unread shopper messages). */
   badge?: number;
+  /** Small tag for a feature the store's plan doesn't include yet. */
+  upgradeTag?: string;
 }
 
-function NavItem({ item, mini, pathname, onPageItemClick, badge = 0 }: NavItemProps) {
+function NavItem({ item, mini, pathname, onPageItemClick, badge = 0, upgradeTag }: NavItemProps) {
   const isActive  = pathname === item.path || (item.path !== '/dashboard' && pathname.startsWith(item.path));
   const isLogout  = item.id === 'logout';
 
   return (
     <ListItem disablePadding sx={{ display: 'block', mb: 0.25 }}>
-      <Tooltip title={mini ? item.text : ''} placement="right" arrow>
+      <Tooltip title={mini ? (badge ? `${item.text} (${badge} unread)` : item.text) : ''} placement="right" arrow>
         <ListItemButton
           component={Link}
           href={item.path}
@@ -151,7 +154,8 @@ function NavItem({ item, mini, pathname, onPageItemClick, badge = 0 }: NavItemPr
               transition: 'color 0.15s',
             }}
           >
-            <Badge badgeContent={badge} color="error" max={99}
+            {/* Collapsed rail: the count rides on the icon. Expanded: it sits at the row's end. */}
+            <Badge badgeContent={mini ? badge : 0} color="error" max={99}
                    sx={{ '& .MuiBadge-badge': { fontSize: 10, height: 16, minWidth: 16, px: 0.5 } }}>
               {React.cloneElement(item.icon, { sx: { fontSize: mini ? 22 : 20 } })}
             </Badge>
@@ -168,6 +172,33 @@ function NavItem({ item, mini, pathname, onPageItemClick, badge = 0 }: NavItemPr
               }}
               sx={{ m: 0 }}
             />
+          )}
+
+          {!mini && badge > 0 && (
+            <Box
+              component="span"
+              aria-label={`${badge} unread`}
+              sx={{
+                ml: 1, minWidth: 20, height: 20, px: 0.75, borderRadius: 10, flexShrink: 0,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                bgcolor: 'error.main', color: 'error.contrastText', fontSize: 11.5, fontWeight: 700, lineHeight: 1,
+              }}
+            >
+              {badge > 99 ? '99+' : badge}
+            </Box>
+          )}
+
+          {!mini && !badge && upgradeTag && (
+            <Box
+              component="span"
+              sx={{
+                ml: 1, px: 0.75, py: 0.25, borderRadius: 1, flexShrink: 0, fontSize: 10.5, fontWeight: 700,
+                letterSpacing: '0.02em', textTransform: 'uppercase', lineHeight: 1.4,
+                color: 'warning.main', border: 1, borderColor: 'warning.main',
+              }}
+            >
+              {upgradeTag}
+            </Box>
           )}
         </ListItemButton>
       </Tooltip>
@@ -373,7 +404,9 @@ export default function DashboardSidebar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [capabilities],
   );
-  const unreadChats = useUnreadChats('vendor', can(CAP.MANAGE_MESSAGES));
+  // Chat is a Basic-and-up feature: free stores see the item with an "Upgrade" tag.
+  const messagingPlan = useMessagingPlan();
+  const unreadChats = useUnreadChats('vendor', can(CAP.MANAGE_MESSAGES) && messagingPlan.allowed);
   const visibleSubscribe = React.useMemo(
     () => subscribeListItems.filter((i) => !i.capability || can(i.capability)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -416,7 +449,8 @@ export default function DashboardSidebar({
           <List dense disablePadding>
             {visibleMain.map((item) => (
               <NavItem key={item.id} item={item} mini={mini} pathname={pathname} onPageItemClick={handlePageItemClick}
-                       badge={item.id === 'messages' ? unreadChats : 0} />
+                       badge={item.id === 'messages' ? unreadChats : 0}
+                       upgradeTag={item.id === 'messages' && messagingPlan.known && !messagingPlan.allowed ? 'Upgrade' : undefined} />
             ))}
           </List>
 

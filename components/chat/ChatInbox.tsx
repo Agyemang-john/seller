@@ -30,6 +30,7 @@ import {
 } from './chatApi';
 import { useChatEvents } from './chatSocket';
 import { listLabel } from './chatFormat';
+import { emptyPaneBg, fieldBg } from './chatTheme';
 
 type Props = {
   side: ChatSide;
@@ -153,7 +154,7 @@ export default function ChatInbox({ side, title = 'Chats', emptyHint, counterpar
           <Box sx={{ px: 2, pt: 2, pb: 1 }}>
             <Typography component="h1" sx={{ fontSize: 22, fontWeight: 800, mb: 1.5 }}>{title}</Typography>
             <Stack direction="row" spacing={1} alignItems="center"
-                   sx={{ px: 1.5, py: 0.75, borderRadius: 5, bgcolor: theme.palette.mode === 'dark' ? 'action.hover' : 'grey.100' }}>
+                   sx={[{ px: 1.5, py: 0.75, borderRadius: 5 }, fieldBg]}>
               <SearchRoundedIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
               <InputBase value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search chats" fullWidth
                          inputProps={{ 'aria-label': 'Search chats' }} sx={{ fontSize: 15 }} />
@@ -213,8 +214,7 @@ export default function ChatInbox({ side, title = 'Chats', emptyHint, counterpar
           ) : selectedId ? (
             <Box sx={{ height: '100%', display: 'grid', placeItems: 'center' }}><CircularProgress size={26} /></Box>
           ) : (
-            <Box sx={{ height: '100%', display: 'grid', placeItems: 'center', textAlign: 'center', px: 4,
-                       bgcolor: theme.palette.mode === 'dark' ? 'background.default' : '#f7f6f3' }}>
+            <Box sx={[{ height: '100%', display: 'grid', placeItems: 'center', textAlign: 'center', px: 4 }, emptyPaneBg]}>
               <Box>
                 <ForumOutlinedIcon sx={{ fontSize: 64, color: 'text.disabled' }} />
                 <Typography sx={{ fontSize: 20, fontWeight: 700, mt: 1 }}>Select a chat</Typography>
