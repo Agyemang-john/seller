@@ -29,6 +29,12 @@ export function buildUIPlan(plan: SubscriptionPlan): UIPlan {
       on: true,
     },
     {
+      label: plan.max_images_per_variant > 0
+        ? `${plan.max_images_per_variant} extra photos per variant`
+        : "Extra variant photos",
+      on: plan.max_images_per_variant > 0,
+    },
+    {
       label: `${plan.max_categories} product categories`,
       on: true,
     },

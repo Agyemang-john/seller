@@ -16,6 +16,7 @@ import ProductGeneralInfo from '@/components/products/ProductGeneralInfo';
 import ProductImages from '@/components/products/ProductImages';
 import DeliveryOptions from '@/components/products/DeliveryOptions';
 import VariantRow from "@/components/products/Variant";
+import { toVariantPayload, runGalleryUploads } from '@/components/products/galleryUploads';
 
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
@@ -226,7 +227,7 @@ export default function ProductForm({ id = null }) {
       if (formData.video instanceof File) submitData.append('video', formData.video);
 
       if (formData.variants?.length > 0) {
-        submitData.append('variants', JSON.stringify(formData.variants.map((v) => ({ ...v, image: null }))));
+        submitData.append('variants', JSON.stringify(variants.map(toVariantPayload)));
         variants.forEach((v, i) => {
           if (v.image instanceof File) submitData.append(`variant_image_${i}`, v.image);
         });
@@ -240,11 +241,10 @@ export default function ProductForm({ id = null }) {
       }
 
       const client = createAxiosClient();
-      if (id) {
-        await client.put(`/api/v1/vendor/products/${id}/`, submitData, { headers: { 'Content-Type': 'multipart/form-data' } });
-      } else {
-        await client.post('/api/v1/vendor/products/', submitData, { headers: { 'Content-Type': 'multipart/form-data' } });
-      }
+      const { data: saved } = id
+        ? await client.put(`/api/v1/vendor/products/${id}/`, submitData, { headers: { 'Content-Type': 'multipart/form-data' } })
+        : await client.post('/api/v1/vendor/products/', submitData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      await runGalleryUploads(Swal, variants, saved?.variant_keys);
 
       await Swal.fire({ icon: 'success', title: 'Product saved!', text: 'Your product has been submitted for review.', timer: 2500, showConfirmButton: false });
       router.push('/products');

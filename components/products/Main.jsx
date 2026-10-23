@@ -18,6 +18,7 @@ import ProductGeneralInfo from '@/components/products/ProductGeneralInfo';
 import ProductImages from '@/components/products/ProductImages';
 import DeliveryOptions from '@/components/products/DeliveryOptions';
 import VariantRow from "@/components/products/Variant";
+import { toVariantPayload, runGalleryUploads } from '@/components/products/galleryUploads';
 
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -336,7 +337,7 @@ export default function ProductForm({ id = null }) {
       if (formData.video instanceof File) fd.append('video', formData.video);
 
       if (formData.variants?.length > 0) {
-        fd.append('variants', JSON.stringify(formData.variants.map((v) => ({ ...v, image: null }))));
+        fd.append('variants', JSON.stringify(variants.map(toVariantPayload)));
         variants.forEach((v, i) => { if (v.image instanceof File) fd.append(`variant_image_${i}`, v.image); });
       }
 
@@ -346,11 +347,10 @@ export default function ProductForm({ id = null }) {
       }
 
       const client = createAxiosClient();
-      if (id) {
-        await client.put(`/api/v1/vendor/products/${id}/`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-      } else {
-        await client.post('/api/v1/vendor/products/', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-      }
+      const { data: saved } = id
+        ? await client.put(`/api/v1/vendor/products/${id}/`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+        : await client.post('/api/v1/vendor/products/', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      await runGalleryUploads(Swal, variants, saved?.variant_keys);
 
       await Swal.fire({ icon: 'success', title: 'Product saved!', text: 'Submitted for review.', timer: 2200, showConfirmButton: false });
       router.push('/products');

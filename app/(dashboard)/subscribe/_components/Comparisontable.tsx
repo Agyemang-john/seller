@@ -29,6 +29,7 @@ const GROUPS: { label: string; rows: CompRow[] }[] = [
     rows: [
       { feature: "Active listings",    value: (p) => count(p.max_products) },
       { feature: "Images per product", value: (p) => count(p.max_images_per_product) },
+      { feature: "Extra photos per variant", value: (p) => p.max_images_per_variant > 0 ? count(p.max_images_per_variant) : false },
       { feature: "Categories",         value: (p) => count(p.max_categories) },
       { feature: "Bulk CSV upload",    value: (p) => p.can_access_bulk_upload },
     ],

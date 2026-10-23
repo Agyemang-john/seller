@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import { createAxiosClient } from "@/utils/clientFetch";
 import { slugify } from "@/components/Functions";
 import { validateImage, validateVideo, squareifyImage  } from "./fileValidators";
+import { galleryFromApi } from "./galleryUploads";
 import Swal from 'sweetalert2';
 
 
@@ -128,6 +129,8 @@ export const useProductForm = (id = null) => {
         quantity: v.quantity || 1,
         price: v.price || 0,
         seller_sku: v.seller_sku || '',
+        key: `v${v.id}`,
+        gallery: galleryFromApi(v.gallery),
       }));
 
       const newFormData = {

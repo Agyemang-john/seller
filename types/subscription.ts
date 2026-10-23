@@ -46,6 +46,8 @@ export interface SubscriptionPlan {
   // ── Product & listing limits ─────────────────────────────────────────────
   max_products: number;
   max_images_per_product: number;
+  /** Extra gallery photos per variant; 0 = not included */
+  max_images_per_variant: number;
   max_categories: number;
 
   // ── Feature flags ────────────────────────────────────────────────────────

@@ -10,7 +10,11 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AddPhotoAlternateOutlinedIcon from '@mui/icons-material/AddPhotoAlternateOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined';
+import useSWR from 'swr';
 import { validateImage, squareifyImage } from './fileValidators';
+import { newVariantKey } from './galleryUploads';
+import VariantGallery from './VariantGallery';
+import { fetcher } from '@/components/dashboard/DashboardUI';
 import Swal from 'sweetalert2';
 
 const fieldSx = {
@@ -21,7 +25,7 @@ const fieldSx = {
 };
 
 // ── Single variant card ────────────────────────────────────────────────────────
-function VariantCard({ variant, index, formData, sizes, colors, imagePreview, onFieldChange, onImageChange, onRemove }) {
+function VariantCard({ variant, index, formData, sizes, colors, imagePreview, galleryLimit, onFieldChange, onImageChange, onGalleryChange, onRemove }) {
   const inputId = `variant-img-${index}`;
   const showSize  = ['Size', 'Size-Color'].includes(formData.variant);
   const showColor = ['Color', 'Size-Color'].includes(formData.variant);
@@ -171,6 +175,8 @@ function VariantCard({ variant, index, formData, sizes, colors, imagePreview, on
             </Grid>
           </Grid>
         </Grid>
+
+        <VariantGallery index={index} gallery={variant.gallery} limit={galleryLimit} onChange={onGalleryChange} />
       </Box>
     </Box>
   );
@@ -183,6 +189,10 @@ const VariantRow = ({
   sizes = [], colors = [],
   variantImagePreviews = {}, setVariantImagePreviews,
 }) => {
+  // Extra photos per variant are a paid feature (payments/entitlements.py).
+  const { data: plan } = useSWR('/api/v1/vendor/plan/', fetcher, { revalidateOnFocus: false });
+  const galleryLimit = plan ? (plan.max_images_per_variant ?? 0) : null;
+
   // Parent `variants` state is the single source of truth; mirror it one-way into formData.
   // (Two-way syncing with a local copy ping-ponged into an infinite update loop — React #185.)
   useEffect(() => {
@@ -196,6 +206,14 @@ const VariantRow = ({
     setLocalVariants((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value === '' ? null : value };
+      return updated;
+    });
+  }, [setLocalVariants]);
+
+  const handleGalleryChange = useCallback((index, update) => {
+    setLocalVariants((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], gallery: update(updated[index].gallery || []) };
       return updated;
     });
   }, [setLocalVariants]);
@@ -223,7 +241,7 @@ const VariantRow = ({
   }, [setVariantImagePreviews, setLocalVariants]);
 
   const handleAdd = () => {
-    setLocalVariants((prev) => [...prev, { id: null, size: null, color: null, image: null, title: '', quantity: 1, price: 0, seller_sku: '' }]);
+    setLocalVariants((prev) => [...prev, { id: null, key: newVariantKey(), size: null, color: null, image: null, title: '', quantity: 1, price: 0, seller_sku: '', gallery: [] }]);
   };
 
   const handleRemove = (index) => {
@@ -289,15 +307,17 @@ const VariantRow = ({
         <Stack spacing={1.5}>
           {localVariants.map((variant, i) => (
             <VariantCard
-              key={i}
+              key={variant.key || i}
               variant={variant}
               index={i}
               formData={formData}
               sizes={sizes}
               colors={colors}
               imagePreview={variantImagePreviews[i]}
+              galleryLimit={galleryLimit}
               onFieldChange={handleFieldChange}
               onImageChange={handleImageChange}
+              onGalleryChange={handleGalleryChange}
               onRemove={handleRemove}
             />
           ))}
