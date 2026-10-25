@@ -2,7 +2,7 @@ import ComingSoon from '@/app/_components/ComingSoon';
 
 export const metadata = {
   title: 'Careers | Negromart',
-  description: 'Join the Negromart team and help build the leading African e-commerce marketplace. View open roles. Coming soon.',
+  description: 'Join the Negromart team and help build a leading e-commerce marketplace. View open roles. Coming soon.',
 };
 
 const ICON = (
@@ -55,8 +55,8 @@ export default function Page() {
   return (
     <ComingSoon
       title="Careers at Negromart"
-      subtitle="Help us build Africa's most trusted marketplace."
-      description="We're a growing team passionate about Pan-African commerce. Our careers page with open roles across engineering, product, operations, marketing and seller success is on its way."
+      subtitle="Help us build the most trusted marketplace."
+      description="We're a growing team passionate about commerce that works for everyone. Our careers page with open roles across engineering, product, operations, marketing and seller success is on its way."
       icon={ICON}
       relatedLinks={RELATED}
     />

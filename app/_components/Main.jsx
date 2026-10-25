@@ -16,7 +16,7 @@ const SLIDES = [
   {
     title: 'Build your brand globally.',
     subtitle:
-      'Connect with millions of buyers across Africa and the diaspora through the Negromart Marketplace platform.',
+      'Connect with buyers in every market we serve through the Negromart Marketplace platform.',
     btnLabel: 'Get started',
     btnHref: '/register',
     note: null,
@@ -35,7 +35,7 @@ const SLIDES = [
 const STATS = [
   {
     number: '1000 +',
-    desc: 'Customers and members across Africa and the diaspora shop on Negromart online each week.',
+    desc: 'Customers and members shop on Negromart online each week.',
     note: '*Negromart first-party data, 2026',
     link: null,
   },

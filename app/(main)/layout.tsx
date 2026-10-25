@@ -12,16 +12,10 @@ export const metadata: Metadata = {
   keywords: [
     "Negromart",
     "E-commerce",
-    "Black-owned business",
-    "African marketplace",
-    "Pan-African commerce",
-    "African products",
     "Online shopping",
-    "Buy African",
-    "African heritage",
-    "African jewelry",
-    "Afro fashion",
-    "Sustainable African products"
+    "Online marketplace",
+    "Verified sellers",
+    "Secure online shopping"
   ],
   icons: {
     icon: "/favicon.ico",

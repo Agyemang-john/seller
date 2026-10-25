@@ -33,7 +33,7 @@ const SHIPPING_OPTIONS = [
       </svg>
     ),
     title: 'International Shipping',
-    desc: 'Reach diaspora buyers in the UK, US, Canada and Europe. Competitive rates with full tracking and customs support.',
+    desc: 'Reach international buyers in the UK, US, Canada and Europe. Competitive rates with full tracking and customs support.',
     badge: 'Global Reach',
   },
   {
@@ -210,7 +210,7 @@ export default function ShippingPage() {
       {/* CTA */}
       <section className="nm-info-cta">
         <h2 className="nm-info-cta-title">Ready to start shipping with Negromart?</h2>
-        <p className="nm-info-cta-sub">Join thousands of sellers already growing their business across Africa and the diaspora.</p>
+        <p className="nm-info-cta-sub">Join thousands of sellers already growing their business with Negromart.</p>
         <Link href="/register" className="nm-cta-btn">Join Marketplace</Link>
       </section>
     </main>

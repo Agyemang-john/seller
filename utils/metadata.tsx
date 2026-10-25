@@ -16,15 +16,10 @@ export const generateMetadata = (pageTitle: string, pageDescription: string): Me
     },
     keywords: [
       "Negromart",
-      "Buy Black",
-      "Black-owned business",
-      "African marketplace",
-      "Pan-African commerce",
-      "African products",
       "Online shopping",
-      "Support Black entrepreneurs",
-      "Black wealth",
-      "African culture",
+      "Online marketplace",
+      "Verified sellers",
+      "Secure online shopping",
     ],
     openGraph: {
       title: pageTitle ? `${pageTitle} | ${siteName}` : defaultTitle,

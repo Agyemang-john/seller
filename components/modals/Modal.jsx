@@ -30,7 +30,7 @@ export default function Modal() {
               <ul className="text-sm list-disc pl-5 space-y-2 text-gray-600">
                 <li>Government-issued ID or Student ID(if student)</li>
                 <li>Business email address</li>
-                <li>Bank account or Mobile Money account(If in Africa)</li>
+                <li>Bank account or Mobile Money account</li>
                 <li>Proof of residential address from the last 180 days, like a bank statement or electicity bill</li>
                 {/* <li>Verify your identity with a valid ID.</li> */}
                 <li>Provide billing or Payout information to start selling.</li>

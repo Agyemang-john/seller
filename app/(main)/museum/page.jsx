@@ -2,7 +2,7 @@ import ComingSoon from '@/app/_components/ComingSoon';
 
 export const metadata = {
   title: 'The Negromart Digital Museum | Negromart',
-  description: 'Celebrating African heritage, culture and creativity through digital art and storytelling. Coming soon.',
+  description: 'Celebrating culture, craft and creativity through digital art and storytelling. Coming soon.',
 };
 
 const ICON = (
@@ -18,7 +18,7 @@ const RELATED = [
   {
     href: '/community',
     label: 'Seller Community',
-    desc: 'Connect with culturally-rooted African sellers.',
+    desc: 'Connect with sellers and makers in our community.',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -31,7 +31,7 @@ const RELATED = [
   {
     href: '/blog',
     label: 'Sell Better Blog',
-    desc: 'Stories celebrating African commerce and culture.',
+    desc: 'Stories from the people behind the products.',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -42,7 +42,7 @@ const RELATED = [
   {
     href: 'https://www.negromart.com',
     label: 'Shop Negromart.com',
-    desc: 'Discover unique products from African creators.',
+    desc: 'Discover unique products from independent creators.',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
@@ -57,8 +57,8 @@ export default function Page() {
   return (
     <ComingSoon
       title="The Negromart Digital Museum"
-      subtitle="Celebrating African heritage, culture and creativity."
-      description="A digital space dedicated to the rich history, art and stories of the African diaspora. Featuring curated exhibitions, artist spotlights and cultural narratives that connect our global community."
+      subtitle="Celebrating culture, craft and creativity."
+      description="A digital space for the history, art and stories behind the things we make and sell. Featuring curated exhibitions, artist spotlights and maker stories that connect our global community."
       icon={ICON}
       relatedLinks={RELATED}
     />

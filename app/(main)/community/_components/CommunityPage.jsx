@@ -11,7 +11,7 @@ const COMMUNITY_FEATURES = [
       </svg>
     ),
     title: 'Seller Forums',
-    desc: 'Post questions, share advice and exchange strategies with thousands of active Negromart sellers across Africa and the diaspora.',
+    desc: 'Post questions, share advice and exchange strategies with thousands of active Negromart sellers.',
   },
   {
     icon: (
@@ -50,7 +50,7 @@ const COMMUNITY_FEATURES = [
       </svg>
     ),
     title: 'Regional Groups',
-    desc: 'Connect with sellers in your country or region — Ghana, Nigeria, diaspora groups in the UK, US, Canada and more.',
+    desc: 'Connect with sellers in your country or region — Ghana, Nigeria, and international groups in the UK, US, Canada and more.',
   },
   {
     icon: (
