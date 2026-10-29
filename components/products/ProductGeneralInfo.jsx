@@ -87,6 +87,83 @@ function ImageUploadZone({ preview, onFileChange, label = 'Main product image', 
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
+// Imported items are entered in weeks, made-to-order in days; both are stored in days.
+const SOURCING_UNIT = { imported: 7, made_to_order: 1 };
+
+function SourcingFields({ formData, setFormData, formErrors, regions, fieldSx }) {
+  const kind = formData.fulfilment_type || 'in_stock';
+  const unit = SOURCING_UNIT[kind] || 1;
+  const unitLabel = unit === 7 ? 'weeks' : 'days';
+  const shown = (days) => (days ? Math.round(days / unit) : '');
+  const setSpan = (field) => (e) => {
+    const n = parseInt(e.target.value, 10);
+    setFormData({ ...formData, [field]: Number.isFinite(n) && n > 0 ? n * unit : 0 });
+  };
+  const setKind = (e) => {
+    const next = e.target.value;
+    setFormData({
+      ...formData,
+      fulfilment_type: next,
+      // Sensible starting point when switching type; the seller edits it.
+      sourcing_min_days: next === 'imported' ? 28 : next === 'made_to_order' ? 7 : 0,
+      sourcing_max_days: next === 'imported' ? 42 : next === 'made_to_order' ? 14 : 0,
+      sourced_from: next === 'imported' ? formData.sourced_from : '',
+    });
+  };
+
+  return (
+    <FieldGroup title="Stock & sourcing">
+      <Grid container spacing={2}>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <FormControl fullWidth size="small" sx={fieldSx}>
+            <InputLabel>How do you get this item?</InputLabel>
+            <Select value={kind} onChange={setKind} label="How do you get this item?">
+              <MenuItem value="in_stock">I have it in stock</MenuItem>
+              <MenuItem value="imported">I order it from abroad after a sale</MenuItem>
+              <MenuItem value="made_to_order">I make it after a sale</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+        {kind === 'imported' && (
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <FormControl fullWidth size="small" sx={fieldSx}>
+              <InputLabel>Ordered from</InputLabel>
+              <Select value={formData.sourced_from || ''} label="Ordered from"
+                onChange={(e) => setFormData({ ...formData, sourced_from: e.target.value })}>
+                <MenuItem value=""><em>Not shown</em></MenuItem>
+                {regions.map((r) => <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>)}
+              </Select>
+            </FormControl>
+          </Grid>
+        )}
+        {kind !== 'in_stock' && (
+          <>
+            <Grid size={{ xs: 6, sm: 3 }}>
+              <TextField label={`Shortest (${unitLabel})`} type="number" size="small" sx={fieldSx} fullWidth
+                value={shown(formData.sourcing_min_days)} onChange={setSpan('sourcing_min_days')}
+                inputProps={{ min: 1 }} />
+            </Grid>
+            <Grid size={{ xs: 6, sm: 3 }}>
+              <TextField label={`Longest (${unitLabel})`} type="number" size="small" sx={fieldSx} fullWidth
+                value={shown(formData.sourcing_max_days)} onChange={setSpan('sourcing_max_days')}
+                inputProps={{ min: 1, max: unit === 7 ? 10 : 70 }}
+                error={!!formErrors.sourcing_max_days} helperText={formErrors.sourcing_max_days} />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <FormHelperText sx={{ mx: 0 }}>
+                How long it takes to have the item in hand, before you ship it. Shoppers see
+                &ldquo;{kind === 'imported' ? 'Ships from abroad' : 'Made to order'}&rdquo; and the extra time, and
+                must accept it at checkout. Your ship-by date is extended by the longest time. If you go past
+                it, the shopper can cancel for a full refund.
+              </FormHelperText>
+            </Grid>
+          </>
+        )}
+      </Grid>
+    </FieldGroup>
+  );
+}
+
 const ProductGeneralInfo = ({
   formData, setFormData, formErrors,
   categories, handleCategoryChange,
@@ -263,6 +340,12 @@ const ProductGeneralInfo = ({
           {formErrors.available_in_regions && <FormHelperText>{formErrors.available_in_regions}</FormHelperText>}
         </FormControl>
       </FieldGroup>
+
+      <Divider sx={{ mb: 3.5 }} />
+
+      {/* ── Stock & sourcing (backend product/sourcing.py) ─────────────── */}
+      <SourcingFields formData={formData} setFormData={setFormData} formErrors={formErrors}
+        regions={regions} fieldSx={fieldSx} />
 
       <Divider sx={{ mb: 3.5 }} />
 

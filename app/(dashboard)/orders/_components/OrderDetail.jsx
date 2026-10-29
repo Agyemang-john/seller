@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '@mui/material/styles';
 import { createAxiosClient } from '@/utils/clientFetch';
+import SourcingPanel from './SourcingPanel';
 import { SHIPMENT_STATUS, getStatusEntry } from '@/theme/designTokens';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -724,6 +725,9 @@ export default function OrderDetailPage({ id }) {
           </Table>
         </Box>
         <Divider sx={{ my: 3 }} />
+
+        {/* ── Imported / made-to-order items ── */}
+        <SourcingPanel orderId={id} lines={order.order_products} onUpdated={fetchOrderDetails} />
 
         {/* ── Shipment & Tracking Panel ── */}
         <ShipmentPanel
