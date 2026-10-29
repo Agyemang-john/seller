@@ -7,8 +7,13 @@
  * after the last one leaves, reconnects with backoff, and pings so the other
  * side sees us as online.
  *
- * Events: message | read | typing, plus a local "connected" after every
- * (re)connect so lists can refetch whatever they missed while offline.
+ * Events: message | read | delivered | typing, plus a local "connected" after
+ * every (re)connect so lists can refetch whatever they missed while offline.
+ *
+ * Staying live: a ping that gets no pong within PONG_TIMEOUT_MS means the
+ * connection died silently (phone slept, network switched), so it's dropped and
+ * reopened at once; coming back to the tab or back online reconnects
+ * immediately instead of waiting out the backoff.
  *
  * Incoming messages also play a sound here (chatSound.ts), once per tab set:
  * a soft tick if that chat is open on screen, a chime otherwise.
@@ -19,14 +24,17 @@ import { getSocketToken, type ChatConversation, type ChatMessage, type ChatSide 
 import { playMessageSound } from './chatSound';
 
 export type ChatEvent =
-  | { type: 'message'; conversation: ChatConversation; message: ChatMessage }
-  | { type: 'read'; conversation_id: number; side: ChatSide; last_read_id: number }
+  // unread_chats: the receiving side's nav-badge number after this event.
+  | { type: 'message'; conversation: ChatConversation; message: ChatMessage; unread_chats?: number }
+  | { type: 'read'; conversation_id: number; side: ChatSide; last_read_id: number; unread_chats?: number }
+  | { type: 'delivered'; conversation_id: number; side: ChatSide; last_delivered_id: number }
   | { type: 'typing'; conversation_id: number }
   | { type: 'connected' };
 
 type Listener = (event: ChatEvent) => void;
 
-const PING_MS = 30_000;
+const PING_MS = 25_000;
+const PONG_TIMEOUT_MS = 10_000;
 const IDLE_CLOSE_MS = 5_000;
 
 class ChatSocket {
@@ -36,9 +44,57 @@ class ChatSocket {
   private pingTimer: ReturnType<typeof setInterval> | null = null;
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private idleTimer: ReturnType<typeof setTimeout> | null = null;
+  private pongTimer: ReturnType<typeof setTimeout> | null = null;
   private connecting = false;
 
-  constructor(private side: ChatSide) {}
+  constructor(private side: ChatSide) {
+    if (typeof window === 'undefined') return;
+    const wake = () => this.wake();
+    window.addEventListener('online', wake);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') wake(); });
+  }
+
+  /** Back on the tab / back online: reconnect now, or check the open socket is still alive. */
+  private wake() {
+    if (this.listeners.size === 0) return;
+    if (this.ws?.readyState === WebSocket.OPEN) { this.ping(); return; }
+    if (this.ws || this.connecting) return;
+    if (this.retryTimer) { clearTimeout(this.retryTimer); this.retryTimer = null; }
+    this.retry = 0;
+    this.connect();
+  }
+
+  private ping() {
+    if (this.ws?.readyState !== WebSocket.OPEN) return;
+    this.send({ action: 'ping' });
+    if (this.pongTimer) return;
+    const ws = this.ws;
+    this.pongTimer = setTimeout(() => {
+      this.pongTimer = null;
+      if (this.ws === ws) this.drop(ws);
+    }, PONG_TIMEOUT_MS);
+  }
+
+  /** Give up on a socket that stopped answering and open a fresh one. */
+  private drop(ws: WebSocket) {
+    ws.onclose = null;
+    ws.onmessage = null;
+    ws.onerror = null;
+    try { ws.close(); } catch { /* already closed */ }
+    this.cleanup(ws);
+    if (this.listeners.size) { this.retry = 0; this.connect(); }
+  }
+
+  /** Forget the current socket (a late close event from an older one changes nothing). */
+  private cleanup(ws: WebSocket) {
+    if (this.ws !== ws) return false;
+    if (this.pingTimer) clearInterval(this.pingTimer);
+    if (this.pongTimer) clearTimeout(this.pongTimer);
+    this.pingTimer = null;
+    this.pongTimer = null;
+    this.ws = null;
+    return true;
+  }
 
   subscribe(listener: Listener) {
     this.listeners.add(listener);
@@ -77,7 +133,7 @@ class ChatSocket {
     this.ws = ws;
     ws.onopen = () => {
       this.retry = 0;
-      this.pingTimer = setInterval(() => this.send({ action: 'ping' }), PING_MS);
+      this.pingTimer = setInterval(() => this.ping(), PING_MS);
       this.emit({ type: 'connected' });
     };
     ws.onmessage = (e) => {
@@ -87,16 +143,18 @@ class ChatSocket {
       } catch {
         return; // ignore malformed frames
       }
+      // Any frame proves the connection is alive.
+      if (this.pongTimer) { clearTimeout(this.pongTimer); this.pongTimer = null; }
       if (data.type === 'message' && data.message.side !== this.side) {
         playMessageSound(isViewing(this.side, data.message.conversation_id) ? 'tick' : 'chime', data.message.id);
       }
-      if (data.type === 'message' || data.type === 'read' || data.type === 'typing') this.emit(data);
+      if (data.type === 'message' || data.type === 'read' || data.type === 'delivered' || data.type === 'typing') {
+        this.emit(data);
+      }
     };
     ws.onerror = () => ws.close();
     ws.onclose = (e) => {
-      if (this.pingTimer) clearInterval(this.pingTimer);
-      this.pingTimer = null;
-      if (this.ws === ws) this.ws = null;
+      if (!this.cleanup(ws)) return;
       // 4401/4403: not signed in / not allowed — don't hammer the server.
       if (this.listeners.size && e.code !== 4403) this.scheduleRetry();
     };
@@ -112,7 +170,7 @@ class ChatSocket {
     if (this.retryTimer) clearTimeout(this.retryTimer);
     this.retryTimer = null;
     const ws = this.ws;
-    this.ws = null;
+    if (ws) this.cleanup(ws);
     ws?.close();
   }
 }

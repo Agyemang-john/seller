@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import useNotificationSocket from '@/hooks/useNotificationSocket';
 import {
   Box, Typography, Chip, Button, Divider, Tabs, Tab,
   IconButton, Tooltip, CircularProgress, Skeleton,
@@ -16,7 +17,6 @@ import { createAxiosClient } from '@/utils/clientFetch';
 import { getNotifMeta } from '@/utils/notifMeta';
 import * as timeago from 'timeago.js';
 import Link from 'next/link';
-import toast from 'react-hot-toast';
 
 // ── Palette ──────────────────────────────────────────────────────────────────
 // Derived from the single design base (theme palette) so it tracks light/dark mode.
@@ -157,8 +157,6 @@ function NotifRow({ n, onMarkRead, onDelete }) {
 // ── Main component ────────────────────────────────────────────────────────────
 export default function NotificationsList() {
   const P = useNotifPalette();
-  const axiosClient = createAxiosClient();
-  const wsRef = useRef(null);
 
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -167,50 +165,28 @@ export default function NotificationsList() {
   const [wsReady, setWsReady] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
 
-  // ── WebSocket ─────────────────────────────────────────────────────────────
-  const connect = useCallback(async () => {
-    try {
-      const res = await axiosClient.get('/api/v1/notification/ws-token/');
-      const token = res.data?.token;
-      if (!token) return;
-
-      const ws = new WebSocket(
-        `${process.env.NEXT_PUBLIC_WS_URL}/ws/notifications/?token=${token}`
-      );
-      wsRef.current = ws;
-
-      ws.onopen = () => setWsReady(true);
-      ws.onclose = () => {
-        setWsReady(false);
-        setTimeout(connect, 4000);
-      };
-      ws.onerror = () => ws.close();
-
-      ws.onmessage = (e) => {
-        const msg = JSON.parse(e.data);
-        if (msg.type === 'refresh_list') {
-          setNotifications(msg.notifications || []);
-          setUnreadCount(msg.unread_count ?? 0);
-        }
-        if (msg.type === 'unread_count') {
-          setUnreadCount(msg.count ?? 0);
-          if (msg.trigger_toast) toast.success('New notification!');
-        }
-      };
-    } catch {
-      setTimeout(connect, 5000);
+  // Live list + count: the server pushes a fresh list whenever anything changes
+  // (new notification, read in another tab or in the chat) and on every reconnect.
+  const send = useNotificationSocket((msg) => {
+    if (msg.type === 'refresh_list') {
+      setNotifications(msg.notifications || []);
+      setUnreadCount(msg.unread_count ?? 0);
+      setWsReady(true);
     }
-  }, []);
+    // No toast here: the header bell (always mounted) already rings.
+    if (msg.type === 'unread_count') {
+      setUnreadCount(msg.count ?? 0);
+    }
+  });
 
-  useEffect(() => {
-    connect();
-    return () => wsRef.current?.close();
-  }, []);
-
+  // Socket first; plain HTTP if it's reconnecting at that moment (the server
+  // then pushes the new state to every open tab either way).
   const sendWs = (payload) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(payload));
-    }
+    if (send(payload)) return;
+    const api = createAxiosClient();
+    if (payload.action === 'mark_read') api.post(`/api/v1/notification/${payload.id}/mark-read/`).catch(() => {});
+    else if (payload.action === 'delete') api.delete(`/api/v1/notification/${payload.id}/delete/`).catch(() => {});
+    else if (payload.action === 'mark_all_read') api.post('/api/v1/notification/mark-all-read/').catch(() => {});
   };
 
   // ── Actions ───────────────────────────────────────────────────────────────

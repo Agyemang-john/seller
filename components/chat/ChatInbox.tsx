@@ -118,13 +118,27 @@ export default function ChatInbox({ side, title = 'Chats', emptyHint, counterpar
     if (e.type === 'message') {
       const incoming = { ...e.conversation };
       if (incoming.id === selectedId && e.message.side !== side) incoming.unread = 0; // the open thread reads it
-      setItems((prev) => [incoming, ...prev.filter((c) => c.id !== incoming.id)].sort(byRecent));
+      setItems((prev) => {
+        // Receipts only move forward; one may have overtaken this event.
+        const known = prev.find((c) => c.id === incoming.id);
+        if (known) {
+          incoming.other_last_read_id = Math.max(incoming.other_last_read_id, known.other_last_read_id);
+          incoming.other_delivered_id = Math.max(incoming.other_delivered_id ?? 0, known.other_delivered_id ?? 0);
+        }
+        return [incoming, ...prev.filter((c) => c.id !== incoming.id)].sort(byRecent);
+      });
       if (e.message.side !== side) stopTyping(incoming.id);
     } else if (e.type === 'read') {
       setItems((prev) => prev.map((c) => {
         if (c.id !== e.conversation_id) return c;
-        return e.side === side ? { ...c, unread: 0 } : { ...c, other_last_read_id: Math.max(c.other_last_read_id, e.last_read_id) };
+        return e.side === side ? { ...c, unread: 0 } : {
+          ...c, other_last_read_id: Math.max(c.other_last_read_id, e.last_read_id),
+          other_delivered_id: Math.max(c.other_delivered_id ?? 0, e.last_read_id),
+        };
       }));
+    } else if (e.type === 'delivered') {
+      setItems((prev) => prev.map((c) => (c.id === e.conversation_id && e.side !== side
+        ? { ...c, other_delivered_id: Math.max(c.other_delivered_id ?? 0, e.last_delivered_id) } : c)));
     } else if (e.type === 'typing') {
       setTypingIds((s) => new Set(s).add(e.conversation_id));
       clearTimeout(typingTimers.current[e.conversation_id]);
@@ -257,6 +271,7 @@ function ChatRow({ c, side, active, typing, onClick }: {
 }) {
   const ownLast = c.last_sender_side === side;
   const read = ownLast && c.other_last_read_id >= c.last_message_id;
+  const delivered = ownLast && Math.max(c.other_delivered_id ?? 0, c.other_last_read_id) >= c.last_message_id;
   const unread = c.unread > 0;
   return (
     <Box component="button" type="button" onClick={onClick} aria-current={active ? 'true' : undefined}
@@ -283,8 +298,8 @@ function ChatRow({ c, side, active, typing, onClick }: {
             <Typography noWrap sx={{ flex: 1, fontSize: 14, color: 'primary.main', fontWeight: 600 }}>typing…</Typography>
           ) : (
             <>
-              {ownLast && (read
-                ? <DoneAllRoundedIcon sx={{ fontSize: 17, color: 'info.main', flexShrink: 0 }} />
+              {ownLast && (delivered
+                ? <DoneAllRoundedIcon sx={{ fontSize: 17, color: read ? 'info.main' : 'text.secondary', flexShrink: 0 }} />
                 : <DoneRoundedIcon sx={{ fontSize: 17, color: 'text.secondary', flexShrink: 0 }} />)}
               <Typography noWrap sx={{ flex: 1, fontSize: 14, color: unread ? 'text.primary' : 'text.secondary', fontWeight: unread ? 600 : 400 }}>
                 {c.last_message_preview}

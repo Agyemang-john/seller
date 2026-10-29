@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createAxiosClient } from '@/utils/clientFetch';
 import {
@@ -35,33 +35,12 @@ export default function NotificationDetail() {
   const { id } = useParams();
   const router = useRouter();
   const axiosClient = createAxiosClient();
-  const wsRef = useRef(null);
 
   const [notification, setNotification] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  // Mark as read via WebSocket on open
-  useEffect(() => {
-    let mounted = true;
-    const connect = async () => {
-      try {
-        const res = await axiosClient.get('/api/v1/notification/ws-token/');
-        const token = res.data?.token;
-        if (!token || !mounted) return;
-        const ws = new WebSocket(`${process.env.NEXT_PUBLIC_WS_URL}/ws/notifications/?token=${token}`);
-        wsRef.current = ws;
-        ws.onopen = () => {
-          ws.send(JSON.stringify({ action: 'view_detail', id: parseInt(id) }));
-        };
-        ws.onclose = () => setTimeout(connect, 4000);
-      } catch { setTimeout(connect, 5000); }
-    };
-    connect();
-    return () => { mounted = false; wsRef.current?.close(); };
-  }, [id]);
-
-  // Fetch notification detail
+  // Fetch notification detail (the GET also marks it read and updates every open bell)
   useEffect(() => {
     if (!id) return;
     setLoading(true);

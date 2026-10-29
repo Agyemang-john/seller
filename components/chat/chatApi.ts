@@ -32,6 +32,8 @@ export interface ChatConversation {
   last_message_id: number;
   unread: number;
   other_last_read_id: number;
+  /** Newest message that reached the other side's open app (✓✓ grey); >= other_last_read_id. */
+  other_delivered_id: number;
   counterpart: ChatCounterpart;
   product: ChatProduct | null;
 }

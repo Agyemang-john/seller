@@ -2,7 +2,8 @@
 
 /**
  * One conversation, WhatsApp style: header with presence/typing, day separators,
- * bubbles with time and ticks (✓ sent, ✓✓ read), older history on scroll-up,
+ * bubbles with time and ticks (✓ sent, ✓✓ grey delivered to their open app,
+ * ✓✓ blue read), older history on scroll-up,
  * and a composer (Enter sends, Shift+Enter new line).
  *
  * Messages are sent over REST with a client_id: the bubble shows at once,
@@ -70,6 +71,7 @@ export default function ChatThread({
   const [loading, setLoading] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [otherRead, setOtherRead] = useState(conversation.other_last_read_id);
+  const [otherDelivered, setOtherDelivered] = useState(conversation.other_delivered_id ?? 0);
   const [typing, setTyping] = useState(false);
   const [presence, setPresence] = useState({ online: conversation.counterpart.online, last_seen: conversation.counterpart.last_seen });
   const [text, setText] = useState('');
@@ -103,6 +105,7 @@ export default function ChatThread({
     let alive = true;
     setMessages([]); setHasMore(false); setLoading(true); setError(null); setTyping(false);
     setOtherRead(conversation.other_last_read_id);
+    setOtherDelivered(conversation.other_delivered_id ?? 0);
     setPresence({ online: conversation.counterpart.online, last_seen: conversation.counterpart.last_seen });
     stick.current = true;
     getMessages(side, id)
@@ -130,6 +133,7 @@ export default function ChatThread({
       getConversation(side, id).then((c) => {
         setPresence({ online: c.counterpart.online, last_seen: c.counterpart.last_seen });
         setOtherRead((r) => Math.max(r, c.other_last_read_id));
+        setOtherDelivered((d) => Math.max(d, c.other_delivered_id ?? 0));
       }).catch(() => {});
     }, 60_000);
     return () => clearInterval(t);
@@ -146,7 +150,8 @@ export default function ChatThread({
   useChatEvents(side, (e) => {
     if (e.type === 'message' && e.message.conversation_id === id) {
       setMessages((prev) => upsert(prev, e.message));
-      setOtherRead(e.conversation.other_last_read_id);
+      setOtherRead((r) => Math.max(r, e.conversation.other_last_read_id));
+      setOtherDelivered((d) => Math.max(d, e.conversation.other_delivered_id ?? 0));
       if (e.message.side !== side) {
         setTyping(false);
         setPresence((p) => ({ ...p, online: true }));
@@ -154,6 +159,9 @@ export default function ChatThread({
       }
     } else if (e.type === 'read' && e.conversation_id === id && e.side !== side) {
       setOtherRead((r) => Math.max(r, e.last_read_id));
+      setOtherDelivered((d) => Math.max(d, e.last_read_id));
+    } else if (e.type === 'delivered' && e.conversation_id === id && e.side !== side) {
+      setOtherDelivered((d) => Math.max(d, e.last_delivered_id));
     } else if (e.type === 'typing' && e.conversation_id === id) {
       setTyping(true);
       setPresence((p) => ({ ...p, online: true }));
@@ -161,6 +169,12 @@ export default function ChatThread({
       typingTimer.current = setTimeout(() => setTyping(false), TYPING_SHOWN_MS);
     } else if (e.type === 'connected') {
       loadLatest().catch(() => {});
+      // Receipts that came in while the socket was down.
+      getConversation(side, id).then((c) => {
+        setOtherRead((r) => Math.max(r, c.other_last_read_id));
+        setOtherDelivered((d) => Math.max(d, c.other_delivered_id ?? 0));
+        setPresence({ online: c.counterpart.online, last_seen: c.counterpart.last_seen });
+      }).catch(() => {});
     }
   });
 
@@ -341,7 +355,10 @@ export default function ChatThread({
                   </Typography>
                   <Stack direction="row" spacing={0.4} alignItems="center" justifyContent="flex-end" sx={{ mt: 0.25 }}>
                     <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>{timeLabel(m.created_at)}</Typography>
-                    {own && <Ticks message={m} read={m.id > 0 && m.id <= otherRead} onRetry={() => retry(m)} />}
+                    {own && (
+                      <Ticks message={m} read={m.id > 0 && m.id <= otherRead}
+                             delivered={m.id > 0 && m.id <= Math.max(otherDelivered, otherRead)} onRetry={() => retry(m)} />
+                    )}
                   </Stack>
                 </Box>
                 {m.status === 'failed' && (
@@ -413,7 +430,9 @@ export default function ChatThread({
   );
 }
 
-function Ticks({ message, read, onRetry }: { message: ChatMessage; read: boolean; onRetry: () => void }) {
+function Ticks({ message, read, delivered, onRetry }: {
+  message: ChatMessage; read: boolean; delivered: boolean; onRetry: () => void;
+}) {
   if (message.status === 'sending') return <ScheduleRoundedIcon sx={{ fontSize: 14, color: 'text.secondary' }} />;
   if (message.status === 'failed') {
     return (
@@ -422,9 +441,9 @@ function Ticks({ message, read, onRetry }: { message: ChatMessage; read: boolean
       </IconButton>
     );
   }
-  return read
-    ? <DoneAllRoundedIcon titleAccess="Read" sx={{ fontSize: 16, color: 'info.main' }} />
-    : <DoneRoundedIcon titleAccess="Sent" sx={{ fontSize: 16, color: 'text.secondary' }} />;
+  if (read) return <DoneAllRoundedIcon titleAccess="Read" sx={{ fontSize: 16, color: 'info.main' }} />;
+  if (delivered) return <DoneAllRoundedIcon titleAccess="Delivered" sx={{ fontSize: 16, color: 'text.secondary' }} />;
+  return <DoneRoundedIcon titleAccess="Sent" sx={{ fontSize: 16, color: 'text.secondary' }} />;
 }
 
 function ProductCard({ product, href, label }: { product: NonNullable<ChatMessage['product']>; href?: string; label?: string }) {

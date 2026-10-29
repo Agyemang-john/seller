@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useRef, useState } from 'react';
 import {
   Badge, IconButton, Popover, Box, Typography, Divider,
   Button, Chip, Tooltip, CircularProgress,
@@ -9,6 +9,7 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { createAxiosClient } from '@/utils/clientFetch';
+import useNotificationSocket from '@/hooks/useNotificationSocket';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import * as timeago from 'timeago.js';
@@ -28,65 +29,27 @@ const P = {
 };
 
 export default function NotificationBell() {
-  const axiosClient = createAxiosClient();
-  const wsRef = useRef(null);
   const anchorRef = useRef(null);
 
   const [open, setOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
-  const [wsReady, setWsReady] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
 
-  // ── WebSocket connection ──────────────────────────────────────────────────
-  const connect = useCallback(async () => {
-    try {
-      const res = await axiosClient.get('/api/v1/notification/ws-token/');
-      const token = res.data?.token;
-      if (!token) return;
-
-      const ws = new WebSocket(
-        `${process.env.NEXT_PUBLIC_WS_URL}/ws/notifications/?token=${token}`
-      );
-      wsRef.current = ws;
-
-      ws.onopen = () => setWsReady(true);
-      ws.onclose = () => {
-        setWsReady(false);
-        setTimeout(connect, 4000);
-      };
-      ws.onerror = () => ws.close();
-
-      ws.onmessage = (e) => {
-        const msg = JSON.parse(e.data);
-
-        if (msg.type === 'refresh_list') {
-          setNotifications(msg.notifications || []);
-          setUnreadCount(msg.unread_count ?? 0);
-        }
-        if (msg.type === 'unread_count') {
-          setUnreadCount(msg.count ?? 0);
-          // Show toast for new notifications (count went up)
-          if (msg.trigger_toast) {
-            toast.success('You have a new notification', { duration: 3500 });
-          }
-        }
-      };
-    } catch {
-      setTimeout(connect, 5000);
+  // Live list + count: the server pushes a fresh list whenever anything changes
+  // (new notification, read on another tab or device, chat read) and on reconnect.
+  const sendWs = useNotificationSocket((msg) => {
+    if (msg.type === 'refresh_list') {
+      setNotifications(msg.notifications || []);
+      setUnreadCount(msg.unread_count ?? 0);
     }
-  }, []);
-
-  useEffect(() => {
-    connect();
-    return () => wsRef.current?.close();
-  }, []);
-
-  const sendWs = (payload) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(payload));
+    if (msg.type === 'unread_count') {
+      setUnreadCount(msg.count ?? 0);
+      if (msg.trigger_toast) {
+        toast.success('You have a new notification', { duration: 3500 });
+      }
     }
-  };
+  });
 
   const handleMarkRead = (id) => {
     // Optimistic
@@ -94,7 +57,9 @@ export default function NotificationBell() {
       prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
     );
     setUnreadCount((c) => Math.max(0, c - 1));
-    sendWs({ action: 'mark_read', id });
+    if (!sendWs({ action: 'mark_read', id })) {
+      createAxiosClient().post(`/api/v1/notification/${id}/mark-read/`).catch(() => {});
+    }
   };
 
   const handleMarkAllRead = () => {
@@ -102,7 +67,9 @@ export default function NotificationBell() {
     setMarkingAll(true);
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
     setUnreadCount(0);
-    sendWs({ action: 'mark_all_read' });
+    if (!sendWs({ action: 'mark_all_read' })) {
+      createAxiosClient().post('/api/v1/notification/mark-all-read/').catch(() => {});
+    }
     setTimeout(() => setMarkingAll(false), 800);
   };
 
