@@ -13,6 +13,9 @@ const securityHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    // Load images straight from the DigitalOcean CDN. Vercel's optimizer ran
+    // out of plan quota and answered 402 for every image it hadn't cached.
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'http',

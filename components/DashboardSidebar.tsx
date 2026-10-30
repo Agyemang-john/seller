@@ -42,6 +42,9 @@ import BadgeRoundedIcon          from '@mui/icons-material/BadgeRounded';
 import AssignmentReturnRoundedIcon from '@mui/icons-material/AssignmentReturnRounded';
 import BoltRoundedIcon           from '@mui/icons-material/BoltRounded';
 import ForumRoundedIcon          from '@mui/icons-material/ForumRounded';
+import FlightLandRoundedIcon     from '@mui/icons-material/FlightLandRounded';
+import useSWR from 'swr';
+import { fetcher } from '@/components/dashboard/DashboardUI';
 import useUnreadChats from '@/components/chat/useUnreadChats';
 import useMessagingPlan from '@/components/chat/useMessagingPlan';
 import useVendorAccess, { CAP } from '@/hooks/useVendorAccess';
@@ -78,6 +81,7 @@ const mainListItems: NavItemDef[] = [
   { id: 'dashboard',       text: 'Dashboard',     icon: <DashboardRoundedIcon />,           path: '/dashboard',       capability: CAP.VIEW_ANALYTICS },
   { id: 'store-analytics', text: 'Store Traffic', icon: <TrendingUpRoundedIcon />,           path: '/store-analytics', capability: CAP.VIEW_ANALYTICS },
   { id: 'orders',          text: 'Orders',        icon: <LocalShippingRoundedIcon />,        path: '/orders',          capability: CAP.MANAGE_ORDERS },
+  { id: 'imported-orders', text: 'Imported Orders', icon: <FlightLandRoundedIcon />,         path: '/imported-orders', capability: CAP.MANAGE_ORDERS },
   { id: 'messages',        text: 'Messages',      icon: <ForumRoundedIcon />,                path: '/messages',        capability: CAP.MANAGE_MESSAGES },
   { id: 'order-returns',   text: 'Returns',       icon: <AssignmentReturnRoundedIcon />,     path: '/order-returns',   capability: CAP.MANAGE_ORDERS },
   { id: 'products',      text: 'Products',      icon: <Inventory2RoundedIcon />,             path: '/products',      capability: CAP.MANAGE_CATALOG },
@@ -407,6 +411,12 @@ export default function DashboardSidebar({
   // Chat is a Basic-and-up feature: free stores see the item with an "Upgrade" tag.
   const messagingPlan = useMessagingPlan();
   const unreadChats = useUnreadChats('vendor', can(CAP.MANAGE_MESSAGES) && messagingPlan.allowed);
+  // Imported items behind schedule (backend order/sourcing.py), so long waits aren't forgotten.
+  const { data: sourced } = useSWR(
+    can(CAP.MANAGE_ORDERS) ? '/api/v1/vendor/sourced-items/' : null, fetcher,
+    { refreshInterval: 10 * 60 * 1000, revalidateOnFocus: false },
+  );
+  const importsBehind = sourced ? sourced.counts.late + sourced.counts.overdue : 0;
   const visibleSubscribe = React.useMemo(
     () => subscribeListItems.filter((i) => !i.capability || can(i.capability)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -449,7 +459,7 @@ export default function DashboardSidebar({
           <List dense disablePadding>
             {visibleMain.map((item) => (
               <NavItem key={item.id} item={item} mini={mini} pathname={pathname} onPageItemClick={handlePageItemClick}
-                       badge={item.id === 'messages' ? unreadChats : 0}
+                       badge={item.id === 'messages' ? unreadChats : item.id === 'imported-orders' ? importsBehind : 0}
                        upgradeTag={item.id === 'messages' && messagingPlan.known && !messagingPlan.allowed ? 'Upgrade' : undefined} />
             ))}
           </List>
@@ -486,7 +496,7 @@ export default function DashboardSidebar({
     [
       mini, hasDrawerTransitions, isFullyExpanded, pathname,
       storeName, storeAddress, storeAvatar, storeLoading, handlePageItemClick,
-      visibleMain, visibleSubscribe,
+      visibleMain, visibleSubscribe, unreadChats, importsBehind, messagingPlan.known, messagingPlan.allowed,
     ],
   );
 

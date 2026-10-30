@@ -6,19 +6,15 @@ import { useState } from 'react';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Divider from '@mui/material/Divider';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { createAxiosClient } from '@/utils/clientFetch';
+import {
+  Countdown, HEALTH, HealthChip, NEXT_ACTION, NextDeadline, STEP_ORDER, SupplierDetails, Timeline, postSourcing,
+} from './sourcingUi';
 
-const NEXT_ACTION = {
-  awaiting: { status: 'ordered', label: 'I have ordered it from my supplier' },
-  ordered: { status: 'in_transit', label: 'It is on its way to me' },
-  in_transit: { status: 'arrived', label: 'It has arrived, ready to ship' },
-};
-
-const formatDate = (iso) =>
-  iso ? new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+const URGENCY = Object.keys(HEALTH);
 
 export default function SourcingPanel({ orderId, lines, onUpdated }) {
   const [busy, setBusy] = useState(false);
@@ -26,32 +22,34 @@ export default function SourcingPanel({ orderId, lines, onUpdated }) {
   const sourced = (lines || []).filter((l) => l.sourcing && l.status !== 'canceled');
   if (!sourced.length) return null;
 
-  // All of this store's sourced lines move together; the earliest one decides the next step.
-  const order = ['awaiting', 'ordered', 'in_transit', 'arrived'];
-  const earliest = sourced.reduce((a, l) => (order.indexOf(l.sourcing.status) < order.indexOf(a) ? l.sourcing.status : a), 'arrived');
+  // All of this store's sourced lines move together; the earliest step decides
+  // the next action and the most urgent line drives the dates shown.
+  const earliest = sourced.reduce(
+    (a, l) => (STEP_ORDER.indexOf(l.sourcing.status) < STEP_ORDER.indexOf(a) ? l.sourcing.status : a), 'arrived');
   const next = NEXT_ACTION[earliest];
-  const promisedBy = sourced.map((l) => l.sourcing.promised_by).filter(Boolean).sort()[0];
+  const rank = (l) => (l.sourcing.health ? URGENCY.indexOf(l.sourcing.health) : URGENCY.length);
+  const lead = [...sourced].sort((a, b) => rank(a) - rank(b))[0].sourcing;
 
   const advance = async () => {
     setBusy(true);
     setError('');
-    try {
-      await createAxiosClient().post(`/api/v1/vendor/orders/${orderId}/sourcing/`, { status: next.status });
-      await onUpdated?.();
-    } catch (err) {
-      setError(err?.response?.data?.error || 'Could not update. Please try again.');
-    } finally {
-      setBusy(false);
-    }
+    const err = await postSourcing(orderId, { status: next.status });
+    if (err) setError(err);
+    else await onUpdated?.();
+    setBusy(false);
   };
 
   return (
     <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, mb: 3 }}>
-      <Typography variant="subtitle1" fontWeight={700}>Items you need to get first</Typography>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
+        <Typography variant="subtitle1" fontWeight={700}>Items you need to get first</Typography>
+        <HealthChip health={lead.health} />
+      </Stack>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-        Promised to the customer by <b>{formatDate(promisedBy)}</b>. Each update is shown to the customer.
-        Until you mark it as ordered they can cancel for free, and after the promised date (plus 3 days) they can cancel for a full refund.
+        Each update is shown to the customer. Until you mark it as ordered they can cancel for free,
+        and 3 days after their date they can cancel for a full refund.
       </Typography>
+
       <Stack spacing={0.75} sx={{ mb: 1.5 }}>
         {sourced.map((l) => (
           <Box key={l.id} sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, fontSize: 13 }}>
@@ -60,14 +58,30 @@ export default function SourcingPanel({ orderId, lines, onUpdated }) {
           </Box>
         ))}
       </Stack>
-      {next ? (
-        <Button variant="contained" onClick={advance} disabled={busy}>
-          {busy ? 'Saving…' : next.label}
-        </Button>
-      ) : (
-        <Alert severity="success" sx={{ py: 0 }}>Everything has arrived. Create the shipment below.</Alert>
+
+      <Stack spacing={1.5}>
+        <Countdown s={lead} />
+        <NextDeadline s={lead} />
+        <Timeline s={lead} />
+      </Stack>
+
+      <Box sx={{ mt: 2 }}>
+        {next ? (
+          <Button variant="contained" onClick={advance} disabled={busy}>
+            {busy ? 'Saving…' : next.label}
+          </Button>
+        ) : (
+          <Alert severity="success" sx={{ py: 0 }}>Everything has arrived. Create the shipment below.</Alert>
+        )}
+        {error && <Alert severity="error" sx={{ mt: 1 }}>{error}</Alert>}
+      </Box>
+
+      {next && (
+        <>
+          <Divider sx={{ my: 2 }} />
+          <SupplierDetails orderId={orderId} s={lead} onSaved={onUpdated} />
+        </>
       )}
-      {error && <Alert severity="error" sx={{ mt: 1 }}>{error}</Alert>}
     </Paper>
   );
 }

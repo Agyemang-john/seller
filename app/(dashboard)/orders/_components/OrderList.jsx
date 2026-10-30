@@ -15,6 +15,8 @@ import RefreshIcon        from '@mui/icons-material/Refresh';
 import ArrowForwardIcon   from '@mui/icons-material/ArrowForward';
 import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
+import FlightLandRoundedIcon from '@mui/icons-material/FlightLandRounded';
+import Link from 'next/link';
 import useSWR from 'swr';
 import toast from 'react-hot-toast';
 import { fetcher } from '@/components/dashboard/DashboardUI';
@@ -138,6 +140,11 @@ function MobileOrderCard({ order, onView }) {
         <Box>
           <Typography sx={{ fontFamily: 'var(--font-mono-stack), ui-monospace, monospace', fontWeight: 700, fontSize: 13, color: 'text.primary', mb: 0.25 }}>
             {order.order_number || `#${order.id}`}
+            {order.imported && (
+              <Typography component="span" sx={{ ml: 1, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.05em', color: 'warning.main' }}>
+                IMPORTED
+              </Typography>
+            )}
           </Typography>
           <Typography variant="caption" color="text.disabled">
             {dayjs(order.date_created).fromNow()} · {dayjs(order.date_created).format('MMM D, YYYY')}
@@ -315,6 +322,16 @@ export default function OrderList() {
               },
             }}
           />
+          <Button
+            size="small"
+            variant="outlined"
+            component={Link}
+            href="/imported-orders"
+            startIcon={<FlightLandRoundedIcon sx={{ fontSize: 17 }} />}
+            sx={{ height: 36, borderRadius: '10px', borderColor: 'divider', color: 'text.primary', whiteSpace: 'nowrap', textTransform: 'none', display: { xs: 'none', sm: 'inline-flex' } }}
+          >
+            Imported
+          </Button>
           <Tooltip
             title={plan && !plan.can_export_reports ? 'CSV export is included in paid plans.' : ''}
             placement="top"
@@ -490,6 +507,11 @@ export default function OrderList() {
                           <Typography sx={{ fontFamily: 'var(--font-mono-stack), ui-monospace, monospace', fontWeight: 700, fontSize: 13 }} color="text.primary">
                             {order.order_number || `#${order.id}`}
                           </Typography>
+                        {order.imported && (
+                            <Typography component="span" sx={{ display: 'block', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.05em', color: 'warning.main', mt: 0.25 }}>
+                              IMPORTED
+                            </Typography>
+                          )}
                         </TableCell>
 
                         {/* Customer */}
