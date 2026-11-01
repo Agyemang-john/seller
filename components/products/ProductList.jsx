@@ -340,6 +340,13 @@ export default function ProductList({ canBulkUpload = false }) {
         <Stack direction="row" spacing={1} flexShrink={0} alignItems="center">
           <BulkUploadButton canBulkUpload={canBulkUpload} />
           <Button
+            variant="outlined"
+            onClick={() => router.push('/products/sell-existing')}
+            sx={{ borderRadius: '10px', fontWeight: 600, fontSize: 13, px: 2, py: 1.15, textTransform: 'none' }}
+          >
+            Sell an existing item
+          </Button>
+          <Button
             variant="contained"
             disableElevation
             startIcon={<AddIcon />}

@@ -1,0 +1,31 @@
+name: Seller dashboard CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: seller-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # Reported, not enforced yet: there are older type errors (theme customisations,
+      # typed-route Link props) to clear first. Flip continue-on-error off once it's clean.
+      - name: Type check
+        run: npx tsc --noEmit -p .
+        continue-on-error: true

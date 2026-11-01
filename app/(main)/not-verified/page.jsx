@@ -78,12 +78,12 @@ const NotVerified = () => {
           className="flex flex-col sm:flex-row justify-center gap-4"
           variants={itemVariants}
         >
-          {/* <Link
-            href="/"
+          <Link
+            href="/verification"
             className="inline-block bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-300"
           >
-            Upload Documents
-          </Link> */}
+            Check or upload documents
+          </Link>
           <Link
             href="/"
             className="inline-block bg-gray-200 text-gray-800 font-semibold py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors duration-300"

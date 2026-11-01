@@ -75,6 +75,13 @@ export default function Earnings() {
           value={balance?.pending}
           hint={balance?.next_release_at ? `Next release ${formatDate(balance.next_release_at)}` : 'Nothing on hold'}
         />
+        {Number(balance?.on_hold) !== 0 && balance?.on_hold != null && (
+          <BalanceCard
+            label="Held for claims"
+            value={balance.on_hold}
+            hint={<Link href="/claims">Released when the shopper's claim is settled</Link>}
+          />
+        )}
         <BalanceCard label="Payout in progress" value={balance?.processing} hint="Being transferred to your account" />
         <BalanceCard label="Paid to date" value={balance?.paid_total} hint="All completed payouts" />
       </Grid>

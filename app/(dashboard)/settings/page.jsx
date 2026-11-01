@@ -24,12 +24,16 @@ import SecuritySettings from './_components/SecuritySettings';
 import NotificationSettings from './_components/NotificationSettings';
 import AppearanceSettings from './_components/AppearanceSettings';
 import DangerZone from './_components/DangerZone';
+import TaxSettings from './_components/TaxSettings';
+import TwoFactorSettings from './_components/TwoFactorSettings';
+import PushToggle from '@/components/push/PushToggle';
 
 const TABS = [
   { value: 'account', label: 'Account' },
   { value: 'security', label: 'Security' },
   { value: 'store', label: 'Store' },
   { value: 'notifications', label: 'Notifications' },
+  { value: 'tax', label: 'Tax' },
   { value: 'appearance', label: 'Appearance' },
 ];
 
@@ -104,10 +108,19 @@ function SettingsHub() {
           </Stack>
         )}
         {tab === 'security' && (
-          <SecuritySettings overview={overview} onChanged={loadOverview} />
+          <>
+            <TwoFactorSettings />
+            <SecuritySettings overview={overview} onChanged={loadOverview} />
+          </>
         )}
         {tab === 'store' && <OperationsSettings />}
-        {tab === 'notifications' && <NotificationSettings />}
+        {tab === 'notifications' && (
+          <>
+            <PushToggle />
+            <NotificationSettings />
+          </>
+        )}
+        {tab === 'tax' && <TaxSettings />}
         {tab === 'appearance' && <AppearanceSettings />}
       </Box>
     </PageContainer>

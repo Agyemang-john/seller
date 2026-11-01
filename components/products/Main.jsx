@@ -30,6 +30,9 @@ import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import ListAltOutlinedIcon from '@mui/icons-material/ListAltOutlined';
+import ProductSpecs from './ProductSpecs';
+import PinnedComplements from './PinnedComplements';
 
 // ── Step definitions ──────────────────────────────────────────────────────────
 const STEPS = [
@@ -37,6 +40,7 @@ const STEPS = [
   { label: 'Images',   icon: ImageOutlinedIcon,            desc: 'Gallery photos'          },
   { label: 'Variants', icon: TuneOutlinedIcon,             desc: 'Sizes & colours'         },
   { label: 'Delivery', icon: LocalShippingOutlinedIcon,    desc: 'Shipping methods'        },
+  { label: 'Specs',    icon: ListAltOutlinedIcon,          desc: 'Filterable details'      },
 ];
 
 const MenuProps = {
@@ -397,6 +401,7 @@ export default function ProductForm({ id = null }) {
       onOptionsChange={handleDeliveryOptionsChange}
       deliveryOptions={deliveryOptions}
     />,
+    <div key="specs"><ProductSpecs id={id} /><PinnedComplements id={id} /></div>,
   ];
 
   const currentStep = STEPS[activeStep];

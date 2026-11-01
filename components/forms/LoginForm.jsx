@@ -47,12 +47,18 @@ export default function LoginForm() {
 
     try {
       const response = await login({ email: emailOrPhone.toLowerCase(), password, cf_turnstile_response: captchaToken }).unwrap();
-      if (response.detail?.includes('OTP sent')) {
+      if (response.method === 'app') {
+        // Authenticator app turned on (backend: twofactor/): no code is sent.
+        sessionStorage.setItem('otp_method', 'app');
+        sessionStorage.removeItem('otp_masked_identifier');
+        router.push(`/auth/verify?redirect=${encodeURIComponent(redirectPath)}`);
+      } else if (response.detail?.includes('OTP sent')) {
         // The backend sets otp_identifier as an HttpOnly cookie — we only use the masked display value
         const masked = response.masked_identifier || 'your registered contact';
         toast.success(`An OTP has been sent to ${masked}`);
         // Store masked value in sessionStorage for display on the OTP page (not sensitive)
         sessionStorage.setItem('otp_masked_identifier', masked);
+        sessionStorage.setItem('otp_method', 'code');
         router.push(`/auth/verify?redirect=${encodeURIComponent(redirectPath)}`);
       } else {
         dispatch(setAuth({}));

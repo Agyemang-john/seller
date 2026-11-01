@@ -19,6 +19,8 @@ export default function OtpForm() {
   const [message, setMessage] = useState({ type: null, text: '' });
   // Masked identifier is display-only; the real identifier is in an HttpOnly cookie on the backend
   const [maskedIdentifier, setMaskedIdentifier] = useState('');
+  // 'app' when the seller signs in with an authenticator app (6 digits or a recovery code).
+  const [method, setMethod] = useState('code');
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -30,6 +32,7 @@ export default function OtpForm() {
     if (masked) {
       setMaskedIdentifier(masked);
     }
+    if (sessionStorage.getItem('otp_method') === 'app') setMethod('app');
     // No redirect guard needed here — the backend will reject OTP verify if the cookie is missing
   }, []);
 
@@ -47,6 +50,7 @@ export default function OtpForm() {
       await otpVerify({ otp }).unwrap();
       dispatch(setAuth({}));
       sessionStorage.removeItem('otp_masked_identifier');
+      sessionStorage.removeItem('otp_method');
       setMessage({ type: 'success', text: 'Logged in successfully!' });
       toast.success('Logged in successfully!');
       window.location.href = redirectPath;
@@ -126,7 +130,11 @@ export default function OtpForm() {
           <Typography variant="h5" className="font-bold">
             Verify OTP
           </Typography>
-          {maskedIdentifier && (
+          {method === 'app' ? (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Enter the 6-digit code from your authenticator app. Lost your phone? Use a recovery code.
+            </Typography>
+          ) : maskedIdentifier && (
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
               Code sent to {maskedIdentifier}
             </Typography>
@@ -152,12 +160,15 @@ export default function OtpForm() {
           <div>
             <TextField
               fullWidth
-              label="Enter OTP"
+              label={method === 'app' ? 'Authenticator or recovery code' : 'Enter OTP'}
               type="text"
               variant="outlined"
               value={otp}
+              inputProps={{ autoComplete: 'one-time-code' }}
               onChange={(e) => {
-                const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 5);
+                const value = method === 'app'
+                  ? e.target.value.replace(/[^0-9A-Fa-f-]/g, '').slice(0, 9)
+                  : e.target.value.replace(/[^0-9]/g, '').slice(0, 5);
                 setOtp(value);
               }}
               required

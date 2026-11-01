@@ -192,6 +192,12 @@ const ProductGeneralInfo = ({
           error={!!formErrors.seller_sku} helperText={formErrors.seller_sku || 'Your own stock code. Must be unique in your store.'}
           size="small" sx={{ ...fieldSx, maxWidth: { sm: 360 } }} inputProps={{ maxLength: 64 }} />
 
+        <TextField label="Barcode (GTIN / EAN / UPC, optional)" value={formData.gtin || ''}
+          onChange={(e) => setFormData({ ...formData, gtin: e.target.value })}
+          error={!!formErrors.gtin}
+          helperText={formErrors.gtin || 'The number under the barcode on the box. Items with the same barcode are shown together, so shoppers can compare sellers.'}
+          size="small" sx={{ ...fieldSx, maxWidth: { sm: 360 } }} inputProps={{ maxLength: 20, inputMode: 'numeric' }} />
+
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Autocomplete

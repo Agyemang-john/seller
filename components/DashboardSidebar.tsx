@@ -43,6 +43,9 @@ import AssignmentReturnRoundedIcon from '@mui/icons-material/AssignmentReturnRou
 import BoltRoundedIcon           from '@mui/icons-material/BoltRounded';
 import ForumRoundedIcon          from '@mui/icons-material/ForumRounded';
 import FlightLandRoundedIcon     from '@mui/icons-material/FlightLandRounded';
+import QuestionAnswerRoundedIcon from '@mui/icons-material/QuestionAnswerRounded';
+import GavelRoundedIcon from '@mui/icons-material/GavelRounded';
+import CampaignRoundedIcon from '@mui/icons-material/CampaignRounded';
 import useSWR from 'swr';
 import { fetcher } from '@/components/dashboard/DashboardUI';
 import useUnreadChats from '@/components/chat/useUnreadChats';
@@ -84,13 +87,16 @@ const mainListItems: NavItemDef[] = [
   { id: 'imported-orders', text: 'Imported Orders', icon: <FlightLandRoundedIcon />,         path: '/imported-orders', capability: CAP.MANAGE_ORDERS },
   { id: 'messages',        text: 'Messages',      icon: <ForumRoundedIcon />,                path: '/messages',        capability: CAP.MANAGE_MESSAGES },
   { id: 'order-returns',   text: 'Returns',       icon: <AssignmentReturnRoundedIcon />,     path: '/order-returns',   capability: CAP.MANAGE_ORDERS },
+  { id: 'claims',          text: 'Claims',        icon: <GavelRoundedIcon />,                path: '/claims',          capability: CAP.MANAGE_ORDERS },
   { id: 'products',      text: 'Products',      icon: <Inventory2RoundedIcon />,             path: '/products',      capability: CAP.MANAGE_CATALOG },
   { id: 'flash-sales',   text: 'Flash Sales',   icon: <BoltRoundedIcon />,                   path: '/flash-sales',   capability: CAP.MANAGE_CATALOG },
+  { id: 'ads',           text: 'Ads',           icon: <CampaignRoundedIcon />,               path: '/ads',           capability: CAP.MANAGE_CATALOG },
   { id: 'payment',       text: 'Payment',       icon: <AccountBalanceWalletRoundedIcon />,   path: '/payment',       capability: CAP.VIEW_FINANCE },
   { id: 'payouts',       text: 'Earnings',       icon: <PaymentsRoundedIcon />,               path: '/payouts',       capability: CAP.VIEW_FINANCE },
   { id: 'working-hours', text: 'Working Hours', icon: <ScheduleRoundedIcon />,               path: '/working-hours', capability: CAP.MANAGE_STORE },
   { id: 'profile',       text: 'Store Profile', icon: <StoreRoundedIcon />,                  path: '/profile',       capability: CAP.MANAGE_STORE },
   { id: 'reviews',       text: 'Reviews',       icon: <StarRoundedIcon />,                   path: '/reviews',       capability: CAP.MANAGE_CATALOG },
+  { id: 'questions',     text: 'Questions',     icon: <QuestionAnswerRoundedIcon />,         path: '/questions',     capability: CAP.MANAGE_CATALOG },
   { id: 'team',          text: 'Team',          icon: <BadgeRoundedIcon />,                  path: '/team' },
   { id: 'help',          text: 'Help & Guide',  icon: <HelpOutlineRoundedIcon />,            path: '/help' },
   { id: 'connect',      text: 'Community',     icon: <GroupsRoundedIcon />,                 path: '/connect' },

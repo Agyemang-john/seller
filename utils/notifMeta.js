@@ -24,6 +24,8 @@ import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import SubscriptionsIcon from '@mui/icons-material/Subscriptions';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import HelpIcon from '@mui/icons-material/Help';
+import GavelIcon from '@mui/icons-material/Gavel';
 
 const VERB_MAP = {
   // Vendor
@@ -55,6 +57,8 @@ const VERB_MAP = {
   support_reply:              { Icon: SupportAgentIcon,          color: '#00695C', label: 'Support Reply'         },
   verification_update:        { Icon: VerifiedUserIcon,          color: '#2E7D32', label: 'Verification'          },
   subscription_reminder:      { Icon: SubscriptionsIcon,         color: '#E65100', label: 'Subscription'          },
+  vendor_new_question:        { Icon: HelpIcon,                  color: '#1565C0', label: 'New Question'          },
+  vendor_claim_update:        { Icon: GavelIcon,                 color: '#C62828', label: 'Claim'                 },
 };
 
 const FALLBACK = { Icon: NotificationsIcon, color: '#424242', label: 'Notification' };

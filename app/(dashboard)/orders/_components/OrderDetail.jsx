@@ -402,6 +402,8 @@ export default function OrderDetailPage({ id }) {
   const [isLoading, setIsLoading] = useState(true);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [shipments, setShipments] = useState([]);
+  // Held by Negromart's fraud check (backend: risk/): don't ship until cleared.
+  const [held, setHeld] = useState(false);
 
   const fetchShipments = useCallback(async () => {
     try {
@@ -424,6 +426,7 @@ export default function OrderDetailPage({ id }) {
   useEffect(() => {
     fetchOrderDetails();
     fetchShipments();
+    axiosClient.get(`/api/v1/risk/seller/orders/${id}/hold/`).then((r) => setHeld(!!r.data.held)).catch(() => {});
   }, []);
 
 
@@ -470,6 +473,24 @@ export default function OrderDetailPage({ id }) {
   const handleBack = useCallback(() => {
     router.push('/orders');
   }, [router]);
+
+
+  // The store's invoice for its part of this order (backend: invoices/). Fetched
+  // with the seller token, then opened, because a plain link carries no auth header.
+  const downloadInvoice = async () => {
+    try {
+      const res = await createAxiosClient().get(`/api/v1/invoices/seller/orders/${id}/`, { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      // A download link, not window.open: pop-up blockers stop windows opened after an await.
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice-order-${id}.pdf`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      Swal.fire({ title: 'Could not open the invoice', icon: 'error', timer: 1800, showConfirmButton: false });
+    }
+  };
 
   const renderShow = () => {
     if (isLoading) {
@@ -726,6 +747,12 @@ export default function OrderDetailPage({ id }) {
         </Box>
         <Divider sx={{ my: 3 }} />
 
+        {held && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Negromart is checking this order. Please don&apos;t pack or ship it yet; we&apos;ll notify you when it&apos;s cleared.
+          </Alert>
+        )}
+
         {/* ── Imported / made-to-order items ── */}
         <SourcingPanel orderId={id} lines={order.order_products} onUpdated={fetchOrderDetails} />
 
@@ -745,16 +772,9 @@ export default function OrderDetailPage({ id }) {
           >
             Back
           </Button>
-          <a
-            href={`${process.env.NEXT_PUBLIC_HOST}/api/v1/order/receipt/${id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ textDecoration: 'none' }}
-          >
-            <Button variant="outlined" color="primary">
-              Download Order
-            </Button>
-          </a>
+          <Button variant="outlined" color="primary" onClick={downloadInvoice}>
+            Download invoice
+          </Button>
         </Stack>
       </Box>
     ) : (
