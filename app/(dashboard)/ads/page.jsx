@@ -127,7 +127,17 @@ export default function AdsPage() {
         </Typography>
         {error && <Alert severity="error">{error}</Alert>}
         {data && data.funded === false && (
-          <Alert severity="warning" sx={{ mb: 2 }}>Your ads are paused until you have earnings to cover them.</Alert>
+          <Alert severity="warning" sx={{ mb: 2 }}
+                 action={<Button color="inherit" size="small" href="/billing/cards">Add a card</Button>}>
+            {data.card_paused
+              ? "Your card was declined, so your ads are paused. Update your card to restart them."
+              : "Your ads aren't showing yet: add a card to pay for clicks (we charge it nightly only when your earnings don't cover the spend)."}
+          </Alert>
+        )}
+        {data && data.funded && data.results.some((c) => c.status === 'active') && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            Your active ads can appear at the top of search results and category pages, marked &quot;Sponsored&quot;.
+          </Alert>
         )}
 
         <Grid container spacing={2} sx={{ mb: 2 }}>

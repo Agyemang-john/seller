@@ -87,9 +87,30 @@ export default function TwoFactorSettings() {
 
       {status.enabled && (
         <Stack spacing={1} sx={{ maxWidth: 360 }}>
-          <Typography variant="body2" color="text.secondary">{status.recovery_codes_left} recovery codes left.</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {status.recovery_codes_left} recovery codes left. They&apos;re stored scrambled, so they can&apos;t be shown again;
+            make a new set if you didn&apos;t save them.
+          </Typography>
           {!disabling ? (
-            <Box><Button color="error" onClick={() => setDisabling(true)}>Turn off</Button></Box>
+            <Stack direction="row" spacing={1}>
+              <Button onClick={() => setDisabling('recovery')}>New recovery codes</Button>
+              <Button color="error" onClick={() => setDisabling(true)}>Turn off</Button>
+            </Stack>
+          ) : disabling === 'recovery' ? (
+            <>
+              <TextField size="small" label="Current code from your app" value={code}
+                         onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} />
+              <Stack direction="row" spacing={1}>
+                <Button variant="outlined" disabled={busy || code.length !== 6}
+                        onClick={async () => {
+                          const d = await post({ action: 'recovery', code });
+                          if (d) { setCodes(d.recovery_codes); setDisabling(false); setCode(''); load(); }
+                        }}>
+                  Make new codes
+                </Button>
+                <Button onClick={() => { setDisabling(false); setCode(''); }}>Cancel</Button>
+              </Stack>
+            </>
           ) : (
             <>
               <TextField size="small" label="Code from your app or a recovery code" value={code}

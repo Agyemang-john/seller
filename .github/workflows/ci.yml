@@ -29,3 +29,8 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit -p .
         continue-on-error: true
+
+      - name: Production build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_HOST: https://app.negromart.com
