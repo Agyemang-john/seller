@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Tab, Tabs } from '@mui/material';
+import { Box, Divider, Tab, Tabs } from '@mui/material';
 import CreateAccountFlow from './CreateAccountFlow';
+import GoogleSellerSignup, { googleEnabled } from './GoogleSellerSignup';
 import SignInForm from './SignInForm';
 
 /**
@@ -14,15 +15,26 @@ import SignInForm from './SignInForm';
  * Either way the user ends up with ONE Negromart account, which is what the
  * store application (or team invitation) gets attached to.
  *
- * Props: onAuthenticated(), defaultTab ('create' | 'signin'), email, lockEmail
+ * `withGoogle` (seller registration only) adds "Sign up with Google" above
+ * both: it works for new and existing shoppers, and always leaves the account
+ * with a password for Seller Centre.
+ *
+ * Props: onAuthenticated(), defaultTab ('create' | 'signin'), email, lockEmail, withGoogle
  */
-export default function AccountPanel({ onAuthenticated, defaultTab = 'signin', email = '', lockEmail = false }) {
+export default function AccountPanel({ onAuthenticated, defaultTab = 'signin', email = '', lockEmail = false, withGoogle = false }) {
   const [tab, setTab] = useState(defaultTab);
   const [prefill, setPrefill] = useState(email);
   const [notice, setNotice] = useState('');
+  const showGoogle = withGoogle && googleEnabled();
 
   return (
     <Box>
+      {showGoogle && (
+        <>
+          <GoogleSellerSignup onDone={onAuthenticated} />
+          <Divider sx={{ my: 2.5, fontSize: 13, color: 'text.secondary' }}>or use your email</Divider>
+        </>
+      )}
       <Tabs
         value={tab}
         onChange={(_, v) => setTab(v)}

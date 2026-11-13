@@ -166,7 +166,6 @@ export default function DeleteConfirmDialog({ open, productTitle, onConfirm, onC
               sx={{
                 fontFamily: 'var(--font-mono-stack), ui-monospace, monospace', fontSize: 16, fontWeight: 700,
                 letterSpacing: '0.12em', color: 'action.secondary', userSelect: 'none',
-                userSelect: 'none',
               }}
             >
               {word}

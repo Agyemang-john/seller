@@ -49,6 +49,18 @@ export const signup = {
   changePhone: (phone) => anon.post('/api/seller-signup/change-phone/', { phone }).then((r) => r.data),
 };
 
+// ── Sign up with Google (registration only; backend: userauths/google_auth.py) ─
+// `seller: true` makes the backend insist on a password, because Seller
+// Centre signs in with a password + code, never with Google.
+
+export const google = {
+  signIn: (credential) => anon.post('/api/auth/google/', { credential, seller: true }).then((r) => r.data),
+  complete: (body) => anon.post('/api/auth/google/complete/', body).then((r) => r.data),
+  link: (ticket, password) => anon.post('/api/auth/google/link/', { ticket, password }).then((r) => r.data),
+  setPassword: (ticket, password) =>
+    anon.post('/api/auth/google/seller-password/', { ticket, password }).then((r) => r.data),
+};
+
 // ── Existing customers ───────────────────────────────────────────────────────
 
 /** Normal customer login: sets the same cookies as signing in on www.negromart.com. */

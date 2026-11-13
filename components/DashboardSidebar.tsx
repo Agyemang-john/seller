@@ -41,6 +41,7 @@ import VerifiedRoundedIcon       from '@mui/icons-material/VerifiedRounded';
 import BadgeRoundedIcon          from '@mui/icons-material/BadgeRounded';
 import AssignmentReturnRoundedIcon from '@mui/icons-material/AssignmentReturnRounded';
 import BoltRoundedIcon           from '@mui/icons-material/BoltRounded';
+import LocalOfferRoundedIcon     from '@mui/icons-material/LocalOfferRounded';
 import ForumRoundedIcon          from '@mui/icons-material/ForumRounded';
 import FlightLandRoundedIcon     from '@mui/icons-material/FlightLandRounded';
 import QuestionAnswerRoundedIcon from '@mui/icons-material/QuestionAnswerRounded';
@@ -73,7 +74,7 @@ export interface DashboardSidebarProps {
 interface NavItemDef {
   id: string;
   text: string;
-  icon: React.ReactElement;
+  icon: React.ReactElement<{ sx?: object }>;
   path: string;
   /** Hidden unless the member's team role grants this (see hooks/useVendorAccess). */
   capability?: string;
@@ -90,6 +91,7 @@ const mainListItems: NavItemDef[] = [
   { id: 'claims',          text: 'Claims',        icon: <GavelRoundedIcon />,                path: '/claims',          capability: CAP.MANAGE_ORDERS },
   { id: 'products',      text: 'Products',      icon: <Inventory2RoundedIcon />,             path: '/products',      capability: CAP.MANAGE_CATALOG },
   { id: 'flash-sales',   text: 'Flash Sales',   icon: <BoltRoundedIcon />,                   path: '/flash-sales',   capability: CAP.MANAGE_CATALOG },
+  { id: 'coupons',       text: 'Coupons',       icon: <LocalOfferRoundedIcon />,             path: '/coupons',       capability: CAP.MANAGE_CATALOG },
   { id: 'ads',           text: 'Ads',           icon: <CampaignRoundedIcon />,               path: '/ads',           capability: CAP.MANAGE_CATALOG },
   { id: 'payment',       text: 'Payment',       icon: <AccountBalanceWalletRoundedIcon />,   path: '/payment',       capability: CAP.VIEW_FINANCE },
   { id: 'payouts',       text: 'Earnings',       icon: <PaymentsRoundedIcon />,               path: '/payouts',       capability: CAP.VIEW_FINANCE },

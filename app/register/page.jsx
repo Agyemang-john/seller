@@ -18,11 +18,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AccountPanel from "@/components/account/AccountPanel";
 import PhoneVerifyPanel from "@/components/account/PhoneVerifyPanel";
+import GoogleSellerSignup from "@/components/account/GoogleSellerSignup";
 
 const STEPS = [
   {
     name: "Negromart account",
-    detail: "Sign in, or create an account. We confirm your email and mobile number with one-time codes.",
+    detail: "Sign in, create an account, or sign up with Google. We confirm your mobile number (and email) with one-time codes.",
   },
   {
     name: "Business information",
@@ -168,9 +169,11 @@ export default function SellerRegisterPage() {
 
   useEffect(() => { checkAccount(); }, [checkAccount]);
 
+  // Google-only shoppers need a password for Seller Centre (password + code).
+  const needsPassword = authState === true && !vendorApp && customer?.has_password === false;
   // Older accounts were never asked for a phone code; applying requires one.
-  const needsPhone = authState === true && !vendorApp && customer && !customer.phone_verified;
-  const ready = authState === true && !vendorApp && !needsPhone;
+  const needsPhone = authState === true && !vendorApp && !needsPassword && customer && !customer.phone_verified;
+  const ready = authState === true && !vendorApp && !needsPassword && !needsPhone;
 
   const handlePrimary = () => {
     if (authState === null) return;
@@ -226,6 +229,7 @@ export default function SellerRegisterPage() {
               authState={authState}
               customer={customer}
               vendorApp={vendorApp}
+              needsPassword={needsPassword}
               needsPhone={needsPhone}
               onChanged={checkAccount}
               onContinue={() => router.push("/register/step-1")}
@@ -292,7 +296,7 @@ export default function SellerRegisterPage() {
 }
 
 /** The "Your account" panel: what the visitor needs to do next. */
-function AccountSection({ authState, customer, vendorApp, needsPhone, onChanged, onContinue }) {
+function AccountSection({ authState, customer, vendorApp, needsPassword, needsPhone, onChanged, onContinue }) {
   if (authState === null) {
     return <p className="nm-reg-muted">Checking whether you are signed in…</p>;
   }
@@ -303,7 +307,29 @@ function AccountSection({ authState, customer, vendorApp, needsPhone, onChanged,
         <p className="nm-reg-muted nm-reg-panel-intro">
           Sign in with the account you use on www.negromart.com, or create one now.
         </p>
-        <AccountPanel onAuthenticated={onChanged} />
+        <AccountPanel onAuthenticated={onChanged} withGoogle />
+      </>
+    );
+  }
+
+  if (needsPassword) {
+    // Shops with Google only: Seller Centre needs a password, set after a
+    // fresh Google sign-in (the proof it's really them).
+    return (
+      <>
+        <SignedInAs customer={customer} />
+        <div className="nm-reg-status">
+          <div className="nm-reg-status-title">Add a password to continue</div>
+          <p>
+            You shop on Negromart with Google. Seller Centre signs in with a password and a one-time code,
+            so confirm with Google and choose a password. You can keep using Google to shop.
+          </p>
+          <GoogleSellerSignup onDone={onChanged} text="continue_with" />
+          <p className="nm-reg-muted" style={{ marginTop: 12 }}>
+            Prefer email? <a href="https://www.negromart.com/auth/password-reset" target="_blank" rel="noopener noreferrer">
+            Get a link to set a password</a>, then come back here.
+          </p>
+        </div>
       </>
     );
   }

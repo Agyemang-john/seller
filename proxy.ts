@@ -20,6 +20,15 @@ const PROTECTED_PREFIXES = [
   '/team',
   '/order-returns',
   '/logout',
+  '/messages',
+  '/ads',
+  '/claims',
+  '/connect',
+  '/flash-sales',
+  '/coupons',
+  '/imported-orders',
+  '/questions',
+  '/about',
 ];
 
 function decodeJWT(token: string) {
@@ -109,5 +118,14 @@ export const config = {
     '/team/:path*',
     '/order-returns/:path*',
     '/logout/:path*',
+    '/messages/:path*',
+    '/ads/:path*',
+    '/claims/:path*',
+    '/connect/:path*',
+    '/flash-sales/:path*',
+    '/coupons/:path*',
+    '/imported-orders/:path*',
+    '/questions/:path*',
+    '/about/:path*',
   ],
 };

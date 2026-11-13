@@ -33,7 +33,9 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  typedRoutes: true,
+  // Off: Next only collects typed routes from .ts/.tsx pages and most pages
+  // here are .jsx, so valid links (e.g. /dashboard) failed type-checking.
+  typedRoutes: false,
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },

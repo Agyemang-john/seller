@@ -25,6 +25,7 @@ const ENTRY_TYPES = [
   { value: '', label: 'All activity' },
   { value: 'sale', label: 'Sales' },
   { value: 'commission', label: 'Commission' },
+  { value: 'seller_discount', label: 'Your coupons' },
   { value: 'refund', label: 'Refunds' },
   { value: 'payout', label: 'Payouts' },
   { value: 'adjustment', label: 'Adjustments' },
