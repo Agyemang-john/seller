@@ -2,61 +2,58 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Box, Typography, Stack, Grid } from '@mui/material';
+import { Box, Typography, Stack } from '@mui/material';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import FavoriteBorderRoundedIcon from '@mui/icons-material/FavoriteBorderRounded';
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined';
 import StarBorderRoundedIcon from '@mui/icons-material/StarBorderRounded';
+import StarRoundedIcon from '@mui/icons-material/StarRounded';
 
 function EngagementTile({ icon: Icon, label, value, subtext }) {
+  // Label row on top, then the number, then one line of context: reads
+  // cleanly even when five tiles share a row.
   return (
     <Box
       sx={{
-        p: { xs: '12px 14px', md: '20px 22px' },
+        p: { xs: 1.75, md: 2.25 },
+        height: '100%',
         borderRadius: '14px',
         border: '1px solid',
         borderColor: 'divider',
         bgcolor: 'background.paper',
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: { xs: 1.25, md: 2 },
-        transition: 'box-shadow 0.18s, transform 0.18s',
-        '&:hover': { boxShadow: '0 8px 32px rgba(0,0,0,0.07)', transform: 'translateY(-2px)' },
+        minWidth: 0,
       }}
     >
-      <Box
-        sx={{
-          width: { xs: 32, md: 40 }, height: { xs: 32, md: 40 }, borderRadius: '10px', bgcolor: 'action.selected',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, mt: 0.25,
-        }}
-      >
-        <Icon sx={{ fontSize: { xs: 15, md: 18 }, color: 'text.secondary' }} />
-      </Box>
-
-      <Box sx={{ minWidth: 0, flex: 1 }}>
-        <Typography variant="caption" sx={{
-          display: 'block', letterSpacing: '0.06em', textTransform: 'uppercase',
-          fontWeight: 600, color: 'text.disabled', mb: 0.3, fontSize: 10,
-        }}>
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.25, minWidth: 0 }}>
+        <Box
+          sx={{
+            width: 30, height: 30, borderRadius: '8px', bgcolor: 'action.selected',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}
+        >
+          <Icon sx={{ fontSize: 16, color: 'text.secondary' }} />
+        </Box>
+        <Typography sx={{ fontSize: 13, fontWeight: 600, color: 'text.secondary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {label}
         </Typography>
-        <Typography
-          sx={{
-            fontFamily: "var(--font-figtree), system-ui, sans-serif",
-            fontSize: { xs: 20, md: 28 }, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1,
-          }}
-          color="text.primary"
-        >
-          {value ?? '—'}
-        </Typography>
-        {subtext && (
-          <Typography variant="caption" color="text.disabled" sx={{ mt: 0.4, display: 'block' }}>
-            {subtext}
-          </Typography>
-        )}
-      </Box>
+      </Stack>
+      <Typography
+        sx={{
+          fontFamily: "var(--font-figtree), system-ui, sans-serif",
+          fontSize: { xs: 22, md: 26 }, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1.1,
+          fontVariantNumeric: 'tabular-nums',
+        }}
+        color="text.primary"
+      >
+        {value ?? '—'}
+      </Typography>
+      {subtext && (
+        <Box sx={{ mt: 0.5, fontSize: 12, color: 'text.secondary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {subtext}
+        </Box>
+      )}
     </Box>
   );
 }
@@ -65,19 +62,10 @@ function EngagementTile({ icon: Icon, label, value, subtext }) {
 function RatingStars({ rating }) {
   const r = Number(rating ?? 0);
   return (
-    <Stack direction="row" alignItems="center" spacing={0.25} sx={{ mt: 0.5 }}>
+    <Stack direction="row" alignItems="center" spacing={0.25} aria-label={`${r.toFixed(1)} out of 5`}>
       {[1, 2, 3, 4, 5].map((star) => (
-        <Box
-          key={star}
-          sx={{
-            width: 8, height: 8, borderRadius: '50%',
-            bgcolor: star <= Math.round(r) ? 'text.primary' : 'divider',
-          }}
-        />
+        <StarRoundedIcon key={star} sx={{ fontSize: 15, color: star <= Math.round(r) ? 'warning.main' : 'divider' }} />
       ))}
-      <Typography variant="caption" color="text.disabled" sx={{ ml: 0.5, fontSize: 10 }}>
-        {r.toFixed(1)} / 5.0
-      </Typography>
     </Stack>
   );
 }
@@ -99,31 +87,31 @@ export default function EngagementChart({ data }) {
   const tiles = [
     {
       icon: VisibilityOutlinedIcon,
-      label: 'Store Views',
+      label: 'Store views',
       value: Number(data.total_views ?? 0).toLocaleString(),
-      subtext: 'Total store visits',
+      subtext: 'Store visits',
     },
     {
       icon: FavoriteBorderRoundedIcon,
       label: 'Wishlisted',
       value: Number(data.wishlist_count ?? 0).toLocaleString(),
-      subtext: 'Products added to wishlists',
+      subtext: 'Saved to wishlists',
     },
     {
       icon: ShoppingCartOutlinedIcon,
-      label: 'In Cart',
+      label: 'In carts',
       value: Number(data.cart_quantity ?? 0).toLocaleString(),
-      subtext: 'Items in shoppers\' carts',
+      subtext: 'Waiting to be bought',
     },
     {
       icon: RateReviewOutlinedIcon,
       label: 'Reviews',
       value: Number(data.review_count ?? 0).toLocaleString(),
-      subtext: 'Customer reviews received',
+      subtext: 'From customers',
     },
     {
       icon: StarBorderRoundedIcon,
-      label: 'Avg Rating',
+      label: 'Avg rating',
       value: Number(data.avg_rating ?? 0).toFixed(1),
       subtext: <RatingStars rating={data.avg_rating} />,
     },
@@ -147,10 +135,10 @@ export default function EngagementChart({ data }) {
             sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 16, md: 22 }, fontWeight: 700, letterSpacing: '-0.5px' }}
             color="text.primary"
           >
-            Customer Engagement
+            Customer engagement
           </Typography>
-          <Typography variant="caption" color="text.disabled" sx={{ letterSpacing: '0.06em', display: { xs: 'none', sm: 'block' } }}>
-            HOW SHOPPERS INTERACT
+          <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+            How shoppers interact with your store
           </Typography>
         </Stack>
         <Link href="/store-analytics" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3, fontSize: 12, fontWeight: 600, color: 'inherit', opacity: 0.55, transition: 'opacity 0.15s' }}
@@ -164,13 +152,13 @@ export default function EngagementChart({ data }) {
         </Link>
       </Stack>
 
-      <Grid container spacing={1.5}>
+      {/* Tiles never get narrower than 150px: five in a row on wide screens,
+          wrapping to fewer columns as space runs out. */}
+      <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(auto-fit, minmax(150px, 1fr))' } }}>
         {tiles.map((tile) => (
-          <Grid key={tile.label} size={{ xs: 6, sm: 6, md: 4, lg: 'auto' }} sx={{ flex: { lg: 1 } }}>
-            <EngagementTile {...tile} />
-          </Grid>
+          <EngagementTile key={tile.label} {...tile} />
         ))}
-      </Grid>
+      </Box>
     </Box>
   );
 }

@@ -192,13 +192,11 @@ export function SalesKpis({ data }) {
     { label: 'Orders', value: count(data?.total_orders) },
     { label: 'Units sold', value: count(data?.total_units_sold) },
     { label: 'Avg order value', value: money(data?.avg_order_value) },
-    { label: 'Product views', value: count(data?.total_views) },
-    { label: 'Wishlisted', value: count(data?.wishlist_count) },
   ];
   return (
     <Grid container spacing={1.5}>
       {items.map((k) => (
-        <Grid key={k.label} size={{ xs: 6, sm: 4, lg: 2 }}>
+        <Grid key={k.label} size={{ xs: 6, md: 3 }}>
           <Kpi {...k} />
         </Grid>
       ))}
@@ -210,9 +208,9 @@ export function SalesKpis({ data }) {
 export function PlanCard({ plan }) {
   if (!plan || ['pro', 'enterprise'].includes(plan.tier)) return null;
   return (
-    <HomeCard>
-      <Stack spacing={1.5}>
-        <Stack direction="row" spacing={1.25} alignItems="center">
+    <HomeCard sx={{ height: 'auto' }}>
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={{ xs: 1.5, md: 3 }} alignItems={{ xs: 'flex-start', md: 'center' }}>
+        <Stack direction="row" spacing={1.25} alignItems="center" sx={{ flexShrink: 0 }}>
           <Box sx={{ width: 36, height: 36, borderRadius: '10px', bgcolor: (t) => alpha(t.palette.warning.main, 0.15), color: 'warning.main', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <WorkspacePremiumRoundedIcon fontSize="small" />
           </Box>
@@ -221,10 +219,10 @@ export function PlanCard({ plan }) {
             <Typography variant="caption" color="text.secondary">Commission {Number(plan.commission_rate).toString()}% · payouts after {plan.payout_delay_days} days</Typography>
           </Box>
         </Stack>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
           Higher plans lower your commission, pay out faster and unlock more analytics.
         </Typography>
-        <Button component={Link} href="/subscribe" variant="outlined" sx={{ borderRadius: '10px', fontWeight: 600, textTransform: 'none', alignSelf: 'flex-start' }}>
+        <Button component={Link} href="/subscribe" variant="outlined" sx={{ borderRadius: '10px', fontWeight: 600, textTransform: 'none', flexShrink: 0 }}>
           Compare plans
         </Button>
       </Stack>

@@ -6,7 +6,7 @@
  *   2. today's work (Action Center) beside the performance scorecard
  *   3. sales at a glance (all-time KPIs)
  *   4. sales & orders over time (date range + refresh live here, not in the page header)
- *   5. customer engagement + plan
+ *   5. customer engagement (full width), then a plan banner
  */
 import * as React from 'react';
 import { useState, useCallback, useMemo } from 'react';
@@ -157,18 +157,12 @@ export default function Dashboard() {
         </Box>
 
         {/* 5 ── Customers + plan */}
-        <Grid container spacing={2.5}>
-          <Grid size={{ xs: 12, lg: showPlan ? 8 : 12 }}>
-            <ChartSection error={engagementError} isLoading={loadingEngage} skeletonHeight={220} featureName="Customer engagement">
-              <EngagementChart data={engagement} />
-            </ChartSection>
-          </Grid>
-          {showPlan && (
-            <Grid size={{ xs: 12, lg: 4 }}>
-              <PlanCard plan={plan} />
-            </Grid>
-          )}
-        </Grid>
+        <Box sx={{ mb: 2.5 }}>
+          <ChartSection error={engagementError} isLoading={loadingEngage} skeletonHeight={220} featureName="Customer engagement">
+            <EngagementChart data={engagement} />
+          </ChartSection>
+        </Box>
+        {showPlan && <PlanCard plan={plan} />}
       </Box>
     </LocalizationProvider>
   );
