@@ -176,10 +176,20 @@ export default function ProductList({ canBulkUpload = false }) {
   const pathname     = usePathname();
   const searchParams = useSearchParams();
 
-  const [search,        setSearch]        = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  // ?search= / ?stock= come from the header search and Home shortcuts.
+  const urlSearch = searchParams.get('search') || '';
+  const urlStock  = searchParams.get('stock') || '';
+  const [search,        setSearch]        = useState(urlSearch);
+  const [debouncedSearch, setDebouncedSearch] = useState(urlSearch.trim());
   const [statusFilter,  setFilter]        = useState(searchParams.get('status') || 'all');
-  const [stockFilter,   setStockFilter]   = useState(searchParams.get('stock') || '');
+  const [stockFilter,   setStockFilter]   = useState(urlStock);
+
+  // Already on this page when a new header search lands: follow the URL.
+  useEffect(() => {
+    setSearch(urlSearch);
+    setDebouncedSearch(urlSearch.trim());
+  }, [urlSearch]);
+  useEffect(() => { setStockFilter(urlStock); }, [urlStock]);
   const [deleting,      setDeleting]      = useState(null);
   const [dialogOpen,    setDialogOpen]    = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);

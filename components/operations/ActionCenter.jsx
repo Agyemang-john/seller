@@ -18,7 +18,7 @@ const SEVERITY = {
   info: { color: 'info.main', label: 'FYI' },
 };
 
-export default function ActionCenter() {
+export default function ActionCenter({ sx }) {
   const { data, error, isLoading } = useSWR('/api/v1/vendor/action-center/', fetcher, {
     ...SWR_CONFIG,
     refreshInterval: 120_000, // new orders arrive while the page is open
@@ -29,9 +29,9 @@ export default function ActionCenter() {
   const items = data?.items ?? [];
 
   return (
-    <Card variant="outlined" sx={{ borderRadius: '12px', mb: 3.5 }}>
+    <Card variant="outlined" sx={{ borderRadius: '20px', mb: 3.5, ...sx }}>
       <Box sx={{ px: 2.5, py: 1.75, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-        <Typography sx={{ fontWeight: 700, fontSize: 16 }}>Needs your attention</Typography>
+        <Typography sx={{ fontFamily: 'var(--font-figtree), system-ui, sans-serif', fontWeight: 700, fontSize: 17, letterSpacing: '-0.3px' }}>Needs your attention</Typography>
         {!isLoading && (
           <Typography variant="caption" color="text.secondary">
             {items.length ? `${items.length} item${items.length === 1 ? '' : 's'}` : 'All clear'}

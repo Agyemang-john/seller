@@ -1,46 +1,51 @@
 'use client';
 
+/**
+ * Seller Home. Laid out like Walmart Seller Center's home page:
+ *   1. greeting, shop status and quick actions
+ *   2. today's work (Action Center) beside the performance scorecard
+ *   3. sales at a glance (all-time KPIs)
+ *   4. sales & orders over time (date range + refresh live here, not in the page header)
+ *   5. customer engagement + plan
+ */
 import * as React from 'react';
 import { useState, useCallback, useMemo } from 'react';
-import {
-  Box, Button, Chip, CircularProgress, Typography, Stack,
-  Divider, Alert,
-} from '@mui/material';
-import ActivityHeartbeat from '@/components/dashboard/ActivityHeartbeat';
-import InactivityBanner from '@/components/dashboard/InactivityBanner';
-import ActionCenter from '@/components/operations/ActionCenter';
-import Link from 'next/link';
+import { Box, Button, CircularProgress, Stack, Alert, Grid, Typography } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import Grid from '@mui/material/Grid';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import useSWR from 'swr';
+import ActivityHeartbeat from '@/components/dashboard/ActivityHeartbeat';
+import InactivityBanner from '@/components/dashboard/InactivityBanner';
+import ActionCenter from '@/components/operations/ActionCenter';
+import { SWR_CONFIG, fetcher, ChartSection } from '@/components/dashboard/DashboardUI';
 import {
-  SWR_CONFIG, fetcher,
-  ChartSection, SectionHeader, ProTeaser,
-} from '@/components/dashboard/DashboardUI';
-import SalesSummaryCard from '@/components/dashboard/SalesSummaryCard';
+  HomeHeader, HomeCard, CardLink, PerformanceScorecard, SalesKpis, PlanCard, HEADING_FONT,
+} from '@/components/dashboard/HomeWidgets';
 import SalesTrendChart from '@/components/dashboard/SalesTrendChart';
 import TopProductsChart from '@/components/dashboard/TopProductsChart';
 import OrderStatusChart from '@/components/dashboard/OrderStatusChart';
 import EngagementChart from '@/components/dashboard/EngagementChart';
 import DeliveryPerformanceChart from '@/components/dashboard/DeliveryPerformanceChart';
+import { useVendorProfile } from '@/hooks/useVendorProfile';
+import useNavCounts from '@/hooks/useNavCounts';
+import useVendorAccess, { CAP } from '@/hooks/useVendorAccess';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MAIN DASHBOARD
-// ─────────────────────────────────────────────────────────────────────────────
+const PAID_UP = ['pro', 'enterprise'];
+
 export default function Dashboard() {
   const [startDate,  setStartDate]  = useState(null);
   const [endDate,    setEndDate]    = useState(null);
   const [period,     setPeriod]     = useState('day');
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const { data: vendorStatus } = useSWR('/api/v1/vendor/my-status/', fetcher, {
-    revalidateOnFocus: false,
-  });
+  const { profile } = useVendorProfile();
+  const { toShip } = useNavCounts();
+  const { can } = useVendorAccess();
+  const { data: vendorStatus } = useSWR('/api/v1/vendor/my-status/', fetcher, { revalidateOnFocus: false });
+  const { data: plan } = useSWR(can(CAP.VIEW_FINANCE) ? '/api/v1/vendor/plan/' : null, fetcher, SWR_CONFIG);
+  const showPlan = !!plan && !PAID_UP.includes(plan.tier);
 
   const toISO        = (d) => (d && d.isValid?.() ? d.toISOString() : null);
   const startISO     = toISO(startDate);
@@ -63,172 +68,107 @@ export default function Dashboard() {
   const { data: delivery,     error: deliveryError,     isLoading: loadingDelivery } = useSWR(`/api/v1/vendor/delivery-performance/?${qs}`, fetcher, SWR_CONFIG);
 
   const isAnyLoading = loadingSummary || loadingTrend || loadingProducts || loadingOrders || loadingEngage || loadingDelivery;
-  const hasData      = !!salesSummary;
 
   const handleRefresh = useCallback(() => {
     if (!isAnyLoading) setRefreshKey((k) => k + 1);
   }, [isAnyLoading]);
 
+  const rangeControls = (
+    <Stack direction="row" spacing={1} alignItems="center" sx={{ width: { xs: '100%', sm: 'auto' } }}>
+      <DatePicker label="From" value={startDate} onChange={setStartDate} slotProps={{ textField: { size: 'small', sx: { flex: { xs: 1, sm: '0 0 150px' } } } }} />
+      <DatePicker label="To"   value={endDate}   onChange={setEndDate}   slotProps={{ textField: { size: 'small', sx: { flex: { xs: 1, sm: '0 0 150px' } } } }} />
+      <Button
+        variant="outlined" onClick={handleRefresh} disabled={isAnyLoading || !!invalidRange} aria-label="Refresh data"
+        sx={{ borderRadius: '10px', borderColor: 'divider', color: 'text.primary', height: 40, minWidth: 40, px: 1, flexShrink: 0, '&:hover': { borderColor: 'text.primary', bgcolor: 'action.hover' } }}
+      >
+        {isAnyLoading ? <CircularProgress size={16} thickness={5} /> : <RefreshIcon fontSize="small" />}
+      </Button>
+    </Stack>
+  );
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Box sx={{ pb: 10, minWidth: 0, maxWidth: '100%' }}>
-        {/* ── Activity heartbeat (invisible) + inactivity banner ────── */}
+      <Box sx={{ pb: 6, minWidth: 0, maxWidth: '100%' }}>
+        {/* Activity heartbeat (invisible) + inactivity banner */}
         <ActivityHeartbeat />
         <InactivityBanner />
 
-        {/* ── Page header ──────────────────────────────────────────────── */}
-        <Box sx={{ display: 'flex', alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 4 }}>
-          <Box>
-            <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 22, sm: 28, md: 38 }, fontWeight: 700, letterSpacing: '-1.5px', lineHeight: 1, mb: 0.5 }} color="text.primary">
-              Store Analytics &nbsp;
-            {vendorStatus && (
-              <Chip
-                component={Link}
-                href="/settings"
-                clickable
-                size="small"
-                label={vendorStatus.shop_paused ? 'Shop Paused' : 'Shop Live'}
-                color={vendorStatus.shop_paused ? 'warning' : 'success'}
-                variant="outlined"
-                sx={{ fontWeight: 600, fontSize: 12 }}
-              />
-            )}
-            </Typography>
-          </Box>
+        {/* 1 ── Greeting + quick actions */}
+        <HomeHeader storeName={profile?.vendor_name} vendorStatus={vendorStatus} toShip={toShip} />
 
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ xs: 'flex-start', sm: 'center' }} flexWrap="wrap">
-            <Stack direction="row" spacing={1} sx={{ width: { xs: '70%', sm: 'auto' } }}>
-              <DatePicker label="From" value={startDate} onChange={setStartDate} slotProps={{ textField: { size: 'small', sx: { flex: { xs: 1, sm: '0 0 148px' } } } }} />
-              <DatePicker label="To"   value={endDate}   onChange={setEndDate}   slotProps={{ textField: { size: 'small', sx: { flex: { xs: 1, sm: '0 0 148px' } } } }} />
-              <Button variant="outlined" size="small" onClick={handleRefresh} disabled={isAnyLoading || !!invalidRange}
-                startIcon={isAnyLoading ? <CircularProgress size={13} thickness={5} /> : <RefreshIcon />}
-                sx={{
-                  display: { xs: 'inline-flex', sm: 'none' },
-                  borderRadius: '10px', borderColor: 'divider', color: 'text.primary',
-                  height: 40, minWidth: 0, width: 40, px: 0, flexShrink: 0,
-                  '& .MuiButton-startIcon': { mx: 0 },
-                  '&:hover': { borderColor: 'text.primary', bgcolor: 'action.hover' },
-                }} />
-            </Stack>
-            <Button variant="outlined" size="small" onClick={handleRefresh} disabled={isAnyLoading || !!invalidRange}
-              startIcon={isAnyLoading ? <CircularProgress size={13} thickness={5} /> : <RefreshIcon />}
-              sx={{
-                display: { xs: 'none', sm: 'inline-flex' },
-                borderRadius: '10px', borderColor: 'divider', color: 'text.primary', fontWeight: 600, height: 40,
-                '&:hover': { borderColor: 'text.primary', bgcolor: 'action.hover' },
-              }}>
-              Refresh
-            </Button>
-          </Stack>
-        </Box>
-
-        {/* ── Work to do (orders to ship, returns, stock, payouts) ─────── */}
-        <ActionCenter />
-
-        {/* Date range error */}
-        {invalidRange && (
-          <Alert severity="error" sx={{ mb: 3, borderRadius: '10px' }}>End date cannot be earlier than start date</Alert>
-        )}
-
-
-        {/* ── SECTION 1 — KPI cards ────────────────────────────────────── */}
-        <Box sx={{ mb: 3.5 }}>
-          <ChartSection error={salesSummaryError} isLoading={loadingSummary} skeletonHeight={200} featureName="Sales Summary">
-            <SalesSummaryCard data={salesSummary} />
-          </ChartSection>
-        </Box>
-
-        <Divider sx={{ mb: 3.5 }} />
-
-        {/* ── SECTION 2 — Trends + distribution ───────────────────────── */}
-        <SectionHeader title="Revenue & Orders" subtitle="Over time" />
-        <Grid container spacing={2.5} sx={{ mb: 3.5 }}>
-          <Grid size={{ xs: 12, md: 8 }}>
-            <Stack spacing={2.5}>
-              <ChartSection error={salesTrendError} isLoading={loadingTrend} skeletonHeight={340} featureName="Sales Trends">
-                <SalesTrendChart data={salesTrend} period={period} setPeriod={setPeriod} />
-              </ChartSection>
-              <ChartSection error={topProductsError} isLoading={loadingProducts} skeletonHeight={300} featureName="Top Products">
-                <TopProductsChart data={topProducts} />
-              </ChartSection>
-            </Stack>
+        {/* 2 ── Work to do + store health */}
+        <Grid container spacing={2.5} sx={{ mb: 2.5 }}>
+          <Grid size={{ xs: 12, lg: 8 }}>
+            <ActionCenter sx={{ mb: 0, height: '100%' }} />
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Stack spacing={2.5}>
-              <ChartSection error={orderStatusError} isLoading={loadingOrders} skeletonHeight={300} featureName="Order Status">
-                <OrderStatusChart data={orderStatus} />
-              </ChartSection>
-              <ChartSection error={deliveryError} isLoading={loadingDelivery} skeletonHeight={300} featureName="Delivery Performance">
-                <DeliveryPerformanceChart data={delivery} />
-              </ChartSection>
-            </Stack>
+          <Grid size={{ xs: 12, lg: 4 }}>
+            {loadingSummary
+              ? <ChartSection isLoading skeletonHeight={320} />
+              : <PerformanceScorecard data={salesSummary} />}
           </Grid>
         </Grid>
 
-        <Divider sx={{ mb: 3.5 }} />
-
-        {/* ── SECTION 3 — Engagement ──────────────────────────────────── */}
-        <SectionHeader title="Customer Engagement" subtitle="How shoppers interact" />
-        <Box sx={{ mb: 3.5 }}>
-          <ChartSection error={engagementError} isLoading={loadingEngage} skeletonHeight={220} featureName="Customer Engagement">
-            <EngagementChart data={engagement} />
+        {/* 3 ── Sales at a glance */}
+        <HomeCard
+          title="Sales at a glance"
+          subtitle="All time"
+          action={<CardLink href="/store-analytics">Traffic report</CardLink>}
+          sx={{ mb: 2.5, height: 'auto' }}
+        >
+          <ChartSection error={salesSummaryError} isLoading={loadingSummary} skeletonHeight={96} featureName="Sales summary">
+            <SalesKpis data={salesSummary} />
           </ChartSection>
-        </Box>
+        </HomeCard>
 
-        <Divider sx={{ mb: 3.5 }} />
-
-        {/* ── SECTION 4 — Store Traffic entry point ───────────────────── */}
-        <Box sx={{ mb: 3.5, p: { xs: '14px 16px', md: '20px 24px' }, borderRadius: '16px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <Box sx={{ width: 42, height: 42, borderRadius: '11px', bgcolor: 'action.selected', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <TrendingUpIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
-            </Box>
+        {/* 4 ── Sales & orders over time */}
+        <Box id="performance" sx={{ mb: 2.5, scrollMarginTop: 16 }}>
+          <Box sx={{ display: 'flex', alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5, mb: 2 }}>
             <Box>
-              <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 18, fontWeight: 700, letterSpacing: '-0.4px', lineHeight: 1.2, mb: 0.3 }} color="text.primary">
-                Store Traffic
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.5 }}>
-                Unique visitors · Device breakdown · Return rate · 30-day trend
-              </Typography>
+              <Typography component="h2" sx={{ fontFamily: HEADING_FONT, fontWeight: 700, fontSize: 20, letterSpacing: '-0.4px' }}>Sales &amp; orders</Typography>
+              <Typography variant="caption" color="text.secondary">Choose dates, or leave them empty for recent activity</Typography>
             </Box>
-          </Stack>
-          <Button href="/store-analytics" variant="outlined" size="small" endIcon={<ArrowForwardIcon sx={{ fontSize: 13 }} />}
-            sx={{ fontSize: 12, fontWeight: 600, borderRadius: '9px', borderColor: 'divider', color: 'text.primary', flexShrink: 0, '&:hover': { borderColor: 'text.primary', bgcolor: 'action.hover' } }}>
-            View Report
-          </Button>
-        </Box>
-
-        <Divider sx={{ mb: 3.5 }} />
-
-        {/* ── SECTION 5 — Pro teasers ──────────────────────────────────── */}
-        {hasData && (
-          <>
-            <SectionHeader title="More on Pro & Enterprise" subtitle="Unlock more" />
-            <Grid container spacing={2} sx={{ mb: 3.5 }}>
-              {[
-                { features: ['Cohort analysis', 'Repeat customer rate', 'Customer lifetime value'] },
-                { features: ['Storefront customisation', 'Featured product boosts', 'Discount codes'] },
-                { features: ['Reduced commission rate', 'Priority support', 'Faster payouts'] },
-              ].map((t, i) => (
-                <Grid key={i} size={{ xs: 12, md: 4 }}>
-                  <ProTeaser features={t.features} href="/subscribe" />
-                </Grid>
-              ))}
+            {rangeControls}
+          </Box>
+          {invalidRange && (
+            <Alert severity="error" sx={{ mb: 2, borderRadius: '10px' }}>End date cannot be earlier than start date</Alert>
+          )}
+          <Grid container spacing={2.5}>
+            <Grid size={{ xs: 12, md: 8 }}>
+              <Stack spacing={2.5}>
+                <ChartSection error={salesTrendError} isLoading={loadingTrend} skeletonHeight={340} featureName="Sales trends">
+                  <SalesTrendChart data={salesTrend} period={period} setPeriod={setPeriod} />
+                </ChartSection>
+                <ChartSection error={topProductsError} isLoading={loadingProducts} skeletonHeight={300} featureName="Top products">
+                  <TopProductsChart data={topProducts} />
+                </ChartSection>
+              </Stack>
             </Grid>
-          </>
-        )}
-
-        {/* ── Footer ───────────────────────────────────────────────────── */}
-        <Box sx={{ p: '14px 22px', borderRadius: '12px', bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
-          <Typography variant="caption" color="text.secondary">
-            Analytics data refreshes every 15 minutes.
-          </Typography>
-          <Button href="/subscribe" size="small" variant="outlined" endIcon={<ArrowForwardIcon sx={{ fontSize: 12 }} />}
-            sx={{ fontSize: 11, fontWeight: 600, borderRadius: '8px', borderColor: 'divider', color: 'text.secondary', '&:hover': { borderColor: 'text.primary', color: 'text.primary' } }}>
-            Manage plan
-          </Button>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <Stack spacing={2.5}>
+                <ChartSection error={orderStatusError} isLoading={loadingOrders} skeletonHeight={300} featureName="Order status">
+                  <OrderStatusChart data={orderStatus} />
+                </ChartSection>
+                <ChartSection error={deliveryError} isLoading={loadingDelivery} skeletonHeight={300} featureName="Delivery performance">
+                  <DeliveryPerformanceChart data={delivery} />
+                </ChartSection>
+              </Stack>
+            </Grid>
+          </Grid>
         </Box>
 
+        {/* 5 ── Customers + plan */}
+        <Grid container spacing={2.5}>
+          <Grid size={{ xs: 12, lg: showPlan ? 8 : 12 }}>
+            <ChartSection error={engagementError} isLoading={loadingEngage} skeletonHeight={220} featureName="Customer engagement">
+              <EngagementChart data={engagement} />
+            </ChartSection>
+          </Grid>
+          {showPlan && (
+            <Grid size={{ xs: 12, lg: 4 }}>
+              <PlanCard plan={plan} />
+            </Grid>
+          )}
+        </Grid>
       </Box>
     </LocalizationProvider>
   );

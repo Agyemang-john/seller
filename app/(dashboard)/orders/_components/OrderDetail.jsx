@@ -616,18 +616,32 @@ export default function OrderDetailPage({ id }) {
             <Grid size={{ xs: 12, sm: 6 }}>
               <Paper sx={{ px: 2, py: 1 }}>
                 <Typography variant="overline">Address</Typography>
-                <Typography variant="body1" sx={{ mb: 1 }}>
-                  {[order.address.country, order.address.region, order.address.town, order.address.address]
-                    .filter(Boolean).join(', ') || '—'}
-                  {order.address.gps_address && `, GPS: ${order.address.gps_address}`}
+                <Typography variant="body1" component="div" sx={{ mb: 1 }}>
+                  {[order.address.address, order.address.address_line2].filter(Boolean).map((line) => (
+                    <div key={line}>{line}</div>
+                  ))}
+                  {order.address.landmark && <div>Near {order.address.landmark}</div>}
+                  <div>
+                    {[order.address.town, order.address.region, order.address.country].filter(Boolean).join(', ') || '—'}
+                  </div>
+                  {order.address.gps_address && <div>GPS: {order.address.gps_address}</div>}
                 </Typography>
+                {order.address.delivery_instructions && (
+                  <Typography variant="body2" sx={{ mb: 1, fontStyle: 'italic' }}>
+                    “{order.address.delivery_instructions}”
+                  </Typography>
+                )}
                 {(order.address.address || order.address.town || order.address.gps_address) && (
                   <Button
                     size="small"
                     component="a"
                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                      [order.address.address, order.address.town, order.address.region, order.address.country]
-                        .filter(Boolean).join(', ') || order.address.gps_address,
+                      // The shopper's pin when it's a real one; otherwise the typed address.
+                      ['gps', 'pin', 'search', 'geocoded'].includes(order.address.location_source)
+                        && order.address.latitude != null && order.address.longitude != null
+                        ? `${order.address.latitude},${order.address.longitude}`
+                        : [order.address.address, order.address.town, order.address.region, order.address.country]
+                          .filter(Boolean).join(', ') || order.address.gps_address,
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"

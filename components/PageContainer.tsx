@@ -67,7 +67,9 @@ export default function PageContainer(props: PageContainerProps) {
   return (
     <Container sx={{ flex: 1, display: 'flex', flexDirection: 'column', px: { xs: 1.5, sm: 3 }, minWidth: 0 }}>
       <Stack sx={{ flex: 1, my: { xs: 1.5, sm: 2 } }} spacing={{ xs: 1.5, sm: 2 }}>
+        {(breadcrumbs?.length || title || actions) ? (
         <Stack>
+          {breadcrumbs?.length ? (
           <PageHeaderBreadcrumbs
             aria-label="breadcrumb"
             separator={<NavigateNextRoundedIcon fontSize="small" />}
@@ -91,6 +93,8 @@ export default function PageContainer(props: PageContainerProps) {
                 })
               : null}
           </PageHeaderBreadcrumbs>
+          ) : null}
+          {(title || actions) ? (
           <PageContentHeader>
             {title ? (
               <Typography variant="h4" sx={{ fontSize: { xs: 20, sm: 24 }, minWidth: 0 }}>
@@ -99,7 +103,9 @@ export default function PageContainer(props: PageContainerProps) {
             ) : null}
             {actions ? <PageHeaderToolbar>{actions}</PageHeaderToolbar> : null}
           </PageContentHeader>
+          ) : null}
         </Stack>
+        ) : null}
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           {children}
         </Box>

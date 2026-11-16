@@ -4,16 +4,9 @@ import Main from './_components/Main';
 import PageContainer from '@/components/PageContainer';
 
 export default function Page() {
-  const pageTitle = 'Seller Dashboard';
-
+  // Home is the root of the dashboard: no breadcrumb trail, the greeting is the heading.
   return (
-    <PageContainer
-      title={''}
-      breadcrumbs={[
-        { title: 'Home', path: '/dashboard' },
-        { title: pageTitle },
-      ]}
-    >
+    <PageContainer>
       <Main />
     </PageContainer>
   );

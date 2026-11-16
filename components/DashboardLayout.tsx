@@ -11,6 +11,8 @@ import SitemarkIcon from '@/components/SitemarkIcon';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import { useVendorProfile } from '@/hooks/useVendorProfile';
 import { usePathname } from 'next/navigation';
+import useSWR from 'swr';
+import { fetcher } from '@/components/dashboard/DashboardUI';
 import { MOBILE_NAV_HEIGHT } from '../constants';
 
 const SIDEBAR_PREF_KEY = 'seller.sidebarExpanded';
@@ -19,6 +21,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const theme = useTheme();
   const { profile, loading } = useVendorProfile();
   const pathname = usePathname();
+  // Same key as the Home page, so SWR shares the request.
+  const { data: vendorStatus } = useSWR('/api/v1/vendor/my-status/', fetcher, { revalidateOnFocus: false });
+  const storeUrl = vendorStatus?.vendor_slug
+    ? `${process.env.NEXT_PUBLIC_SHOP_URL || 'https://www.negromart.com'}/seller/${vendorStatus.vendor_slug}`
+    : undefined;
 
   const [isDesktopNavigationExpanded, setIsDesktopNavigationExpanded] =
     React.useState(true);
@@ -87,6 +94,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         onToggleMenu={handleToggleHeaderMenu}
         storeName={profile?.vendor_name}
         storeAvatar={profile?.profile_image}
+        storeUrl={storeUrl}
       />
 
       <DashboardSidebar

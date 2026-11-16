@@ -7,19 +7,16 @@ import Paper from '@mui/material/Paper';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 import Badge from '@mui/material/Badge';
-import DashboardRoundedIcon     from '@mui/icons-material/DashboardRounded';
+import HomeRoundedIcon          from '@mui/icons-material/HomeRounded';
 import LocalShippingRoundedIcon from '@mui/icons-material/LocalShippingRounded';
 import Inventory2RoundedIcon    from '@mui/icons-material/Inventory2Rounded';
 import PaymentsRoundedIcon      from '@mui/icons-material/PaymentsRounded';
 import MenuRoundedIcon          from '@mui/icons-material/MenuRounded';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import useSWR from 'swr';
 import useVendorAccess, { CAP } from '@/hooks/useVendorAccess';
-import { createAxiosClient } from '@/utils/clientFetch';
+import useNavCounts from '@/hooks/useNavCounts';
 import { MOBILE_NAV_HEIGHT } from '../constants';
-import useUnreadChats from '@/components/chat/useUnreadChats';
-import useMessagingPlan from '@/components/chat/useMessagingPlan';
 
 interface TabDef {
   id: string;
@@ -31,15 +28,11 @@ interface TabDef {
 
 // The four things sellers do most from a phone; everything else lives behind "More".
 const tabs: TabDef[] = [
-  { id: 'dashboard', label: 'Home',     icon: <DashboardRoundedIcon />,     path: '/dashboard', capability: CAP.VIEW_ANALYTICS },
+  { id: 'dashboard', label: 'Home',     icon: <HomeRoundedIcon />,     path: '/dashboard', capability: CAP.VIEW_ANALYTICS },
   { id: 'orders',    label: 'Orders',   icon: <LocalShippingRoundedIcon />, path: '/orders',    capability: CAP.MANAGE_ORDERS },
   { id: 'products',  label: 'Products', icon: <Inventory2RoundedIcon />,    path: '/products',  capability: CAP.MANAGE_CATALOG },
   { id: 'payouts',   label: 'Earnings', icon: <PaymentsRoundedIcon />,      path: '/payouts',   capability: CAP.VIEW_FINANCE },
 ];
-
-// "To ship" is the queue a seller has to act on, so that's what the badge counts.
-const toShipFetcher = (url: string) =>
-  createAxiosClient().get(url).then((res) => res.data?.count ?? 0);
 
 export interface MobileBottomNavProps {
   moreOpen: boolean;
@@ -56,15 +49,9 @@ export default function MobileBottomNav({ moreOpen, onMore }: MobileBottomNavPro
     [capabilities],
   );
 
-  // Messages lives under "More" on phones; show unread chats there.
-  const messagingPlan = useMessagingPlan();
-  const unreadChats = useUnreadChats('vendor', can(CAP.MANAGE_MESSAGES) && messagingPlan.allowed);
-
-  const { data: toShip } = useSWR(
-    can(CAP.MANAGE_ORDERS) ? '/api/v1/vendor/orders/?filter=to_ship&page_size=1' : null,
-    toShipFetcher,
-    { refreshInterval: 60_000, revalidateOnFocus: true, shouldRetryOnError: false },
-  );
+  // Orders badge = the "to ship" queue; Messages lives under "More" on phones,
+  // so unread chats ride on that tab.
+  const { toShip, unreadChats } = useNavCounts();
 
   const active = moreOpen
     ? 'more'

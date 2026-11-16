@@ -7,51 +7,25 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Avatar from '@mui/material/Avatar';
 import Skeleton from '@mui/material/Skeleton';
 import Tooltip from '@mui/material/Tooltip';
-import Divider from '@mui/material/Divider';
 import Badge from '@mui/material/Badge';
+import Collapse from '@mui/material/Collapse';
+import Popover from '@mui/material/Popover';
 import type {} from '@mui/material/themeCssVarsAugmentation';
 
-import DashboardRoundedIcon      from '@mui/icons-material/DashboardRounded';
-import TrendingUpRoundedIcon     from '@mui/icons-material/TrendingUpRounded';
-import LocalShippingRoundedIcon  from '@mui/icons-material/LocalShippingRounded';
-import Inventory2RoundedIcon     from '@mui/icons-material/Inventory2Rounded';
-import AccountBalanceWalletRoundedIcon from '@mui/icons-material/AccountBalanceWalletRounded';
-import PaymentsRoundedIcon       from '@mui/icons-material/PaymentsRounded';
-import ScheduleRoundedIcon       from '@mui/icons-material/ScheduleRounded';
-import StoreRoundedIcon          from '@mui/icons-material/StoreRounded';
-import StarRoundedIcon           from '@mui/icons-material/StarRounded';
-import HelpOutlineRoundedIcon    from '@mui/icons-material/HelpOutlineRounded';
-import GroupsRoundedIcon         from '@mui/icons-material/GroupsRounded';
-import ReceiptLongRoundedIcon    from '@mui/icons-material/ReceiptLongRounded';
-import CardMembershipRoundedIcon from '@mui/icons-material/CardMembershipRounded';
-import SettingsRoundedIcon       from '@mui/icons-material/SettingsRounded';
-import InfoOutlinedIcon          from '@mui/icons-material/InfoOutlined';
 import LogoutRoundedIcon         from '@mui/icons-material/LogoutRounded';
 import LocationOnRoundedIcon     from '@mui/icons-material/LocationOnRounded';
 import VerifiedRoundedIcon       from '@mui/icons-material/VerifiedRounded';
-import BadgeRoundedIcon          from '@mui/icons-material/BadgeRounded';
-import AssignmentReturnRoundedIcon from '@mui/icons-material/AssignmentReturnRounded';
-import BoltRoundedIcon           from '@mui/icons-material/BoltRounded';
-import LocalOfferRoundedIcon     from '@mui/icons-material/LocalOfferRounded';
-import ForumRoundedIcon          from '@mui/icons-material/ForumRounded';
-import FlightLandRoundedIcon     from '@mui/icons-material/FlightLandRounded';
-import QuestionAnswerRoundedIcon from '@mui/icons-material/QuestionAnswerRounded';
-import GavelRoundedIcon from '@mui/icons-material/GavelRounded';
-import CampaignRoundedIcon from '@mui/icons-material/CampaignRounded';
-import useSWR from 'swr';
-import { fetcher } from '@/components/dashboard/DashboardUI';
-import useUnreadChats from '@/components/chat/useUnreadChats';
-import useMessagingPlan from '@/components/chat/useMessagingPlan';
+import ExpandMoreRoundedIcon     from '@mui/icons-material/ExpandMoreRounded';
+import AddRoundedIcon            from '@mui/icons-material/AddRounded';
 import useVendorAccess, { CAP } from '@/hooks/useVendorAccess';
+import useNavCounts from '@/hooks/useNavCounts';
+import { NAV_GROUPS, activeLinkId, isPathActive, type NavGroup, type NavLink } from '@/components/navConfig';
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -71,174 +45,185 @@ export interface DashboardSidebarProps {
   storeLoading?: boolean;
 }
 
-interface NavItemDef {
-  id: string;
-  text: string;
-  icon: React.ReactElement<{ sx?: object }>;
-  path: string;
-  /** Hidden unless the member's team role grants this (see hooks/useVendorAccess). */
-  capability?: string;
-}
+const OPEN_GROUPS_KEY = 'seller.navOpenGroups';
 
-// ── Nav definitions ───────────────────────────────────────────────────────────
-const mainListItems: NavItemDef[] = [
-  { id: 'dashboard',       text: 'Dashboard',     icon: <DashboardRoundedIcon />,           path: '/dashboard',       capability: CAP.VIEW_ANALYTICS },
-  { id: 'store-analytics', text: 'Store Traffic', icon: <TrendingUpRoundedIcon />,           path: '/store-analytics', capability: CAP.VIEW_ANALYTICS },
-  { id: 'orders',          text: 'Orders',        icon: <LocalShippingRoundedIcon />,        path: '/orders',          capability: CAP.MANAGE_ORDERS },
-  { id: 'imported-orders', text: 'Imported Orders', icon: <FlightLandRoundedIcon />,         path: '/imported-orders', capability: CAP.MANAGE_ORDERS },
-  { id: 'messages',        text: 'Messages',      icon: <ForumRoundedIcon />,                path: '/messages',        capability: CAP.MANAGE_MESSAGES },
-  { id: 'order-returns',   text: 'Returns',       icon: <AssignmentReturnRoundedIcon />,     path: '/order-returns',   capability: CAP.MANAGE_ORDERS },
-  { id: 'claims',          text: 'Claims',        icon: <GavelRoundedIcon />,                path: '/claims',          capability: CAP.MANAGE_ORDERS },
-  { id: 'products',      text: 'Products',      icon: <Inventory2RoundedIcon />,             path: '/products',      capability: CAP.MANAGE_CATALOG },
-  { id: 'flash-sales',   text: 'Flash Sales',   icon: <BoltRoundedIcon />,                   path: '/flash-sales',   capability: CAP.MANAGE_CATALOG },
-  { id: 'coupons',       text: 'Coupons',       icon: <LocalOfferRoundedIcon />,             path: '/coupons',       capability: CAP.MANAGE_CATALOG },
-  { id: 'ads',           text: 'Ads',           icon: <CampaignRoundedIcon />,               path: '/ads',           capability: CAP.MANAGE_CATALOG },
-  { id: 'payment',       text: 'Payment',       icon: <AccountBalanceWalletRoundedIcon />,   path: '/payment',       capability: CAP.VIEW_FINANCE },
-  { id: 'payouts',       text: 'Earnings',       icon: <PaymentsRoundedIcon />,               path: '/payouts',       capability: CAP.VIEW_FINANCE },
-  { id: 'working-hours', text: 'Working Hours', icon: <ScheduleRoundedIcon />,               path: '/working-hours', capability: CAP.MANAGE_STORE },
-  { id: 'profile',       text: 'Store Profile', icon: <StoreRoundedIcon />,                  path: '/profile',       capability: CAP.MANAGE_STORE },
-  { id: 'reviews',       text: 'Reviews',       icon: <StarRoundedIcon />,                   path: '/reviews',       capability: CAP.MANAGE_CATALOG },
-  { id: 'questions',     text: 'Questions',     icon: <QuestionAnswerRoundedIcon />,         path: '/questions',     capability: CAP.MANAGE_CATALOG },
-  { id: 'team',          text: 'Team',          icon: <BadgeRoundedIcon />,                  path: '/team' },
-  { id: 'help',          text: 'Help & Guide',  icon: <HelpOutlineRoundedIcon />,            path: '/help' },
-  { id: 'connect',      text: 'Community',     icon: <GroupsRoundedIcon />,                 path: '/connect' },
-];
-
-const subscribeListItems: NavItemDef[] = [
-  { id: 'billing',   text: 'Billing',      icon: <ReceiptLongRoundedIcon />,    path: '/billing',   capability: CAP.VIEW_FINANCE },
-  { id: 'subscribe', text: 'Subscription', icon: <CardMembershipRoundedIcon />, path: '/subscribe', capability: CAP.VIEW_FINANCE },
-];
-
-const bottomListItems: NavItemDef[] = [
-  { id: 'settings', text: 'Settings', icon: <SettingsRoundedIcon />, path: '/settings' },
-  { id: 'about',    text: 'About',    icon: <InfoOutlinedIcon />,    path: '/about' },
-  { id: 'logout',   text: 'Log out',  icon: <LogoutRoundedIcon />,   path: '/logout' },
-];
-
-// ── NavItem ───────────────────────────────────────────────────────────────────
-interface NavItemProps {
-  item: NavItemDef;
-  mini: boolean;
-  pathname: string;
-  onPageItemClick: () => void;
-  /** Counter for things waiting on the seller (e.g. chats with unread shopper messages). */
-  badge?: number;
-  /** Small tag for a feature the store's plan doesn't include yet. */
-  upgradeTag?: string;
-}
-
-function NavItem({ item, mini, pathname, onPageItemClick, badge = 0, upgradeTag }: NavItemProps) {
-  const isActive  = pathname === item.path || (item.path !== '/dashboard' && pathname.startsWith(item.path));
-  const isLogout  = item.id === 'logout';
-
+// ── Small pieces ──────────────────────────────────────────────────────────────
+function CountPill({ n }: { n: number }) {
+  if (!n) return null;
   return (
-    <ListItem disablePadding sx={{ display: 'block', mb: 0.25 }}>
-      <Tooltip title={mini ? (badge ? `${item.text} (${badge} unread)` : item.text) : ''} placement="right" arrow>
-        <ListItemButton
-          component={Link}
-          href={item.path}
-          selected={isActive}
-          onClick={onPageItemClick}
-          sx={{
-            height: { xs: 44, sm: 40 },
-            borderRadius: '10px',
-            px: mini ? 0 : 1.25,
-            justifyContent: mini ? 'center' : 'flex-start',
-            transition: 'background-color 0.15s, color 0.15s',
-            '&.Mui-selected': {
-              bgcolor: (t: Theme) => alpha(t.palette.primary.main, 0.1),
-              '& .MuiListItemIcon-root': { color: 'primary.main' },
-              '& .MuiListItemText-primary': { fontWeight: 700, color: 'primary.main' },
-              '&:hover': { bgcolor: (t: Theme) => alpha(t.palette.primary.main, 0.16) },
-            },
-            '&:not(.Mui-selected):hover': {
-              bgcolor: isLogout ? (t: Theme) => alpha(t.palette.error.main, 0.07) : 'action.hover',
-              '& .MuiListItemIcon-root': { color: isLogout ? 'error.main' : 'text.primary' },
-              '& .MuiListItemText-primary': { color: isLogout ? 'error.main' : 'text.primary' },
-            },
-          }}
-        >
-          <ListItemIcon
-            sx={{
-              minWidth: mini ? 'auto' : 34,
-              color: isActive ? 'primary.main' : isLogout ? 'text.disabled' : 'text.secondary',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'color 0.15s',
-            }}
-          >
-            {/* Collapsed rail: the count rides on the icon. Expanded: it sits at the row's end. */}
-            <Badge badgeContent={mini ? badge : 0} color="error" max={99}
-                   sx={{ '& .MuiBadge-badge': { fontSize: 10, height: 16, minWidth: 16, px: 0.5 } }}>
-              {React.cloneElement(item.icon, { sx: { fontSize: mini ? 22 : 20 } })}
-            </Badge>
-          </ListItemIcon>
-
-          {!mini && (
-            <ListItemText
-              primary={item.text}
-              primaryTypographyProps={{
-                fontSize: 13.5,
-                fontWeight: isActive ? 700 : 500,
-                letterSpacing: '-0.01em',
-                lineHeight: 1,
-              }}
-              sx={{ m: 0 }}
-            />
-          )}
-
-          {!mini && badge > 0 && (
-            <Box
-              component="span"
-              aria-label={`${badge} unread`}
-              sx={{
-                ml: 1, minWidth: 20, height: 20, px: 0.75, borderRadius: 10, flexShrink: 0,
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                bgcolor: 'error.main', color: 'error.contrastText', fontSize: 11.5, fontWeight: 700, lineHeight: 1,
-              }}
-            >
-              {badge > 99 ? '99+' : badge}
-            </Box>
-          )}
-
-          {!mini && !badge && upgradeTag && (
-            <Box
-              component="span"
-              sx={{
-                ml: 1, px: 0.75, py: 0.25, borderRadius: 1, flexShrink: 0, fontSize: 10.5, fontWeight: 700,
-                letterSpacing: '0.02em', textTransform: 'uppercase', lineHeight: 1.4,
-                color: 'warning.main', border: 1, borderColor: 'warning.main',
-              }}
-            >
-              {upgradeTag}
-            </Box>
-          )}
-        </ListItemButton>
-      </Tooltip>
-    </ListItem>
+    <Box
+      component="span"
+      aria-label={`${n} waiting`}
+      sx={{
+        ml: 1, minWidth: 20, height: 20, px: 0.75, borderRadius: 10, flexShrink: 0,
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        bgcolor: 'error.main', color: 'error.contrastText', fontSize: 11.5, fontWeight: 700, lineHeight: 1,
+      }}
+    >
+      {n > 99 ? '99+' : n}
+    </Box>
   );
 }
 
-// ── Section label ─────────────────────────────────────────────────────────────
-function SectionLabel({ label, mini }: { label: string; mini: boolean }) {
-  if (mini) {
-    return (
-      <Box sx={{ px: 1, py: 1 }}>
-        <Divider />
-      </Box>
-    );
-  }
+function UpgradeTag({ text }: { text: string }) {
   return (
-    <Box sx={{ px: 1.25, pt: 2, pb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-      <Typography
-        sx={{
-          fontSize: 10, fontWeight: 800, letterSpacing: '0.1em',
-          color: 'text.disabled', textTransform: 'uppercase', whiteSpace: 'nowrap',
-        }}
-      >
-        {label}
-      </Typography>
-      <Box sx={{ flex: 1, height: '1px', bgcolor: 'divider' }} />
+    <Box
+      component="span"
+      sx={{
+        ml: 1, px: 0.75, py: 0.25, borderRadius: 1, flexShrink: 0, fontSize: 10.5, fontWeight: 700,
+        letterSpacing: '0.02em', textTransform: 'uppercase', lineHeight: 1.4,
+        color: 'warning.main', border: 1, borderColor: 'warning.main',
+      }}
+    >
+      {text}
     </Box>
+  );
+}
+
+const rowSx = {
+  borderRadius: '10px',
+  transition: 'background-color 0.15s, color 0.15s',
+  '&.Mui-selected': {
+    bgcolor: (t: Theme) => alpha(t.palette.primary.main, 0.1),
+    color: 'primary.main',
+    '&:hover': { bgcolor: (t: Theme) => alpha(t.palette.primary.main, 0.16) },
+  },
+  '&:not(.Mui-selected):hover': { bgcolor: 'action.hover', color: 'text.primary' },
+};
+
+// ── Child link (inside an expanded group) ─────────────────────────────────────
+function ChildRow({ link, active, badge, tag, onClick }: {
+  link: NavLink; active: boolean; badge: number; tag?: string; onClick: () => void;
+}) {
+  return (
+    <ListItemButton
+      component={Link}
+      href={link.path}
+      selected={active}
+      onClick={onClick}
+      aria-current={active ? 'page' : undefined}
+      sx={{
+        ...rowSx,
+        position: 'relative',
+        height: { xs: 40, sm: 34 },
+        pl: '44px', pr: 1.25, mb: 0.25,
+        color: active ? 'primary.main' : 'text.secondary',
+        // Thin rail that ties a group's links together; the active one lights up.
+        '&::before': {
+          content: '""', position: 'absolute', left: 21, top: 0, bottom: 0, width: '2px',
+          bgcolor: active ? 'primary.main' : 'divider', borderRadius: 1,
+        },
+      }}
+    >
+      <Typography sx={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: active ? 700 : 500, letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        {link.text}
+      </Typography>
+      <CountPill n={badge} />
+      {!badge && tag ? <UpgradeTag text={tag} /> : null}
+    </ListItemButton>
+  );
+}
+
+// ── Group header (expanded sidebar) ───────────────────────────────────────────
+function GroupRow({ group, open, active, badge, onToggle, onNavigate }: {
+  group: NavGroup; open: boolean; active: boolean; badge: number;
+  onToggle: () => void; onNavigate: () => void;
+}) {
+  const isLink = !!group.path;
+  const linkProps = isLink ? { component: Link, href: group.path, onClick: onNavigate } : { onClick: onToggle };
+  return (
+    <ListItemButton
+      {...(linkProps as object)}
+      selected={isLink && active}
+      aria-expanded={isLink ? undefined : open}
+      sx={{
+        ...rowSx,
+        height: { xs: 44, sm: 40 }, px: 1.25, mb: 0.25,
+        color: active ? (isLink ? 'primary.main' : 'text.primary') : 'text.secondary',
+      }}
+    >
+      <Box sx={{ width: 34, display: 'flex', alignItems: 'center', color: active ? 'primary.main' : 'inherit', flexShrink: 0 }}>
+        {React.cloneElement(group.icon, { sx: { fontSize: 20 } })}
+      </Box>
+      <Typography sx={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: active ? 700 : 600, letterSpacing: '-0.01em', color: active ? 'text.primary' : 'inherit', ...(isLink && active ? { color: 'primary.main' } : {}) }}>
+        {group.text}
+      </Typography>
+      {/* A closed group still tells you something inside needs you. */}
+      {!isLink && !open && <CountPill n={badge} />}
+      {!isLink && (
+        <ExpandMoreRoundedIcon sx={{ fontSize: 18, ml: 0.5, color: 'text.disabled', transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'none' }} />
+      )}
+    </ListItemButton>
+  );
+}
+
+// ── Group in the collapsed rail: icon + flyout menu ───────────────────────────
+function MiniGroup({ group, links, active, badge, badges, tags, pathname, onNavigate }: {
+  group: NavGroup; links: NavLink[]; active: boolean; badge: number;
+  badges: Record<string, number>; tags: Record<string, string>; pathname: string; onNavigate: () => void;
+}) {
+  const [anchor, setAnchor] = React.useState<HTMLElement | null>(null);
+  const activeId = activeLinkId(pathname, links);
+  const isLink = !!group.path;
+  const close = () => setAnchor(null);
+
+  const button = (
+    <ListItemButton
+      {...((isLink
+        ? { component: Link, href: group.path, onClick: onNavigate }
+        : { onClick: (e: React.MouseEvent<HTMLElement>) => setAnchor(e.currentTarget) }) as object)}
+      selected={active}
+      aria-haspopup={isLink ? undefined : 'menu'}
+      sx={{
+        ...rowSx,
+        flexDirection: 'column', justifyContent: 'center', gap: 0.25,
+        height: 56, px: 0.5, mb: 0.5,
+        color: active ? 'primary.main' : 'text.secondary',
+      }}
+    >
+      <Badge badgeContent={badge} color="error" max={99}
+             sx={{ '& .MuiBadge-badge': { fontSize: 10, height: 16, minWidth: 16, px: 0.5 } }}>
+        {React.cloneElement(group.icon, { sx: { fontSize: 22 } })}
+      </Badge>
+      <Typography sx={{ fontSize: 10.5, fontWeight: active ? 700 : 600, lineHeight: 1.1 }}>{group.text}</Typography>
+    </ListItemButton>
+  );
+
+  return (
+    <>
+      {isLink ? <Tooltip title={group.text} placement="right" arrow>{button}</Tooltip> : button}
+      {!isLink && (
+        <Popover
+          open={!!anchor}
+          anchorEl={anchor}
+          onClose={close}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+          slotProps={{ paper: { sx: { ml: 1, minWidth: 220, borderRadius: '12px', p: 0.75, border: '1px solid', borderColor: 'divider', boxShadow: '0 12px 32px rgba(0,0,0,0.12)' } } }}
+        >
+          <Typography sx={{ px: 1.25, pt: 0.75, pb: 0.5, fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'text.disabled' }}>
+            {group.text}
+          </Typography>
+          <List dense disablePadding role="menu">
+            {links.map((l) => (
+              <ListItemButton
+                key={l.id}
+                component={Link}
+                href={l.path}
+                role="menuitem"
+                selected={l.id === activeId}
+                onClick={() => { close(); onNavigate(); }}
+                sx={{ ...rowSx, height: 36, px: 1.25 }}
+              >
+                <Typography sx={{ flex: 1, fontSize: 13.5, fontWeight: l.id === activeId ? 700 : 500 }}>{l.text}</Typography>
+                <CountPill n={badges[l.id] ?? 0} />
+                {!badges[l.id] && tags[l.id] ? <UpgradeTag text={tags[l.id]} /> : null}
+              </ListItemButton>
+            ))}
+          </List>
+        </Popover>
+      )}
+    </>
   );
 }
 
@@ -251,6 +236,28 @@ interface StoreCardProps {
   storeLoading?: boolean;
 }
 
+function StoreAvatar({ name, src, size }: { name?: string; src?: string; size: number }) {
+  return (
+    <Box sx={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}>
+      <Avatar
+        src={src || undefined}
+        alt={name}
+        sx={{
+          width: size, height: size, fontSize: size * 0.4, fontWeight: 700,
+          bgcolor: 'primary.main', color: 'primary.contrastText',
+          border: '2px solid', borderColor: (t: Theme) => alpha(t.palette.primary.main, 0.25),
+        }}
+      >
+        {!src && name ? name[0].toUpperCase() : null}
+      </Avatar>
+      <Box sx={{
+        position: 'absolute', bottom: 1, right: 1, width: 10, height: 10, borderRadius: '50%',
+        bgcolor: 'success.main', border: '2px solid', borderColor: 'background.paper',
+      }} />
+    </Box>
+  );
+}
+
 function StoreCard({ mini, storeName, storeAddress, storeAvatar, storeLoading }: StoreCardProps) {
   if (mini) {
     return (
@@ -258,26 +265,9 @@ function StoreCard({ mini, storeName, storeAddress, storeAvatar, storeLoading }:
         {storeLoading ? (
           <Skeleton variant="circular" width={38} height={38} />
         ) : (
-          <Tooltip title={storeName || 'Your Store'} placement="right" arrow>
+          <Tooltip title={storeName || 'Your store'} placement="right" arrow>
             <Link href="/profile" style={{ textDecoration: 'none' }}>
-              <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-                <Avatar
-                  src={storeAvatar || undefined}
-                  sx={{
-                    width: 38, height: 38, fontSize: 16, fontWeight: 700,
-                    bgcolor: 'primary.main', color: 'primary.contrastText',
-                    border: '2px solid', borderColor: 'primary.light',
-                    cursor: 'pointer', '&:hover': { opacity: 0.85 },
-                  }}
-                >
-                  {!storeAvatar && storeName ? storeName[0].toUpperCase() : null}
-                </Avatar>
-                <Box sx={{
-                  position: 'absolute', bottom: 1, right: 1,
-                  width: 9, height: 9, borderRadius: '50%',
-                  bgcolor: '#22c55e', border: '1.5px solid', borderColor: 'background.paper',
-                }} />
-              </Box>
+              <StoreAvatar name={storeName} src={storeAvatar} size={38} />
             </Link>
           </Tooltip>
         )}
@@ -289,7 +279,7 @@ function StoreCard({ mini, storeName, storeAddress, storeAvatar, storeLoading }:
     <Box sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
       {storeLoading ? (
         <Box sx={{ px: 2, py: 1.75, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Skeleton variant="circular" width={44} height={44} />
+          <Skeleton variant="circular" width={42} height={42} />
           <Box sx={{ flex: 1 }}>
             <Skeleton variant="rounded" width="65%" height={15} sx={{ mb: 0.75, borderRadius: '4px' }} />
             <Skeleton variant="rounded" width="45%" height={12} sx={{ borderRadius: '4px' }} />
@@ -297,58 +287,25 @@ function StoreCard({ mini, storeName, storeAddress, storeAvatar, storeLoading }:
         </Box>
       ) : storeName ? (
         <Link href="/profile" style={{ textDecoration: 'none' }}>
-          <Box
-            sx={{
-              px: 1.5, py: 1.5, mx: 0.75, my: 0.75,
-              borderRadius: '12px', cursor: 'pointer',
-              transition: 'background-color 0.15s',
-              '&:hover': { bgcolor: 'action.hover' },
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-              {/* Avatar with online dot */}
-              <Box sx={{ position: 'relative', flexShrink: 0 }}>
-                <Avatar
-                  src={storeAvatar || undefined}
-                  sx={{
-                    width: 42, height: 42, fontSize: 17, fontWeight: 700,
-                    bgcolor: 'primary.main', color: 'primary.contrastText',
-                    border: '2px solid', borderColor: (t: Theme) => alpha(t.palette.primary.main, 0.25),
-                  }}
-                >
-                  {!storeAvatar ? storeName[0].toUpperCase() : null}
-                </Avatar>
-                <Box sx={{
-                  position: 'absolute', bottom: 1, right: 1,
-                  width: 10, height: 10, borderRadius: '50%',
-                  bgcolor: '#22c55e', border: '2px solid', borderColor: 'background.paper',
-                }} />
+          <Box sx={{ px: 1.5, py: 1.25, mx: 0.75, my: 0.75, borderRadius: '12px', display: 'flex', alignItems: 'center', gap: 1.25, '&:hover': { bgcolor: 'action.hover' } }}>
+            <StoreAvatar name={storeName} src={storeAvatar} size={40} />
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.2 }}>
+                <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: 'text.primary', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {storeName}
+                </Typography>
+                <VerifiedRoundedIcon sx={{ fontSize: 13, color: 'primary.main', flexShrink: 0 }} />
               </Box>
-
-              {/* Store info */}
-              <Box sx={{ minWidth: 0, flex: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.2 }}>
-                  <Typography
-                    sx={{ fontSize: 13.5, fontWeight: 700, color: 'text.primary', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                  >
-                    {storeName}
+              {storeAddress ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+                  <LocationOnRoundedIcon sx={{ fontSize: 11, color: 'text.disabled', flexShrink: 0 }} />
+                  <Typography sx={{ fontSize: 11, color: 'text.disabled', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {storeAddress}
                   </Typography>
-                  <VerifiedRoundedIcon sx={{ fontSize: 13, color: 'primary.main', flexShrink: 0 }} />
                 </Box>
-                {storeAddress ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-                    <LocationOnRoundedIcon sx={{ fontSize: 11, color: 'text.disabled', flexShrink: 0 }} />
-                    <Typography sx={{ fontSize: 11, color: 'text.disabled', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {storeAddress}
-                    </Typography>
-                  </Box>
-                ) : (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
-                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#22c55e', flexShrink: 0 }} />
-                    <Typography sx={{ fontSize: 11, color: '#22c55e', fontWeight: 600 }}>Active</Typography>
-                  </Box>
-                )}
-              </Box>
+              ) : (
+                <Typography sx={{ fontSize: 11, color: 'success.main', fontWeight: 600 }}>Active</Typography>
+              )}
             </Box>
           </Box>
         </Link>
@@ -411,25 +368,41 @@ export default function DashboardSidebar({
   // Team members only see sections their role can use. The API enforces the
   // same rules, so this is purely to avoid dead ends in the nav.
   const { can, capabilities } = useVendorAccess();
-  const visibleMain = React.useMemo(
-    () => mainListItems.filter((i) => !i.capability || can(i.capability)),
+  const visibleGroups = React.useMemo(
+    () => NAV_GROUPS
+      .map((g) => ({ ...g, children: g.children?.filter((c) => !c.searchOnly && (!c.capability || can(c.capability))) }))
+      .filter((g) => (g.path ? !g.capability || can(g.capability) : (g.children?.length ?? 0) > 0)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [capabilities],
   );
-  // Chat is a Basic-and-up feature: free stores see the item with an "Upgrade" tag.
-  const messagingPlan = useMessagingPlan();
-  const unreadChats = useUnreadChats('vendor', can(CAP.MANAGE_MESSAGES) && messagingPlan.allowed);
-  // Imported items behind schedule (backend order/sourcing.py), so long waits aren't forgotten.
-  const { data: sourced } = useSWR(
-    can(CAP.MANAGE_ORDERS) ? '/api/v1/vendor/sourced-items/' : null, fetcher,
-    { refreshInterval: 10 * 60 * 1000, revalidateOnFocus: false },
+  const { badges, tags } = useNavCounts();
+
+  // Which groups are open: remembered per browser, and the group holding the
+  // current page is always opened so the seller can see where they are.
+  const [openGroups, setOpenGroups] = React.useState<string[]>([]);
+  React.useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(OPEN_GROUPS_KEY) || 'null');
+      if (Array.isArray(saved)) setOpenGroups(saved);
+      else setOpenGroups(['orders', 'catalog']); // first visit: the day-to-day work
+    } catch { setOpenGroups(['orders', 'catalog']); }
+  }, []);
+  const activeGroupId = React.useMemo(
+    () => visibleGroups.find((g) => (g.path ? isPathActive(g.path, pathname) : g.children?.some((c) => isPathActive(c.path, pathname))))?.id,
+    [visibleGroups, pathname],
   );
-  const importsBehind = sourced ? sourced.counts.late + sourced.counts.overdue : 0;
-  const visibleSubscribe = React.useMemo(
-    () => subscribeListItems.filter((i) => !i.capability || can(i.capability)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [capabilities],
-  );
+  React.useEffect(() => {
+    if (activeGroupId) setOpenGroups((prev) => (prev.includes(activeGroupId) ? prev : [...prev, activeGroupId]));
+  }, [activeGroupId]);
+  const toggleGroup = React.useCallback((id: string) => {
+    setOpenGroups((prev) => {
+      const next = prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id];
+      try { localStorage.setItem(OPEN_GROUPS_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
+
+  const canAddProduct = can(CAP.MANAGE_CATALOG);
 
   const getDrawerContent = React.useCallback(
     (viewport: 'phone' | 'tablet' | 'desktop') => (
@@ -442,22 +415,36 @@ export default function DashboardSidebar({
           ...(hasDrawerTransitions ? getDrawerSxTransitionMixin(isFullyExpanded, 'padding') : {}),
         }}
       >
-        <Toolbar sx={{ flexShrink: 0 }} />
+        <Toolbar sx={{ flexShrink: 0, minHeight: { xs: 56, sm: 60 } }} />
 
-        {/* Store card */}
-        <StoreCard
-          mini={mini}
-          storeName={storeName}
-          storeAddress={storeAddress}
-          storeAvatar={storeAvatar}
-          storeLoading={storeLoading}
-        />
+        <StoreCard mini={mini} storeName={storeName} storeAddress={storeAddress} storeAvatar={storeAvatar} storeLoading={storeLoading} />
+
+        {/* The most common job gets a real button, like Seller Center's "Add items". */}
+        {canAddProduct && (
+          <Box sx={{ px: mini ? 1 : 1.5, pt: 1.25, pb: 0.5 }}>
+            <Tooltip title={mini ? 'Add a product' : ''} placement="right" arrow>
+              <ListItemButton
+                component={Link}
+                href="/products/product"
+                onClick={handlePageItemClick}
+                sx={{
+                  height: 40, borderRadius: '10px', justifyContent: 'center', gap: 0.75,
+                  bgcolor: 'primary.main', color: 'primary.contrastText',
+                  '&:hover': { bgcolor: 'primary.dark' },
+                }}
+              >
+                <AddRoundedIcon sx={{ fontSize: 20 }} />
+                {!mini && <Typography sx={{ fontSize: 13.5, fontWeight: 700 }}>Add a product</Typography>}
+              </ListItemButton>
+            </Tooltip>
+          </Box>
+        )}
 
         {/* Scrollable nav area */}
         <Box
           sx={{
             flex: 1, overflowY: 'auto', overflowX: 'hidden',
-            px: 0.75, pt: 0.75,
+            px: 0.75, pt: 0.75, pb: 1,
             scrollbarWidth: 'thin',
             '&::-webkit-scrollbar': { width: 4 },
             '&::-webkit-scrollbar-track': { bgcolor: 'transparent' },
@@ -465,27 +452,39 @@ export default function DashboardSidebar({
           }}
         >
           <List dense disablePadding>
-            {visibleMain.map((item) => (
-              <NavItem key={item.id} item={item} mini={mini} pathname={pathname} onPageItemClick={handlePageItemClick}
-                       badge={item.id === 'messages' ? unreadChats : item.id === 'imported-orders' ? importsBehind : 0}
-                       upgradeTag={item.id === 'messages' && messagingPlan.known && !messagingPlan.allowed ? 'Upgrade' : undefined} />
-            ))}
+            {visibleGroups.map((g) => {
+              const links = g.children ?? [];
+              const groupBadge = links.reduce((n, l) => n + (badges[l.id] ?? 0), 0);
+              const active = g.id === activeGroupId;
+              if (mini) {
+                return (
+                  <MiniGroup key={g.id} group={g} links={links} active={active} badge={groupBadge}
+                             badges={badges} tags={tags} pathname={pathname} onNavigate={handlePageItemClick} />
+                );
+              }
+              const open = openGroups.includes(g.id);
+              const activeId = active ? activeLinkId(pathname, links) : undefined;
+              return (
+                <Box key={g.id}>
+                  <GroupRow group={g} open={open} active={active} badge={groupBadge}
+                            onToggle={() => toggleGroup(g.id)} onNavigate={handlePageItemClick} />
+                  {links.length > 0 && (
+                    <Collapse in={open} timeout={180} unmountOnExit>
+                      <List dense disablePadding sx={{ pb: 0.5 }}>
+                        {links.map((l) => (
+                          <ChildRow key={l.id} link={l} active={l.id === activeId} badge={badges[l.id] ?? 0}
+                                    tag={tags[l.id]} onClick={handlePageItemClick} />
+                        ))}
+                      </List>
+                    </Collapse>
+                  )}
+                </Box>
+              );
+            })}
           </List>
-
-          {visibleSubscribe.length > 0 && (
-            <>
-              <SectionLabel label="Subscription" mini={mini} />
-
-              <List dense disablePadding>
-                {visibleSubscribe.map((item) => (
-                  <NavItem key={item.id} item={item} mini={mini} pathname={pathname} onPageItemClick={handlePageItemClick} />
-                ))}
-              </List>
-            </>
-          )}
         </Box>
 
-        {/* Pinned bottom items */}
+        {/* Pinned bottom: log out */}
         <Box
           sx={{
             flexShrink: 0, px: 0.75, pt: 0.5, borderTop: '1px solid', borderColor: 'divider',
@@ -493,18 +492,28 @@ export default function DashboardSidebar({
             pb: viewport === 'phone' ? `calc(${MOBILE_NAV_HEIGHT}px + env(safe-area-inset-bottom) + 6px)` : 0.75,
           }}
         >
-          <List dense disablePadding>
-            {bottomListItems.map((item) => (
-              <NavItem key={item.id} item={item} mini={mini} pathname={pathname} onPageItemClick={handlePageItemClick} />
-            ))}
-          </List>
+          <Tooltip title={mini ? 'Log out' : ''} placement="right" arrow>
+            <ListItemButton
+              component={Link}
+              href="/logout"
+              onClick={handlePageItemClick}
+              sx={{
+                height: 40, borderRadius: '10px', px: mini ? 0 : 1.25, justifyContent: mini ? 'center' : 'flex-start',
+                color: 'text.secondary',
+                '&:hover': { bgcolor: (t: Theme) => alpha(t.palette.error.main, 0.07), color: 'error.main' },
+              }}
+            >
+              <LogoutRoundedIcon sx={{ fontSize: 20, mr: mini ? 0 : 1.75 }} />
+              {!mini && <Typography sx={{ fontSize: 13.5, fontWeight: 500 }}>Log out</Typography>}
+            </ListItemButton>
+          </Tooltip>
         </Box>
       </Box>
     ),
     [
       mini, hasDrawerTransitions, isFullyExpanded, pathname,
       storeName, storeAddress, storeAvatar, storeLoading, handlePageItemClick,
-      visibleMain, visibleSubscribe, unreadChats, importsBehind, messagingPlan.known, messagingPlan.allowed,
+      visibleGroups, badges, tags, openGroups, activeGroupId, toggleGroup, canAddProduct,
     ],
   );
 
