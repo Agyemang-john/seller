@@ -22,6 +22,9 @@ export function toVariantPayload(v) {
   const { gallery = [], key, ...rest } = v;
   return {
     ...rest,
+    // The form keeps what was typed (so a field can be cleared); send numbers.
+    price: rest.price === '' || rest.price == null ? null : Number(rest.price),
+    quantity: parseInt(rest.quantity, 10) || 0,
     image: null,
     client_key: key,
     keep_gallery: gallery.map((g) => g.id ?? null),

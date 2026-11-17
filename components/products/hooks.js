@@ -29,6 +29,9 @@ export const useProductForm = (id = null) => {
   const [formErrors, setFormErrors] = useState({});
   const [product, setProduct] = useState(null);
   const [deliveryError, setDeliveryError] = useState('');
+  // Editing: true until the saved product has loaded; loadError if it didn't.
+  const [loading, setLoading] = useState(!!id);
+  const [loadError, setLoadError] = useState('');
 
   const [formData, setFormData] = useState({
     available_in_regions: [],
@@ -37,20 +40,22 @@ export const useProductForm = (id = null) => {
     sub_category: "",
     variant: "None",
     brand: "",
-    price: "1.99",
-    old_price: "2.99",
+    // Empty, not a sample value: a pre-filled price gets published by mistake.
+    price: "",
+    old_price: "",
     features: "",
     description: "",
     specifications: "",
     delivery_returns: "",
-    total_quantity: "10",
+    total_quantity: "",
     seller_sku: "",
     gtin: "",
-    weight: "1.0",
-    volume: "1.0",
+    weight: "",
+    volume: "",
     mfd: null,
-    life: "3",
-    product_type: null,
+    life: "",
+    return_period_days: "",
+    product_type: "new",
     // Imported / made to order (backend product/sourcing.py). Days.
     fulfilment_type: "in_stock",
     sourcing_min_days: 0,
@@ -158,8 +163,9 @@ export const useProductForm = (id = null) => {
         weight: data.weight,
         volume: data.volume,
         mfd: data.mfd ? dayjs(data.mfd) : null,
-        life: data.life,
-        product_type: data.product_type,
+        life: data.life ?? '',
+        return_period_days: data.return_period_days ?? '',
+        product_type: data.product_type || 'new',
         fulfilment_type: data.fulfilment_type || 'in_stock',
         sourcing_min_days: data.sourcing_min_days || 0,
         sourcing_max_days: data.sourcing_max_days || 0,
@@ -192,6 +198,11 @@ export const useProductForm = (id = null) => {
       setSelectedBrand(brands.find((b) => b.id === data.brand) || null);
     } catch (err) {
       console.error("Error fetching product by ID:", err);
+      setLoadError(err?.response?.status === 404
+        ? "This product doesn't exist, or it belongs to another store."
+        : 'The product could not be loaded. Check your connection and try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -271,7 +282,6 @@ export const useProductForm = (id = null) => {
     setSelectedCategory(selectedCategory);
     setFormData((prev) => {
       const updated = { ...prev, sub_category: selectedCategory?.id || "" };
-      console.log('Updated formData (category):', updated);
       return updated;
     });
   };
@@ -280,7 +290,6 @@ export const useProductForm = (id = null) => {
     setSelectedBrand(selectedBrand);
     setFormData((prev) => {
       const updated = { ...prev, brand: selectedBrand?.id || "" };
-      console.log('Updated formData (brand):', updated);
       return updated;
     });
   };
@@ -289,7 +298,6 @@ export const useProductForm = (id = null) => {
     const validDate = dayjs.isDayjs(newDate) && newDate.isValid() ? newDate : null;
     setFormData((prev) => {
       const updated = { ...prev, mfd: validDate };
-      console.log('Updated formData (mfd):', updated);
       return updated;
     });
   };
@@ -321,6 +329,8 @@ export const useProductForm = (id = null) => {
   };
 
   return {
+    loading,
+    loadError,
     value,
     setValue,
     formData,

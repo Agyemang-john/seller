@@ -48,9 +48,14 @@ export default function BillingOverviewPage() {
     setPaying(true);
     try {
       const client = createAxiosClient();
-      await client.post('/api/v1/payments/billing/pay-now/');
+      const res = await client.post('/api/v1/payments/billing/pay-now/');
       await refetch();
-      Swal.fire({ icon: 'success', title: 'Payment successful', timer: 2000, showConfirmButton: false });
+      if (res.status === 202) {
+        // Bank still confirming (or our team is applying it): don't pay twice.
+        Swal.fire({ icon: 'info', title: 'Payment received', text: res.data?.message || res.data?.error || 'Your plan updates as soon as the payment is confirmed.' });
+      } else {
+        Swal.fire({ icon: 'success', title: 'Payment successful', timer: 2000, showConfirmButton: false });
+      }
     } catch (err) {
       const msg = err?.response?.data?.detail || err?.response?.data?.error || 'Payment failed.';
       if (err?.response?.data?.error === 'no_default_card') {
@@ -112,6 +117,13 @@ export default function BillingOverviewPage() {
                   <Typography variant="body2" color="text.primary" sx={{ mt: 1.25 }}>
                     Your plan ends on <strong>{fmtDate(sub.end_date)}</strong>, then your store moves to Free.
                   </Typography>
+                )}
+                {sub.status === 'past_due' && (
+                  <Alert severity="error" sx={{ mt: 1.5, borderRadius: '10px' }}>
+                    We couldn&apos;t collect your renewal{sub.last_renewal_error ? ` (${sub.last_renewal_error})` : ''}.
+                    {' '}You keep {sub.plan.name} until <strong>{fmtDate(sub.grace_until || sub.access_until || sub.end_date)}</strong>.
+                    {' '}Pay now or update your card to avoid moving to Free.
+                  </Alert>
                 )}
               </Grid>
               <Grid size={{ xs: 12, md: 4 }}>

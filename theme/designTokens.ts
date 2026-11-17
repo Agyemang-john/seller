@@ -162,6 +162,8 @@ export const TXN_STATUS: Record<string, StatusEntry> = {
   failed: { label: 'Failed', hue: 'red' },
   pending: { label: 'Pending', hue: 'amber' },
   refunded: { label: 'Refunded', hue: 'violet' },
+  // Paid, being applied (or refunded) by the Negromart team.
+  review: { label: 'Being checked', hue: 'blue' },
 };
 
 const FALLBACK: StatusEntry = { label: '—', hue: 'slate' };

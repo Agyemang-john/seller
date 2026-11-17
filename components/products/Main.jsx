@@ -1,514 +1,298 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from "react";
-import dayjs from "dayjs";
-import {
-  Box, Button, Typography, Stack, CircularProgress,
-  Chip, LinearProgress,
-} from '@mui/material';
+/**
+ * Add / edit product: one page for both (routes products/product and
+ * products/product/[id]). All sections sit on one scrolling page, with a
+ * section list to jump around and one Save that sends the product, its specs
+ * and its gallery together. Sections are defined in form/sections.js.
+ */
+
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import dayjs from 'dayjs';
+import { Alert, Box, Button, Skeleton, Stack } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useRouter } from 'next/navigation';
-import { useTheme } from '@mui/material/styles';
 import Swal from 'sweetalert2';
+import toast from 'react-hot-toast';
 import PageContainer from '@/components/PageContainer';
-import { createAxiosClient } from "@/utils/clientFetch";
+import { createAxiosClient } from '@/utils/clientFetch';
 import { useProductForm } from '@/components/products/hooks';
-
-import ProductGeneralInfo from '@/components/products/ProductGeneralInfo';
-import ProductImages from '@/components/products/ProductImages';
-import DeliveryOptions from '@/components/products/DeliveryOptions';
-import VariantRow from "@/components/products/Variant";
 import { toVariantPayload, runGalleryUploads } from '@/components/products/galleryUploads';
+import { usePinnedComplements } from './PinnedComplements';
+import { useProductSpecs } from './form/useProductSpecs';
+import { SECTIONS, sectionStatus, sectionForError, validateProduct } from './form/sections';
+import { SectionCard } from './form/fields';
+import { DesktopRail, MobileActionBar, MobileSectionBar, scrollToSection, useScrollSpy } from './form/FormNav';
 
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
-import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
-import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import ListAltOutlinedIcon from '@mui/icons-material/ListAltOutlined';
-import ProductSpecs from './ProductSpecs';
-import PinnedComplements from './PinnedComplements';
+// Optional numbers the model can't store empty: send these instead of ''.
+const EMPTY_NUMBER_AS = { old_price: '0', return_period_days: '0' };
+// Optional numbers left out when empty, so the saved/default value stands.
+const OMIT_WHEN_EMPTY = ['volume'];
 
-// ── Step definitions ──────────────────────────────────────────────────────────
-const STEPS = [
-  { label: 'General',  icon: InfoOutlinedIcon,             desc: 'Title, price, category' },
-  { label: 'Images',   icon: ImageOutlinedIcon,            desc: 'Gallery photos'          },
-  { label: 'Variants', icon: TuneOutlinedIcon,             desc: 'Sizes & colours'         },
-  { label: 'Delivery', icon: LocalShippingOutlinedIcon,    desc: 'Shipping methods'        },
-  { label: 'Specs',    icon: ListAltOutlinedIcon,          desc: 'Filterable details'      },
-];
-
-const MenuProps = {
-  PaperProps: { style: { maxHeight: 48 * 4.5 + 8, width: 250 } },
-};
-
-function getStyles(name, personName, theme) {
-  return {
-    fontWeight: personName.includes(name)
-      ? theme?.typography?.fontWeightMedium ?? 500
-      : theme?.typography?.fontWeightRegular ?? 400,
-  };
+/** A stable text form of the form state, to tell whether anything changed. */
+function fingerprint(parts) {
+  return JSON.stringify(parts, (key, v) => {
+    if (typeof File !== 'undefined' && v instanceof File) return `file:${v.name}:${v.size}:${v.lastModified}`;
+    if (typeof v === 'string' && v.startsWith('data:')) return `data:${v.length}`;
+    if (dayjs.isDayjs(v)) return v.toISOString();
+    return v;
+  });
 }
 
-// ── Readiness checklist ───────────────────────────────────────────────────────
-function ReadinessChecklist({ formData, id }) {
-  const checks = [
-    { label: 'Title',           done: !!formData.title },
-    { label: 'Price set',       done: !!formData.price && parseFloat(formData.price) > 0 },
-    { label: 'Category',        done: !!formData.sub_category },
-    { label: 'Main image',      done: !!formData.image },
-    { label: 'Delivery method', done: (formData.delivery_options?.length ?? 0) > 0 },
-  ];
-  const complete = checks.filter((c) => c.done).length;
-  const pct      = Math.round((complete / checks.length) * 100);
-
-  return (
-    <Box>
-      {/* Progress bar */}
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
-        <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: 10, color: 'text.disabled' }}>
-          Readiness
-        </Typography>
-        <Typography variant="caption" sx={{ fontWeight: 700, color: complete === checks.length ? 'success.main' : 'text.disabled', fontSize: 11 }}>
-          {complete}/{checks.length}
-        </Typography>
-      </Stack>
-      <LinearProgress
-        variant="determinate"
-        value={pct}
-        sx={{
-          height: 4, borderRadius: 2, mb: 2,
-          bgcolor: 'action.hover',
-          '& .MuiLinearProgress-bar': {
-            borderRadius: 2,
-            bgcolor: complete === checks.length ? 'success.main' : 'text.primary',
-          },
-        }}
-      />
-      <Stack spacing={0.6}>
-        {checks.map((c) => (
-          <Stack key={c.label} direction="row" alignItems="center" spacing={1}>
-            {c.done
-              ? <CheckCircleIcon sx={{ fontSize: 13, color: 'success.main', flexShrink: 0 }} />
-              : <RadioButtonUncheckedIcon sx={{ fontSize: 13, color: 'text.disabled', flexShrink: 0 }} />
-            }
-            <Typography variant="caption" sx={{ color: c.done ? 'text.primary' : 'text.disabled', fontWeight: c.done ? 600 : 400 }}>
-              {c.label}
-            </Typography>
-          </Stack>
-        ))}
-      </Stack>
-    </Box>
-  );
+function errorHtml(errors) {
+  return errors.map(([field, msg]) => `<b>${field.replace(/_/g, ' ')}:</b> ${msg}`).join('<br/>');
 }
 
-// ── Sidebar ───────────────────────────────────────────────────────────────────
-function ProductSidebar({ formData, isLoading, isEdit, onSubmit, activeStep, id }) {
-  const price    = parseFloat(formData.price || 0);
-  const oldPrice = parseFloat(formData.old_price || 0);
-  const hasDiscount = oldPrice > price && price > 0;
-  const router = useRouter();
-
-  const handleBack = useCallback(() => {
-        router.back();
-      }, [router]);
-
-  return (
-    <Box sx={{ position: { lg: 'sticky' }, top: { lg: 24 } }}>
-
-      {/* Preview card */}
-      <Box sx={{ borderRadius: '20px', border: '1px solid', borderColor: 'divider', bgcolor: 'text.primary', overflow: 'hidden', mb: 2 }}>
-        {/* Image preview */}
-        <Box sx={{ aspectRatio: '16/9', bgcolor: 'rgba(255,255,255,0.06)', overflow: 'hidden', position: 'relative' }}>
-          {formData.image && typeof formData.image !== 'string' ? (
-            <Box
-              component="img"
-              src={URL.createObjectURL(formData.image)}
-              sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            />
-          ) : formData.image && typeof formData.image === 'string' ? (
-            <Box
-              component="img"
-              src={formData.image}
-              sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            />
-          ) : (
-            <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <ImageOutlinedIcon sx={{ fontSize: 36, color: 'rgba(255,255,255,0.15)' }} />
-            </Box>
-          )}
-
-          {/* Status chip */}
-          <Box sx={{ position: 'absolute', top: 8, left: 8 }}>
-            <Chip
-              label={isEdit ? 'Editing' : 'New product'}
-              size="small"
-              sx={{ height: 20, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', bgcolor: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)', borderRadius: '5px', '& .MuiChip-label': { px: 1 } }}
-            />
-          </Box>
-        </Box>
-
-        {/* Title + price */}
-        <Box sx={{ p: '16px 20px 20px' }}>
-          <Typography
-            sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: '-0.4px', color: '#ffffff', lineHeight: 1.25, mb: 0.75 }}
-            noWrap
-          >
-            {formData.title || 'Untitled product'}
-          </Typography>
-
-          {formData.price ? (
-            <Stack direction="row" alignItems="baseline" spacing={0.75}>
-              <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 22, fontWeight: 700, color: '#ffffff', lineHeight: 1 }}>
-                GHS {price.toLocaleString('en-GH', { minimumFractionDigits: 2 })}
-              </Typography>
-              {hasDiscount && (
-                <Typography sx={{ fontSize: 12, textDecoration: 'line-through', color: 'rgba(255,255,255,0.35)' }}>
-                  {oldPrice.toLocaleString('en-GH', { minimumFractionDigits: 2 })}
-                </Typography>
-              )}
-            </Stack>
-          ) : (
-            <Typography sx={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>No price set yet</Typography>
-          )}
-        </Box>
-      </Box>
-
-      {/* Checklist card */}
-      <Box sx={{ borderRadius: '16px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', p: '18px 20px', mb: 2 }}>
-        <ReadinessChecklist formData={formData} id={id} />
-      </Box>
-
-      {/* Save button */}
-      <Button
-        type="submit"
-        variant="contained"
-        disableElevation
-        fullWidth
-        disabled={isLoading}
-        onClick={onSubmit}
-        startIcon={isLoading
-          ? <CircularProgress size={15} thickness={5} color="inherit" />
-          : <SaveOutlinedIcon sx={{ fontSize: 16 }} />
-        }
-        sx={{
-          bgcolor: 'text.primary', color: 'background.paper',
-          borderRadius: '12px', fontWeight: 700, fontSize: 14, py: 1.6, mb: 1,
-          '&:hover': { bgcolor: 'text.secondary' },
-          '&.Mui-disabled': { bgcolor: 'action.disabledBackground' },
-        }}
-      >
-        {isLoading ? 'Saving…' : isEdit ? 'Update product' : 'Save product'}
-      </Button>
-
-      <Button
-          variant="contained"
-          fullWidth
-          startIcon={<ArrowBackIcon />}
-          onClick={handleBack}
-        >
-          Back
-      </Button>
-
-      <Typography variant="caption" color="text.disabled" sx={{ display: 'block', textAlign: 'center', mt: 1 }}>
-        {isEdit ? 'Changes save immediately' : 'Submitted for review after saving'}
-      </Typography>
-    </Box>
-  );
-}
-
-// ── Step navigator ────────────────────────────────────────────────────────────
-function StepNav({ activeStep, setActiveStep, hasError }) {
-  return (
-    <Box
-      sx={{
-        display: 'grid',
-        gridTemplateColumns: `repeat(${STEPS.length}, 1fr)`,
-        gap: '4px',
-        borderRadius: '16px', border: '1px solid', borderColor: 'divider',
-        bgcolor: 'background.paper', p: '5px', mb: 2.5,
-        overflowX: 'auto', '&::-webkit-scrollbar': { display: 'none' },
-      }}
-    >
-      {STEPS.map((step, i) => {
-        const Icon    = step.icon;
-        const active  = activeStep === i;
-        const hasErr  = hasError(i);
-
-        return (
-          <Box
-            key={step.label}
-            onClick={() => setActiveStep(i)}
-            sx={{
-              px: { xs: 1, sm: 1.5 }, py: { xs: 0.75, sm: 1 },
-              borderRadius: '11px', cursor: 'pointer',
-              textAlign: 'center', transition: 'all 0.18s',
-              bgcolor: active ? 'text.secondary' : 'transparent',
-              '&:hover': { bgcolor: active ? 'text.primary' : 'action.hover' },
-              position: 'relative', minWidth: 68,
-            }}
-          >
-            <Icon sx={{
-              fontSize: 16, display: 'block', mx: 'auto', mb: 0.3,
-              color: active ? '#ffffff' : hasErr ? 'error.main' : 'text.disabled',
-            }} />
-            <Typography variant="caption" sx={{
-              fontWeight: 700, fontSize: 11, letterSpacing: '0.03em',
-              color: active ? '#ffffff' : hasErr ? 'error.main' : 'text.secondary',
-              display: 'block', lineHeight: 1,
-            }}>
-              {step.label}
-            </Typography>
-            {/* Error dot */}
-            {hasErr && !active && (
-              <Box sx={{ position: 'absolute', top: 5, right: 5, width: 5, height: 5, borderRadius: '50%', bgcolor: 'error.main' }} />
-            )}
-          </Box>
-        );
-      })}
-    </Box>
-  );
-}
-
-// ── Main ──────────────────────────────────────────────────────────────────────
 export default function ProductForm({ id = null }) {
-  const pageTitle  = id ? 'Edit Product' : 'Add New Product';
-  const theme      = useTheme();
-  const router     = useRouter();
-  const [isLoading,  setIsLoading]  = useState(false);
-  const [activeStep, setActiveStep] = useState(0);
+  const isEdit = !!id;
+  const pageTitle = isEdit ? 'Edit product' : 'Add a product';
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
 
+  const form = useProductForm(id);
   const {
-    value, formData, setFormData, formErrors, setFormErrors,
-    images, setImages, fieldOptions, deliveryOptions,
-    regions, categories, brands, colors, sizes,
+    loading, loadError, formData, setFormData, formErrors, setFormErrors,
+    images, setImages, fieldOptions, deliveryOptions, regions, categories, brands, colors, sizes,
     selectedCategory, selectedBrand, imagePreview, videoPreview,
     variants, setVariants, variantImagePreviews, setVariantImagePreviews,
-    handleTabChange, handleCategoryChange, handleBrandChange,
-    handleFileChange, handleDateChange, handleRegionChange,
+    handleCategoryChange, handleBrandChange, handleFileChange, handleDateChange,
     handleDeliveryOptionsChange, handleEditorChange,
-  } = useProductForm(id);
+  } = form;
 
-  const validateForm = (data) => {
-    const errors = {};
-    if (!data.title)          errors.title         = 'Title is required';
-    if (!data.price)          errors.price         = 'Price is required';
-    if (!data.total_quantity) errors.totalQuantity = 'Quantity is required';
-    if (!id && !data.image && data.variant === 'None') errors.image = 'Main image is required';
-    if (!data.delivery_options || data.delivery_options.length === 0) {
-      errors.delivery_options = 'At least one delivery option must be selected';
-    } else {
-      const dc = data.delivery_options.filter((o) => o.default).length;
-      if (dc !== 1)  errors.delivery_options = 'Exactly one delivery option must be marked as default';
-      if (data.delivery_options.some((o) => !o.deliveryOptionId)) errors.delivery_options = 'All options must have a delivery type selected';
+  const specs = useProductSpecs(id, formData.sub_category || null);
+  const pinned = usePinnedComplements(id);
+
+  // Editing a field clears its error, so the page reflects what's left to fix.
+  const setField = useCallback((name, value) => {
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormErrors((prev) => {
+      if (!prev[name] && !(name === 'total_quantity' && prev.totalQuantity)) return prev;
+      const next = { ...prev };
+      delete next[name];
+      if (name === 'total_quantity') delete next.totalQuantity;
+      return next;
+    });
+  }, [setFormData, setFormErrors]);
+
+  // ── Unsaved changes ────────────────────────────────────────────────────────
+  const current = fingerprint([
+    { ...formData, variants: undefined, slug: undefined }, variants,
+    images.map((i) => i.id || i.file), specs.values, pinned.value.map((p) => p.id),
+  ]);
+  const baseline = useRef(null);
+  const ready = !loading && !loadError && (!isEdit || (specs.editable && pinned.loaded));
+  useEffect(() => {
+    if (!ready || baseline.current !== null) return undefined;
+    // After derived state settles (slug, variant mirroring, category lookups).
+    const t = setTimeout(() => { baseline.current = current; }, 300);
+    return () => clearTimeout(t);
+  }, [ready, current]);
+  const dirty = baseline.current !== null && baseline.current !== current;
+
+  useEffect(() => {
+    if (!dirty || saving) return undefined;
+    const warn = (e) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty, saving]);
+
+  const leave = async () => {
+    if (dirty) {
+      const { isConfirmed } = await Swal.fire({
+        icon: 'warning', title: 'Discard your changes?', text: "What you've entered on this page will be lost.",
+        showCancelButton: true, confirmButtonText: 'Discard', cancelButtonText: 'Keep editing', reverseButtons: true,
+      });
+      if (!isConfirmed) return;
     }
-    return errors;
+    baseline.current = current;
+    router.push('/products');
   };
 
-  const handleSubmit = async (event) => {
-    if (event?.preventDefault) event.preventDefault();
-    if (!navigator.onLine) { Swal.fire('Offline', 'Please connect and try again.', 'warning'); return; }
+  // ── Sections, status, readiness ──────────────────────────────────────────────
+  const ctx = {
+    id, formData, setFormData, setField, formErrors, images, setImages, imagePreview, videoPreview,
+    handleFileChange, categories, brands, regions, colors, sizes, selectedCategory, selectedBrand,
+    handleCategoryChange, handleBrandChange, handleDateChange, handleEditorChange,
+    variants, setVariants, variantImagePreviews, setVariantImagePreviews,
+    fieldOptions, deliveryOptions, handleDeliveryOptionsChange, specs, pinned,
+  };
+  const statuses = Object.fromEntries(SECTIONS.map((s) => [s.id, sectionStatus(s, ctx)]));
+  const required = SECTIONS.filter((s) => !s.optional);
+  const readiness = { done: required.filter((s) => statuses[s.id] === 'done').length, total: required.length };
+  const [active] = useScrollSpy(SECTIONS.map((s) => s.id));
 
-    const errors = validateForm(formData);
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      Swal.fire('Required fields missing', errors.delivery_options || Object.values(errors)[0], 'error');
+  const price = parseFloat(formData.price);
+  const preview = {
+    title: formData.title,
+    image: imagePreview || null,
+    price: price > 0 ? `GHS ${price.toLocaleString('en-GH', { minimumFractionDigits: 2 })}` : '',
+  };
+
+  const showErrors = (errors) => {
+    setFormErrors(errors);
+    const first = SECTIONS.find((s) => s.errorKeys.some((k) => errors[k]));
+    if (first) scrollToSection(first.id);
+    return first;
+  };
+
+  // ── Save ─────────────────────────────────────────────────────────────────────
+  const handleSubmit = async (event) => {
+    event?.preventDefault?.();
+    if (saving) return;
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      Swal.fire('You are offline', 'Connect to the internet and try again. Nothing on this page is lost.', 'warning');
       return;
     }
 
-    try {
-      setIsLoading(true);
-      const fd = new FormData();
+    const errors = validateProduct({ formData, variants, isNew: !isEdit });
+    if (Object.keys(errors).length) {
+      const first = showErrors(errors);
+      const count = Object.keys(errors).filter((k) => k !== 'variantRows').length;
+      toast.error(`${count} thing${count === 1 ? '' : 's'} to fix${first ? ` — starting with ${first.title}` : ''}.`);
+      return;
+    }
 
+    setSaving(true);
+    try {
+      const fd = new FormData();
       Object.keys(formData).forEach((key) => {
+        const value = formData[key];
+        if (['image', 'video', 'variants'].includes(key)) return;
         if (key === 'mfd') {
-          if (formData.mfd) fd.append(key, dayjs(formData.mfd).toISOString());
+          if (value) fd.append(key, dayjs(value).toISOString());
         } else if (key === 'available_in_regions') {
-          formData.available_in_regions.forEach((rid) => fd.append('available_in_regions', rid));
+          value.forEach((rid) => fd.append('available_in_regions', rid));
         } else if (key === 'delivery_options') {
-          fd.append('delivery_options', JSON.stringify(formData.delivery_options));
-        } else if (!['image', 'video', 'variants'].includes(key)) {
-          fd.append(key, formData[key] ?? '');
+          fd.append('delivery_options', JSON.stringify(value));
+        } else if (value === '' || value == null) {
+          if (OMIT_WHEN_EMPTY.includes(key)) return;
+          fd.append(key, EMPTY_NUMBER_AS[key] ?? '');
+        } else {
+          fd.append(key, value);
         }
       });
 
       if (formData.image instanceof File) fd.append('image', formData.image);
       if (formData.video instanceof File) fd.append('video', formData.video);
 
-      if (formData.variants?.length > 0) {
+      if (variants.length > 0) {
         fd.append('variants', JSON.stringify(variants.map(toVariantPayload)));
         variants.forEach((v, i) => { if (v.image instanceof File) fd.append(`variant_image_${i}`, v.image); });
       }
 
       images.filter((img) => img.file instanceof File).forEach((img) => fd.append('images[]', img.file));
-      if (id) {
+      if (isEdit) {
         fd.append('keep_images', JSON.stringify(images.filter((img) => img.id && !img.file).map((img) => img.id)));
       }
 
-      const client = createAxiosClient();
-      const { data: saved } = id
-        ? await client.put(`/api/v1/vendor/products/${id}/`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
-        : await client.post('/api/v1/vendor/products/', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-      await runGalleryUploads(Swal, variants, saved?.variant_keys);
+      const attributes = specs.payload();
+      if (attributes) fd.append('attributes', JSON.stringify(attributes));
 
-      await Swal.fire({ icon: 'success', title: 'Product saved!', text: 'Submitted for review.', timer: 2200, showConfirmButton: false });
+      const client = createAxiosClient();
+      const multipart = { headers: { 'Content-Type': 'multipart/form-data' } };
+      const { data: saved } = isEdit
+        ? await client.put(`/api/v1/vendor/products/${id}/`, fd, multipart)
+        : await client.post('/api/v1/vendor/products/', fd, multipart);
+
+      await runGalleryUploads(Swal, variants, saved?.variant_keys);
+      const pinnedProblem = await pinned.save(saved?.id ?? id);
+
+      baseline.current = current; // nothing unsaved any more; leave without a prompt
+      if (pinnedProblem) toast.error(pinnedProblem);
+      await Swal.fire({
+        icon: 'success',
+        title: isEdit ? 'Changes saved' : 'Product saved',
+        text: isEdit ? 'Your changes are saved.' : "It's been sent for review. We'll let you know when it's live.",
+        timer: 2200, showConfirmButton: false,
+      });
       router.push('/products');
     } catch (error) {
       const body = error?.response?.data;
-      const msg  = body?.detail || (typeof body === 'object' ? JSON.stringify(body) : null) || error.message || 'An error occurred';
-      Swal.fire(!error.response ? 'Network Error' : 'Save failed', !error.response ? 'Check your connection and try again.' : msg, 'error');
+      if (!error?.response) {
+        Swal.fire('Connection problem', 'Check your connection and press Save again. Nothing on this page is lost.', 'error');
+        return;
+      }
+      if (body?.error === 'image_limit_exceeded' || body?.error === 'product_limit_reached' || body?.upgrade_url) {
+        const { isConfirmed } = await Swal.fire({
+          icon: 'info', title: 'Plan limit reached', text: body.detail || 'Your plan does not allow this.',
+          showCancelButton: true, confirmButtonText: 'See plans', cancelButtonText: 'Close',
+        });
+        if (isConfirmed) window.open(body.upgrade_url || '/subscribe', '_blank', 'noopener');
+        return;
+      }
+      if (body && typeof body === 'object' && !body.detail) {
+        // Field errors from the server: put each one beside its field.
+        const fieldErrors = {};
+        const unplaced = [];
+        Object.entries(body).forEach(([field, messages]) => {
+          const msg = Array.isArray(messages) ? messages.map((m) => (typeof m === 'string' ? m : JSON.stringify(m))).join(' ')
+            : typeof messages === 'string' ? messages : JSON.stringify(messages);
+          fieldErrors[field] = msg;
+          if (!sectionForError(field)) unplaced.push([field, msg]);
+        });
+        showErrors(fieldErrors);
+        if (unplaced.length) {
+          Swal.fire({ icon: 'error', title: 'Please fix the following', html: errorHtml(unplaced) });
+        } else {
+          toast.error('Some details need fixing. They are marked on the page.');
+        }
+        return;
+      }
+      Swal.fire('Could not save', body?.detail || error.message || 'Something went wrong. Please try again.', 'error');
     } finally {
-      setIsLoading(false);
+      setSaving(false);
     }
   };
 
-  const hasError = (step) => {
-    if (step === 0) return !!(formErrors.title || formErrors.price || formErrors.totalQuantity || formErrors.image);
-    if (step === 3) return !!formErrors.delivery_options;
-    return false;
-  };
-
-  const stepContent = [
-    <ProductGeneralInfo
-      key="general"
-      formData={formData} setFormData={setFormData} formErrors={formErrors}
-      categories={categories} handleCategoryChange={handleCategoryChange}
-      brands={brands} handleBrandChange={handleBrandChange}
-      regions={regions} MenuProps={MenuProps} getStyles={getStyles}
-      theme={theme} handleRegionChange={handleRegionChange}
-      handleDateChange={handleDateChange} handleEditorChange={handleEditorChange}
-      handleFileChange={handleFileChange} imagePreview={imagePreview}
-      videoPreview={videoPreview} selectedCategory={selectedCategory}
-      selectedBrand={selectedBrand}
-    />,
-    <ProductImages key="images" images={images} setImages={setImages} />,
-    <VariantRow
-      key="variants"
-      formData={formData} setFormData={setFormData}
-      variants={variants} setVariants={setVariants}
-      sizes={sizes} colors={colors}
-      variantImagePreviews={variantImagePreviews}
-      setVariantImagePreviews={setVariantImagePreviews}
-    />,
-    <DeliveryOptions
-      key="delivery"
-      fieldOptions={fieldOptions}
-      onOptionsChange={handleDeliveryOptionsChange}
-      deliveryOptions={deliveryOptions}
-    />,
-    <div key="specs"><ProductSpecs id={id} /><PinnedComplements id={id} /></div>,
+  const breadcrumbs = [
+    { title: 'Home', path: '/dashboard' },
+    { title: 'Products', path: '/products' },
+    { title: pageTitle },
   ];
 
-  const currentStep = STEPS[activeStep];
+  if (loadError) {
+    return (
+      <PageContainer title={pageTitle} breadcrumbs={breadcrumbs}>
+        <Alert severity="error" sx={{ borderRadius: '12px' }}
+          action={<Button color="inherit" onClick={() => router.push('/products')}>Back to products</Button>}>
+          {loadError}
+        </Alert>
+      </PageContainer>
+    );
+  }
 
   return (
-    <PageContainer
-      title={pageTitle}
-      breadcrumbs={[
-        { title: 'Home',     path: '/dashboard' },
-        { title: 'Products', path: '/products'  },
-        { title: pageTitle },
-      ]}
-    >
-      <Box component="form" onSubmit={handleSubmit} sx={{ pb: 10 }}>
+    <PageContainer title={pageTitle} breadcrumbs={breadcrumbs}>
+      <Box component="form" onSubmit={handleSubmit} noValidate>
+        <MobileSectionBar sections={SECTIONS} statuses={statuses} active={active} />
+
         <Grid container spacing={3} alignItems="flex-start">
-
-          {/* ── Left: steps + content ────────────────────────────────── */}
-          <Grid size={{ xs: 12, lg: 8 }}>
-
-            {/* Step navigator */}
-            <StepNav activeStep={activeStep} setActiveStep={setActiveStep} hasError={hasError} />
-
-            {/* Content card */}
-            <Box sx={{ borderRadius: '20px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', overflow: 'hidden' }}>
-
-              {/* Card header */}
-              <Box sx={{ px: { xs: 2.5, md: 3 }, pt: { xs: 2.5, md: 3 }, pb: 2.5, borderBottom: '1px solid', borderColor: 'divider' }}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between">
-                  <Stack direction="row" alignItems="center" spacing={1.5}>
-                    <Box sx={{ width: 36, height: 36, borderRadius: '10px', bgcolor: 'action.selected', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      {React.createElement(currentStep.icon, { sx: { fontSize: 18, color: 'text.secondary' } })}
-                    </Box>
-                    <Box>
-                      <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1.1 }} color="text.primary">
-                        {currentStep.label}
-                      </Typography>
-                      <Typography variant="caption" color="text.disabled">{currentStep.desc}</Typography>
-                    </Box>
-                  </Stack>
-
-                  {/* Prev / Next */}
-                  <Stack direction="row" spacing={1}>
-                    {activeStep > 0 && (
-                      <Button size="small" startIcon={<ArrowBackIcon sx={{ fontSize: 13 }} />}
-                        onClick={() => setActiveStep((s) => s - 1)}
-                        sx={{ borderRadius: '8px', color: 'text.secondary', fontWeight: 600, fontSize: 12, '&:hover': { bgcolor: 'action.hover', color: 'text.primary' } }}>
-                        Back
-                      </Button>
-                    )}
-                    {activeStep < STEPS.length - 1 && (
-                      <Button size="small" variant="contained" disableElevation
-                        endIcon={<ArrowForwardIcon sx={{ fontSize: 13 }} />}
-                        onClick={() => setActiveStep((s) => s + 1)}
-                        sx={{ borderRadius: '8px', bgcolor: 'text.primary', color: 'background.paper', fontWeight: 600, fontSize: 12, '&:hover': { bgcolor: 'text.secondary' } }}>
-                        {STEPS[activeStep + 1].label}
-                      </Button>
-                    )}
-                  </Stack>
-                </Stack>
-
-                {/* Error banner */}
-                {hasError(activeStep) && (
-                  <Box sx={{ mt: 2, px: 2, py: 1.25, borderRadius: '10px', bgcolor: 'error.lighter', border: '1px solid', borderColor: 'error.light', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <ErrorOutlineIcon sx={{ fontSize: 16, color: 'error.main', flexShrink: 0 }} />
-                    <Typography variant="caption" color="error.main" fontWeight={600}>
-                      Some fields need attention before saving.
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
-
-              {/* Step body */}
-              <Box sx={{ p: { xs: 2.5, md: 3 } }}>
-                {stepContent[activeStep]}
-              </Box>
-
-              {/* Card footer — mobile save button */}
-              <Box sx={{ display: { lg: 'none' }, px: 2.5, pb: 2.5 }}>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  disableElevation
-                  fullWidth
-                  disabled={isLoading}
-                  onClick={handleSubmit}
-                  startIcon={isLoading ? <CircularProgress size={14} thickness={5} color="inherit" /> : <SaveOutlinedIcon />}
-                  sx={{ bgcolor: 'text.primary', color: 'background.paper', borderRadius: '12px', fontWeight: 700, fontSize: 14, py: 1.5, '&:hover': { bgcolor: 'text.secondary' } }}
-                >
-                  {isLoading ? 'Saving…' : id ? 'Update product' : 'Save product'}
-                </Button>
-              </Box>
-            </Box>
+          <Grid size={{ xs: 12, lg: 9 }}>
+            {loading ? (
+              <Stack spacing={2}>
+                {[220, 320, 260].map((h) => <Skeleton key={h} variant="rounded" height={h} sx={{ borderRadius: '20px' }} />)}
+              </Stack>
+            ) : (
+              <Stack spacing={2}>
+                {SECTIONS.map((s) => {
+                  const Section = s.component;
+                  return (
+                    <SectionCard key={s.id} id={s.id} title={s.title} subtitle={s.subtitle} icon={s.icon} status={statuses[s.id]}>
+                      <Section {...ctx} />
+                    </SectionCard>
+                  );
+                })}
+              </Stack>
+            )}
           </Grid>
 
-          {/* ── Right: sidebar (desktop only) ───────────────────────── */}
-          <Grid size={{ xs: 12, lg: 4 }} sx={{ display: { xs: 'none', lg: 'block' } }}>
-            <ProductSidebar
-              formData={formData}
-              isLoading={isLoading}
-              isEdit={!!id}
-              onSubmit={handleSubmit}
-              activeStep={activeStep}
-              id={id}
-            />
+          <Grid size={{ lg: 3 }} sx={{ display: { xs: 'none', lg: 'block' }, position: 'sticky', top: 16 }}>
+            <DesktopRail sections={SECTIONS} statuses={statuses} active={active} readiness={readiness}
+              preview={preview} saving={saving} isEdit={isEdit} onSave={handleSubmit} onCancel={leave} dirty={dirty} />
           </Grid>
-
         </Grid>
+
+        <MobileActionBar readiness={readiness} saving={saving} isEdit={isEdit} onSave={handleSubmit} />
       </Box>
     </PageContainer>
   );

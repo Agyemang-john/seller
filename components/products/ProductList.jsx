@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import {
   Box, Grid, Typography, Stack, Button, Chip, IconButton,
   InputAdornment, TextField, MenuItem, Select, FormControl, Tooltip,
-  Pagination,
+  Pagination, Popover, CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
@@ -13,7 +13,9 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import SearchIcon from '@mui/icons-material/Search';
-import FilterListIcon from '@mui/icons-material/FilterList';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import SortRoundedIcon from '@mui/icons-material/SortRounded';
+import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
 import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import Swal from 'sweetalert2';
@@ -23,7 +25,8 @@ import BulkUploadButton from './BulkUploadButton';
 import ProductListSkeleton from './Productlistskeleton';
 import ProductListError from './Productlisterror';
 
-const PAGE_SIZE = 20;
+// Matches the backend default (vendor/views.py → VendorProductPagination).
+const PAGE_SIZE = 50;
 
 // ── Status config ─────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
@@ -148,7 +151,7 @@ function ProductCard({ product, onEdit, onDelete, onView, index }) {
 }
 
 // ── Empty state ───────────────────────────────────────────────────────────────
-function EmptyState({ onAdd, filtered }) {
+function EmptyState({ onAdd, filtered, onClear }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', py: 14, px: 3, borderRadius: '20px', border: '1px dashed', borderColor: 'divider', bgcolor: 'background.paper' }}>
       <Box sx={{ width: 64, height: 64, borderRadius: '18px', bgcolor: 'action.selected', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
@@ -158,8 +161,13 @@ function EmptyState({ onAdd, filtered }) {
         {filtered ? 'No results found' : 'No products yet'}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 320, lineHeight: 1.75, mb: 3.5 }}>
-        {filtered ? "Try adjusting your search or filter." : 'Start building your catalog. Add your first product to get listed on Negromart.'}
+        {filtered ? 'Nothing matches these filters. Try a different word or remove a filter.' : 'Start building your catalog. Add your first product to get listed on Negromart.'}
       </Typography>
+      {filtered && onClear && (
+        <Button variant="outlined" onClick={onClear} sx={{ borderRadius: '10px', fontWeight: 600, textTransform: 'none' }}>
+          Clear all filters
+        </Button>
+      )}
       {!filtered && (
         <Button variant="contained" disableElevation startIcon={<AddIcon />} onClick={onAdd}
           sx={{ bgcolor: 'text.primary', color: 'background.paper', borderRadius: '10px', fontWeight: 600, '&:hover': { bgcolor: 'text.secondary' } }}>
@@ -170,26 +178,142 @@ function EmptyState({ onAdd, filtered }) {
   );
 }
 
+// ── Filter bar pieces ─────────────────────────────────────────────────────────
+const SORT_OPTIONS = [
+  { value: 'newest',      label: 'Newest first' },
+  { value: 'updated',     label: 'Recently updated' },
+  { value: 'oldest',      label: 'Oldest first' },
+  { value: 'title',       label: 'Title A–Z' },
+  { value: 'price_low',   label: 'Price: low to high' },
+  { value: 'price_high',  label: 'Price: high to low' },
+  { value: 'stock_low',   label: 'Stock: lowest first' },
+  { value: 'stock_high',  label: 'Stock: highest first' },
+  { value: 'most_viewed', label: 'Most viewed' },
+];
+const FULFILMENT_OPTIONS = [
+  { value: 'in_stock',      label: 'Ships from stock' },
+  { value: 'imported',      label: 'Imported' },
+  { value: 'made_to_order', label: 'Made to order' },
+];
+// Every filter the URL can carry; changing any of them returns to page 1.
+const FILTER_KEYS = ['search', 'status', 'stock', 'category', 'fulfilment', 'min_price', 'max_price', 'sort'];
+
+const selectSx = {
+  borderRadius: '10px', fontSize: 13.5, bgcolor: 'background.paper',
+  '& fieldset': { borderColor: 'divider' },
+  '& .MuiSelect-select': { py: '8.5px' },
+};
+
+/** A compact dropdown whose label is part of the value ("Stock: Low"). */
+function FilterSelect({ label, value, onChange, options, allLabel = 'All', minWidth = 150 }) {
+  const active = value !== '';
+  return (
+    <FormControl size="small" sx={{ minWidth, flex: { xs: '1 1 calc(50% - 6px)', md: '0 0 auto' } }}>
+      <Select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        displayEmpty
+        renderValue={(v) => {
+          const opt = options.find((o) => String(o.value) === String(v));
+          return (
+            <Box component="span" sx={{ fontWeight: active ? 600 : 400, color: active ? 'text.primary' : 'text.secondary' }}>
+              {label}: {opt ? opt.label : allLabel}
+            </Box>
+          );
+        }}
+        sx={{ ...selectSx, ...(active ? { '& fieldset': { borderColor: 'text.primary' } } : {}) }}
+        MenuProps={{ slotProps: { paper: { sx: { maxHeight: 360, borderRadius: '10px' } } } }}
+      >
+        <MenuItem value="">{allLabel}</MenuItem>
+        {options.map((o) => (
+          <MenuItem key={o.value} value={String(o.value)} sx={{ fontSize: 14 }}>
+            <Box component="span" sx={{ flex: 1 }}>{o.label}</Box>
+            {o.count != null && <Typography component="span" variant="caption" color="text.disabled" sx={{ ml: 2 }}>{o.count}</Typography>}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  );
+}
+
+/** "Price" button that opens a small min/max form. */
+function PriceFilter({ min, max, onApply }) {
+  const [anchor, setAnchor] = useState(null);
+  const [lo, setLo] = useState(min);
+  const [hi, setHi] = useState(max);
+  const active = !!(min || max);
+  const label = active
+    ? `Price: ${min ? `GHS ${min}` : 'Any'} – ${max ? `GHS ${max}` : 'Any'}`
+    : 'Price: Any';
+  const open = (e) => { setLo(min); setHi(max); setAnchor(e.currentTarget); };
+  const apply = () => { onApply(lo.trim(), hi.trim()); setAnchor(null); };
+  const invalid = lo && hi && Number(lo) > Number(hi);
+
+  return (
+    <>
+      <Button
+        onClick={open}
+        endIcon={<ExpandMoreRoundedIcon />}
+        sx={{
+          flex: { xs: '1 1 calc(50% - 6px)', md: '0 0 auto' }, justifyContent: 'space-between',
+          height: 40, px: 1.75, borderRadius: '10px', border: '1px solid', textTransform: 'none',
+          borderColor: active ? 'text.primary' : 'divider', bgcolor: 'background.paper',
+          color: active ? 'text.primary' : 'text.secondary', fontWeight: active ? 600 : 400, fontSize: 13.5,
+          whiteSpace: 'nowrap', '& .MuiButton-endIcon': { color: 'text.secondary' },
+        }}
+      >
+        {label}
+      </Button>
+      <Popover
+        open={!!anchor}
+        anchorEl={anchor}
+        onClose={() => setAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        slotProps={{ paper: { sx: { mt: 0.75, p: 2, width: 280, borderRadius: '12px' } } }}
+      >
+        <Typography sx={{ fontWeight: 700, fontSize: 14, mb: 1.5 }}>Price (GHS)</Typography>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <TextField size="small" label="Min" value={lo} onChange={(e) => setLo(e.target.value.replace(/[^\d.]/g, ''))}
+            inputProps={{ inputMode: 'decimal' }} onKeyDown={(e) => e.key === 'Enter' && !invalid && apply()} />
+          <Typography color="text.disabled">–</Typography>
+          <TextField size="small" label="Max" value={hi} onChange={(e) => setHi(e.target.value.replace(/[^\d.]/g, ''))}
+            inputProps={{ inputMode: 'decimal' }} onKeyDown={(e) => e.key === 'Enter' && !invalid && apply()} />
+        </Stack>
+        {invalid && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 1 }}>Min can&rsquo;t be more than max.</Typography>}
+        <Stack direction="row" justifyContent="space-between" sx={{ mt: 2 }}>
+          <Button size="small" onClick={() => { onApply('', ''); setAnchor(null); }} sx={{ textTransform: 'none' }}>Clear</Button>
+          <Button size="small" variant="contained" disableElevation disabled={!!invalid} onClick={apply} sx={{ textTransform: 'none', borderRadius: '8px' }}>Apply</Button>
+        </Stack>
+      </Popover>
+    </>
+  );
+}
+
 // ── Main ProductList ──────────────────────────────────────────────────────────
 export default function ProductList({ canBulkUpload = false }) {
   const router       = useRouter();
   const pathname     = usePathname();
   const searchParams = useSearchParams();
+  const listTopRef   = useRef(null);
 
-  // ?search= / ?stock= come from the header search and Home shortcuts.
-  const urlSearch = searchParams.get('search') || '';
-  const urlStock  = searchParams.get('stock') || '';
-  const [search,        setSearch]        = useState(urlSearch);
-  const [debouncedSearch, setDebouncedSearch] = useState(urlSearch.trim());
-  const [statusFilter,  setFilter]        = useState(searchParams.get('status') || 'all');
-  const [stockFilter,   setStockFilter]   = useState(urlStock);
+  // All filters live in the URL: refresh, back/forward and shared links keep
+  // the seller's view, and the header search can deep-link with ?search=.
+  const urlSearch   = searchParams.get('search') || '';
+  const statusFilter = searchParams.get('status') || 'all';
+  const stockFilter  = searchParams.get('stock') || '';
+  const category     = searchParams.get('category') || '';
+  const fulfilment   = searchParams.get('fulfilment') || '';
+  const minPrice     = searchParams.get('min_price') || '';
+  const maxPrice     = searchParams.get('max_price') || '';
+  const sort         = searchParams.get('sort') || 'newest';
+  const currentPage  = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
 
-  // Already on this page when a new header search lands: follow the URL.
-  useEffect(() => {
-    setSearch(urlSearch);
-    setDebouncedSearch(urlSearch.trim());
-  }, [urlSearch]);
-  useEffect(() => { setStockFilter(urlStock); }, [urlStock]);
+  // The search box is typed into locally and written to the URL after a pause.
+  const [search, setSearch] = useState(urlSearch);
+  // Follow the URL (header search, back button) without fighting the typist:
+  // "red " mid-typing already matches ?search=red, so leave it alone.
+  useEffect(() => { setSearch((s) => (s.trim() === urlSearch ? s : urlSearch)); }, [urlSearch]);
+
   const [deleting,      setDeleting]      = useState(null);
   const [dialogOpen,    setDialogOpen]    = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
@@ -200,33 +324,36 @@ export default function ProductList({ canBulkUpload = false }) {
   const [totalPages,   setTotalPages]   = useState(1);
   const [statusCounts, setStatusCounts] = useState({});
   const [catalogTotal, setCatalogTotal] = useState(0);   // whole catalog, ignores filters
+  const [facets,       setFacets]       = useState({ categories: [], stock_counts: {}, low_stock_threshold: null });
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(null);
   const [hasLoaded,    setHasLoaded]    = useState(false);
 
-  // Current page from URL — survives refresh
-  const currentPage = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
-
-  // Navigate to a specific page (persisted in the URL) without scrolling to top
-  const goToPage = useCallback((page) => {
+  /** Write params to the URL. Filter changes go back to page 1. */
+  const setParams = useCallback((updates, { keepPage = false } = {}) => {
     const params = new URLSearchParams(searchParams.toString());
-    params.set('page', String(page));
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    Object.entries(updates).forEach(([k, v]) => {
+      if (v === '' || v == null || (k === 'status' && v === 'all') || (k === 'sort' && v === 'newest')) params.delete(k);
+      else params.set(k, String(v));
+    });
+    if (!keepPage) params.delete('page');
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }, [router, pathname, searchParams]);
 
-  // Debounce the search box so we don't hit the API on every keystroke
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search.trim()), 350);
-    return () => clearTimeout(t);
-  }, [search]);
+  const goToPage = useCallback((page) => {
+    setParams({ page: page > 1 ? page : '' }, { keepPage: true });
+    // With 50 per page the pager is far down; bring the seller back to the top of the list.
+    listTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [setParams]);
 
-  // Reset to page 1 when the search term or status filter changes (skip mount)
-  const isMount = useRef(true);
+  // Debounce the search box into the URL.
   useEffect(() => {
-    if (isMount.current) { isMount.current = false; return; }
-    if (currentPage !== 1) goToPage(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, statusFilter, stockFilter]);
+    const term = search.trim();
+    if (term === urlSearch) return undefined;
+    const t = setTimeout(() => setParams({ search: term }), 350);
+    return () => clearTimeout(t);
+  }, [search, urlSearch, setParams]);
 
   // ── Fetch the current page from the server ─────────────────────────────────
   const reqSeq = useRef(0);
@@ -239,9 +366,14 @@ export default function ProductList({ canBulkUpload = false }) {
       const params = new URLSearchParams();
       params.set('page', String(currentPage));
       params.set('page_size', String(PAGE_SIZE));
-      if (debouncedSearch)           params.set('search', debouncedSearch);
-      if (statusFilter !== 'all')    params.set('status', statusFilter);
-      if (stockFilter)               params.set('stock', stockFilter);
+      if (urlSearch)              params.set('search', urlSearch);
+      if (statusFilter !== 'all') params.set('status', statusFilter);
+      if (stockFilter)            params.set('stock', stockFilter);
+      if (category)               params.set('category', category);
+      if (fulfilment)             params.set('fulfilment', fulfilment);
+      if (minPrice)               params.set('min_price', minPrice);
+      if (maxPrice)               params.set('max_price', maxPrice);
+      if (sort !== 'newest')      params.set('sort', sort);
 
       const { data } = await client.get(`/api/v1/vendor/products/?${params.toString()}`);
       if (seq !== reqSeq.current) return; // a newer request superseded this one
@@ -251,10 +383,15 @@ export default function ProductList({ canBulkUpload = false }) {
       setTotalPages(data.total_pages || 1);
       setStatusCounts(data.status_counts || {});
       setCatalogTotal(data.catalog_total ?? 0);
+      setFacets({
+        categories: data.categories || [],
+        stock_counts: data.stock_counts || {},
+        low_stock_threshold: data.low_stock_threshold ?? null,
+      });
 
       // Backend clamps out-of-range pages — keep the URL in sync if it did.
       if (data.current_page && data.current_page !== currentPage) {
-        goToPage(data.current_page);
+        setParams({ page: data.current_page > 1 ? data.current_page : '' }, { keepPage: true });
       }
     } catch (err) {
       if (seq !== reqSeq.current) return;
@@ -269,7 +406,7 @@ export default function ProductList({ canBulkUpload = false }) {
         setHasLoaded(true);
       }
     }
-  }, [currentPage, debouncedSearch, statusFilter, stockFilter, goToPage]);
+  }, [currentPage, urlSearch, statusFilter, stockFilter, category, fulfilment, minPrice, maxPrice, sort, setParams]);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
@@ -310,11 +447,28 @@ export default function ProductList({ canBulkUpload = false }) {
     setPendingDelete(null);
   }, []);
 
-  const isFiltered = !!debouncedSearch || statusFilter !== 'all' || !!stockFilter;
+  // Chips for every active filter (status has its own tabs), each removable.
+  const categoryName = facets.categories.find((c) => String(c.id) === category)?.title;
+  const activeFilters = [
+    urlSearch   && { key: 'search',     label: `“${urlSearch}”`,               clear: { search: '' } },
+    stockFilter && { key: 'stock',      label: { in: 'In stock', low: 'Low stock', out: 'Out of stock' }[stockFilter] || stockFilter, clear: { stock: '' } },
+    category    && { key: 'category',   label: categoryName || 'Category',     clear: { category: '' } },
+    fulfilment  && { key: 'fulfilment', label: FULFILMENT_OPTIONS.find((o) => o.value === fulfilment)?.label || fulfilment, clear: { fulfilment: '' } },
+    (minPrice || maxPrice) && { key: 'price', label: `GHS ${minPrice || '0'} – ${maxPrice || 'any'}`, clear: { min_price: '', max_price: '' } },
+  ].filter(Boolean);
+  const isFiltered = activeFilters.length > 0 || statusFilter !== 'all';
+  const clearAll = () => { setSearch(''); setParams(Object.fromEntries(FILTER_KEYS.filter((k) => k !== 'sort').map((k) => [k, '']))); };
 
   // Range label for current page (server-paginated)
   const rangeStart = count === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
   const rangeEnd   = Math.min(currentPage * PAGE_SIZE, count);
+
+  const sc = facets.stock_counts || {};
+  const stockOptions = [
+    { value: 'in',  label: 'In stock',     count: sc.in },
+    { value: 'low', label: facets.low_stock_threshold != null ? `Low stock (≤ ${facets.low_stock_threshold})` : 'Low stock', count: sc.low },
+    { value: 'out', label: 'Out of stock', count: sc.out },
+  ];
 
   // First load — full skeleton. Subsequent fetches keep the UI mounted so the
   // search box doesn't lose focus and the page doesn't jump.
@@ -328,7 +482,7 @@ export default function ProductList({ canBulkUpload = false }) {
         direction={{ xs: 'column', sm: 'row' }}
         justifyContent="space-between"
         alignItems={{ sm: 'flex-end' }}
-        sx={{ mb: 3.5 }}
+        sx={{ mb: 3 }}
         spacing={2}
       >
         <Box>
@@ -342,12 +496,12 @@ export default function ProductList({ canBulkUpload = false }) {
           <Typography variant="body2" color="text.secondary">
             {catalogTotal === 0
               ? 'Your catalog is empty'
-              : `${catalogTotal} product${catalogTotal !== 1 ? 's' : ''} in your catalog`}
+              : `${catalogTotal.toLocaleString()} product${catalogTotal !== 1 ? 's' : ''} in your catalog`}
           </Typography>
         </Box>
 
         {/* ── Action buttons ────────────────────────────────────────────── */}
-        <Stack direction="row" spacing={1} flexShrink={0} alignItems="center">
+        <Stack direction="row" spacing={1} flexShrink={0} alignItems="center" flexWrap="wrap" useFlexGap>
           <BulkUploadButton canBulkUpload={canBulkUpload} />
           <Button
             variant="outlined"
@@ -372,88 +526,120 @@ export default function ProductList({ canBulkUpload = false }) {
         </Stack>
       </Stack>
 
-      {/* Search + filter */}
       {(catalogTotal > 0 || isFiltered) && (
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 3 }}>
-          <TextField
-            placeholder="Search products…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            size="small"
-            InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 18, color: 'text.disabled' }} /></InputAdornment> }}
-            sx={{ flex: 1, '& .MuiOutlinedInput-root': { borderRadius: '10px', '& fieldset': { borderColor: 'divider' }, '&:hover fieldset': { borderColor: 'text.disabled' } } }}
-          />
-          <FormControl size="small" sx={{ minWidth: 148 }}>
-            <Select
-              value={statusFilter}
-              onChange={(e) => setFilter(e.target.value)}
-              startAdornment={<FilterListIcon sx={{ fontSize: 16, mr: 0.75, color: 'text.disabled' }} />}
-              sx={{ borderRadius: '10px', '& fieldset': { borderColor: 'divider' } }}
-            >
-              <MenuItem value="all">All status</MenuItem>
-              {Object.entries(STATUS_CONFIG).map(([val, cfg]) => (
-                <MenuItem key={val} value={val}>
-                  <Stack direction="row" alignItems="center" spacing={1}>
-                    <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: cfg.color, flexShrink: 0 }} />
-                    <span>{cfg.label}</span>
-                    {statusCounts[val] && <Typography component="span" variant="caption" color="text.disabled" sx={{ ml: 0.5 }}>({statusCounts[val]})</Typography>}
-                  </Stack>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Stack>
-      )}
+        <Box ref={listTopRef} sx={{ scrollMarginTop: 16 }}>
+          {/* ── Status tabs (catalog-wide counts) ─────────────────────────── */}
+          <Stack direction="row" spacing={0.75} sx={{ mb: 2, overflowX: 'auto', pb: 0.5, '&::-webkit-scrollbar': { display: 'none' } }}>
+            {[['all', `All (${catalogTotal})`], ...Object.keys(STATUS_CONFIG).filter((s) => statusCounts[s]).map((s) => [s, `${STATUS_CONFIG[s].label} (${statusCounts[s]})`])].map(([s, label]) => {
+              const on = statusFilter === s;
+              const color = s === 'all' ? null : STATUS_CONFIG[s].color;
+              return (
+                <Chip
+                  key={s}
+                  label={label}
+                  onClick={() => setParams({ status: s === statusFilter && s !== 'all' ? 'all' : s })}
+                  sx={{
+                    borderRadius: '8px', fontWeight: 600, fontSize: 12.5, height: 32, flexShrink: 0,
+                    bgcolor: on ? (color || 'text.primary') : 'action.hover',
+                    color: on ? (color ? '#ffffff' : 'background.paper') : 'text.secondary',
+                    '&:hover': { bgcolor: on ? (color || 'text.primary') : 'action.selected' },
+                  }}
+                />
+              );
+            })}
+          </Stack>
 
-      {/* Status chip quick-filters (always shown while a stock filter is active) */}
-      {(catalogTotal > 3 || stockFilter) && (
-        <Stack direction="row" spacing={0.75} sx={{ mb: 2.5, overflowX: 'auto', pb: 0.5, '&::-webkit-scrollbar': { display: 'none' } }}>
-          {stockFilter && (
-            <Chip
+          {/* ── Search + sort ─────────────────────────────────────────────── */}
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 1.5 }}>
+            <TextField
+              placeholder="Search by title, SKU, brand or barcode"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') setParams({ search: search.trim() }); }}
               size="small"
-              label={stockFilter === 'out' ? 'Out of stock' : 'Low stock'}
-              onDelete={() => setStockFilter('')}
-              sx={{ borderRadius: '8px', fontWeight: 600, fontSize: 11, flexShrink: 0 }}
+              inputProps={{ 'aria-label': 'Search products' }}
+              InputProps={{
+                startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 20, color: 'text.secondary' }} /></InputAdornment>,
+                endAdornment: search ? (
+                  <InputAdornment position="end">
+                    <IconButton size="small" aria-label="Clear search" onClick={() => { setSearch(''); setParams({ search: '' }); }}>
+                      <CloseRoundedIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </InputAdornment>
+                ) : null,
+              }}
+              sx={{ flex: 1, '& .MuiOutlinedInput-root': { borderRadius: '10px', height: 42, bgcolor: 'background.paper', '& fieldset': { borderColor: 'divider' }, '&:hover fieldset': { borderColor: 'text.disabled' } } }}
             />
-          )}
-          <Chip
-            label={`All (${catalogTotal})`}
-            size="small"
-            onClick={() => { setFilter('all'); setStockFilter(''); }}
-            sx={{ borderRadius: '8px', fontWeight: 600, fontSize: 11, flexShrink: 0, bgcolor: statusFilter === 'all' ? 'text.primary' : 'action.hover', color: statusFilter === 'all' ? 'background.paper' : 'text.secondary' }}
-          />
-          {Object.entries(statusCounts).map(([s, c]) => {
-            const cfg = getStatus(s);
-            return (
-              <Chip
-                key={s}
-                label={`${cfg.label} (${c})`}
-                size="small"
-                onClick={() => setFilter(s === statusFilter ? 'all' : s)}
-                sx={{ borderRadius: '8px', fontWeight: 600, fontSize: 11, flexShrink: 0, bgcolor: statusFilter === s ? cfg.color : 'action.hover', color: statusFilter === s ? '#ffffff' : 'text.secondary' }}
+            <FormControl size="small" sx={{ minWidth: { sm: 210 } }}>
+              <Select
+                value={sort}
+                onChange={(e) => setParams({ sort: e.target.value })}
+                startAdornment={<SortRoundedIcon sx={{ fontSize: 18, mr: 1, color: 'text.secondary' }} />}
+                sx={{ ...selectSx, height: 42 }}
+                inputProps={{ 'aria-label': 'Sort products' }}
+              >
+                {SORT_OPTIONS.map((o) => <MenuItem key={o.value} value={o.value} sx={{ fontSize: 14 }}>{o.label}</MenuItem>)}
+              </Select>
+            </FormControl>
+          </Stack>
+
+          {/* ── Filters ───────────────────────────────────────────────────── */}
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2 }}>
+            <FilterSelect label="Stock" value={stockFilter} onChange={(v) => setParams({ stock: v })} options={stockOptions} />
+            {facets.categories.length > 0 && (
+              <FilterSelect
+                label="Category"
+                value={category}
+                onChange={(v) => setParams({ category: v })}
+                options={facets.categories.map((c) => ({ value: c.id, label: c.title, count: c.count }))}
+                minWidth={180}
               />
-            );
-          })}
-        </Stack>
+            )}
+            <FilterSelect label="Fulfilment" value={fulfilment} onChange={(v) => setParams({ fulfilment: v })} options={FULFILMENT_OPTIONS} minWidth={170} />
+            <PriceFilter
+              key={`${minPrice}-${maxPrice}`}
+              min={minPrice}
+              max={maxPrice}
+              onApply={(lo, hi) => setParams({ min_price: lo, max_price: hi })}
+            />
+          </Box>
+
+          {/* ── Active filters + result count ─────────────────────────────── */}
+          <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2, minHeight: 28 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mr: 0.5 }}>
+              {count === 0
+                ? 'No products'
+                : `Showing ${rangeStart.toLocaleString()}–${rangeEnd.toLocaleString()} of ${count.toLocaleString()}${isFiltered ? ' matching' : ''}`}
+              {loading && <CircularProgress size={12} thickness={5} sx={{ ml: 1, verticalAlign: 'middle' }} />}
+            </Typography>
+            {activeFilters.map((f) => (
+              <Chip
+                key={f.key}
+                size="small"
+                label={f.label}
+                onDelete={() => { if (f.key === 'search') setSearch(''); setParams(f.clear); }}
+                sx={{ borderRadius: '8px', fontWeight: 600, fontSize: 12 }}
+              />
+            ))}
+            {isFiltered && (
+              <Button size="small" onClick={clearAll} sx={{ textTransform: 'none', fontWeight: 600, fontSize: 13 }}>
+                Clear all
+              </Button>
+            )}
+          </Stack>
+        </Box>
       )}
 
       {/* Grid */}
       {products.length === 0 ? (
-        <EmptyState onAdd={() => router.push('/products/product')} filtered={isFiltered} />
+        <EmptyState onAdd={() => router.push('/products/product')} filtered={isFiltered} onClear={clearAll} />
       ) : (
         <>
-          {/* Range counter */}
-          <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mb: 1.5 }}>
-            {isFiltered
-              ? `Showing ${rangeStart}–${rangeEnd} of ${count} matching products`
-              : `Showing ${rangeStart}–${rangeEnd} of ${count} products`}
-          </Typography>
-
           <Grid container spacing={{ xs: 1.5, sm: 2 }} sx={{ opacity: loading ? 0.5 : 1, transition: 'opacity 0.2s', pointerEvents: loading ? 'none' : 'auto' }}>
             {products.map((item, i) => {
               const p = item.product ?? item;
               return (
-                <Grid key={p.id} size={{ xs: 6, sm: 4, md: 3, lg: 3 }}>
+                <Grid key={p.id} size={{ xs: 6, sm: 4, md: 3, xl: 2.4 }}>
                   <Box sx={{ opacity: deleting === p.id ? 0.3 : 1, transform: deleting === p.id ? 'scale(0.96)' : 'none', transition: 'opacity 0.3s, transform 0.3s', pointerEvents: deleting === p.id ? 'none' : 'auto' }}>
                     <ProductCard product={item} onEdit={handleEdit} onDelete={handleDeleteIntent} onView={handleView} index={i} />
                   </Box>
@@ -464,7 +650,7 @@ export default function ProductList({ canBulkUpload = false }) {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <Stack alignItems="center" sx={{ mt: 4 }}>
+            <Stack alignItems="center" spacing={1} sx={{ mt: 4 }}>
               <Pagination
                 count={totalPages}
                 page={Math.min(currentPage, totalPages)}
@@ -485,6 +671,9 @@ export default function ProductList({ canBulkUpload = false }) {
                   },
                 }}
               />
+              <Typography variant="caption" color="text.secondary">
+                {PAGE_SIZE} products per page
+              </Typography>
             </Stack>
           )}
         </>
@@ -499,7 +688,7 @@ export default function ProductList({ canBulkUpload = false }) {
               : <>Need to add many products at once? <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>Bulk upload</Box> is available on the Pro plan.</>}
           </Typography>
           <Button
-            href={canBulkUpload ? '/products/bulk-upload' : '/vendor/subscription'}
+            href={canBulkUpload ? '/products/bulk-upload' : '/subscribe'}
             size="small"
             variant="outlined"
             endIcon={<ArrowForwardIcon sx={{ fontSize: 12 }} />}

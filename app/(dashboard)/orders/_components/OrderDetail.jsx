@@ -87,9 +87,12 @@ function ShipmentPanel({ orderId, existingShipments, onShipmentUpdated }) {
     event_date: dayjs().format('YYYY-MM-DDTHH:mm'),
   };
 
+  // A shipment the courier cancelled can be replaced; the backend clears it out.
+  const hasLiveShipment = shipments.some((sh) => sh.status !== 'canceled');
+
   const handleCreateShipment = async () => {
-    // Guard: each vendor can only have one shipment per order
-    if (shipments.length > 0) {
+    // Guard: each vendor can only have one live shipment per order
+    if (hasLiveShipment) {
       Swal.fire('Already Exists', 'You already have a shipment for this order. Update it instead of creating a new one.', 'info');
       return;
     }
@@ -100,7 +103,7 @@ function ShipmentPanel({ orderId, existingShipments, onShipmentUpdated }) {
         estimated_delivery_date: form.estimated_delivery_date || undefined,
       });
       const created = res.data;
-      setShipments((prev) => [...prev, created]);
+      setShipments((prev) => [...prev.filter((sh) => sh.status !== 'canceled'), created]);
       setShowCreateForm(false);
       setForm({ carrier: '', carrier_code: '', tracking_number: '', tracking_url: '', status: 'label_created', estimated_delivery_date: '', is_international: false });
       onShipmentUpdated && onShipmentUpdated();
@@ -152,7 +155,7 @@ function ShipmentPanel({ orderId, existingShipments, onShipmentUpdated }) {
           <LocalShippingIcon color="action" fontSize="small" />
           <Typography variant="h6">Shipment & Tracking</Typography>
         </Stack>
-        {shipments.length === 0 && (
+        {!hasLiveShipment && (
           <Button
             size="small"
             startIcon={<AddCircleOutlineIcon />}
@@ -160,7 +163,7 @@ function ShipmentPanel({ orderId, existingShipments, onShipmentUpdated }) {
             variant={showCreateForm ? 'outlined' : 'contained'}
             disableElevation
           >
-            {showCreateForm ? 'Cancel' : 'Ready for pickup'}
+            {showCreateForm ? 'Cancel' : shipments.length ? 'Book delivery again' : 'Ready for pickup'}
           </Button>
         )}
       </Stack>

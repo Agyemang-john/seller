@@ -81,6 +81,29 @@ function useResults(query: string): Result[] {
   }, [query, can]);
 }
 
+/**
+ * Freeze the page while the search is open so the wheel / touch can't scroll
+ * the content behind the dropdown. The dashboard scrolls inside <main>
+ * (components/DashboardLayout.tsx), not the window, so that is what we lock;
+ * the scrollbar's width is padded back so the page doesn't shift sideways.
+ */
+function useScrollLock(locked: boolean) {
+  React.useEffect(() => {
+    if (!locked) return undefined;
+    const targets = [document.querySelector('main'), document.body].filter(Boolean) as HTMLElement[];
+    const saved = targets.map((el) => ({ el, overflow: el.style.overflow, paddingRight: el.style.paddingRight }));
+    targets.forEach((el) => {
+      const scrollbar = el === document.body ? window.innerWidth - document.documentElement.clientWidth : el.offsetWidth - el.clientWidth;
+      if (scrollbar > 0) el.style.paddingRight = `${parseFloat(getComputedStyle(el).paddingRight) + scrollbar}px`;
+      el.style.overflow = 'hidden';
+    });
+    return () => saved.forEach(({ el, overflow, paddingRight }) => {
+      el.style.overflow = overflow;
+      el.style.paddingRight = paddingRight;
+    });
+  }, [locked]);
+}
+
 function ResultList({ results, active, query, onPick, onHover }: {
   results: Result[]; active: number; query: string; onPick: (r: Result) => void; onHover: (i: number) => void;
 }) {
@@ -132,6 +155,7 @@ export default function SellerSearch() {
   const results = useResults(query);
 
   React.useEffect(() => setActive(0), [query]);
+  useScrollLock(open);
 
   // Ctrl/⌘+K anywhere, or "/" when not already typing somewhere.
   React.useEffect(() => {
@@ -167,6 +191,10 @@ export default function SellerSearch() {
       value={query}
       onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
       onFocus={() => setOpen(true)}
+      // Desktop: leaving the box (Tab, clicking elsewhere) closes the dropdown and
+      // unlocks scrolling. Results keep focus on mousedown, so picking one still works.
+      // Phones keep the full-screen sheet open until Back is pressed.
+      onBlur={autoFocus ? undefined : () => setOpen(false)}
       onKeyDown={onKeyDown}
       placeholder="Search orders, products or pages"
       inputProps={{ 'aria-label': 'Search Seller Center', role: 'combobox', 'aria-expanded': open }}
