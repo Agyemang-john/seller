@@ -162,7 +162,7 @@ function MomoPendingState({ reference, displayText, provider, maskedPhone, requi
       </Box>
 
       <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: 22, fontWeight: 700, mb: 1 }} color="text.primary">
-        {status === 'otp'     && 'Enter your OTP'}
+        {status === 'otp'     && 'Enter the code'}
         {status === 'pending' && `Waiting${dots}`}
         {status === 'success' && 'Confirmed!'}
         {status === 'failed'  && 'Failed'}
@@ -170,12 +170,13 @@ function MomoPendingState({ reference, displayText, provider, maskedPhone, requi
       <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>{message}</Typography>
       <Typography variant="caption" color="text.disabled">{maskedPhone}</Typography>
 
-      {/* OTP input — shown for MTN send_otp flow */}
+      {/* Code input — Paystack's send_otp step (Telecel/Vodafone: a voucher made by dialling *110#) */}
       {status === 'otp' && (
         <Box sx={{ mt: 3, maxWidth: 280, mx: 'auto', textAlign: 'left' }}>
           <Box sx={{ p: 2, borderRadius: '10px', bgcolor: '#fffbeb', border: '1px solid #fbbf24', mb: 2 }}>
             <Typography variant="caption" sx={{ color: '#92400e', fontWeight: 600, lineHeight: 1.6 }}>
-              📱 An OTP code was sent to your phone via SMS. Enter it below to authorise the payment.
+              📱 Follow the instruction above to get your code. On Telecel (Vodafone), dial <strong>*110#</strong> and
+              choose to generate a voucher; on other networks the code comes by SMS. Enter it below to authorise the payment.
               <br />Do not share this code with anyone.
             </Typography>
           </Box>
@@ -185,7 +186,7 @@ function MomoPendingState({ reference, displayText, provider, maskedPhone, requi
             </Alert>
           )}
           <TextField
-            fullWidth size="small" label="OTP Code" type="number"
+            fullWidth size="small" label="Code" type="text"
             value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 8))}
             placeholder="e.g. 449085"
             inputProps={{ inputMode: 'numeric', pattern: '[0-9]*', style: { fontFamily: 'var(--font-mono-stack), ui-monospace, monospace', fontSize: 20, letterSpacing: '0.2em', textAlign: 'center' } }}
@@ -206,7 +207,7 @@ function MomoPendingState({ reference, displayText, provider, maskedPhone, requi
             {otpLoading ? <><CircularProgress size={14} sx={{ color: '#fff' }} /> Verifying…</> : 'Confirm payment'}
           </Box>
           <Typography variant="caption" color="text.disabled" sx={{ display: 'block', textAlign: 'center', mt: 1.5 }}>
-            Didn't receive the OTP? Check your SMS inbox or wait a moment.
+            No code? On Telecel, dial *110# to generate one. Otherwise check your SMS inbox.
           </Typography>
         </Box>
       )}

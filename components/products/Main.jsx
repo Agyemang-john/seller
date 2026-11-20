@@ -52,7 +52,7 @@ export default function ProductForm({ id = null }) {
   const form = useProductForm(id);
   const {
     loading, loadError, formData, setFormData, formErrors, setFormErrors,
-    images, setImages, fieldOptions, deliveryOptions, regions, categories, brands, colors, sizes,
+    images, setImages, fieldOptions, deliveryOptions, regions, categories, brands, colors, sizes, variationOptions,
     selectedCategory, selectedBrand, imagePreview, videoPreview,
     variants, setVariants, variantImagePreviews, setVariantImagePreviews,
     handleCategoryChange, handleBrandChange, handleFileChange, handleDateChange,
@@ -111,7 +111,7 @@ export default function ProductForm({ id = null }) {
   // ── Sections, status, readiness ──────────────────────────────────────────────
   const ctx = {
     id, formData, setFormData, setField, formErrors, images, setImages, imagePreview, videoPreview,
-    handleFileChange, categories, brands, regions, colors, sizes, selectedCategory, selectedBrand,
+    handleFileChange, categories, brands, regions, colors, sizes, variationOptions, selectedCategory, selectedBrand,
     handleCategoryChange, handleBrandChange, handleDateChange, handleEditorChange,
     variants, setVariants, variantImagePreviews, setVariantImagePreviews,
     fieldOptions, deliveryOptions, handleDeliveryOptionsChange, specs, pinned,
@@ -164,6 +164,9 @@ export default function ProductForm({ id = null }) {
           value.forEach((rid) => fd.append('available_in_regions', rid));
         } else if (key === 'delivery_options') {
           fd.append('delivery_options', JSON.stringify(value));
+        } else if (key === 'variation_axes') {
+          // No versions: no options (the server then treats the product as one version).
+          fd.append('variation_axes', JSON.stringify(formData.variant === 'None' ? [] : value));
         } else if (value === '' || value == null) {
           if (OMIT_WHEN_EMPTY.includes(key)) return;
           fd.append(key, EMPTY_NUMBER_AS[key] ?? '');
@@ -176,7 +179,7 @@ export default function ProductForm({ id = null }) {
       if (formData.video instanceof File) fd.append('video', formData.video);
 
       if (variants.length > 0) {
-        fd.append('variants', JSON.stringify(variants.map(toVariantPayload)));
+        fd.append('variants', JSON.stringify(variants.map((v) => toVariantPayload(v, formData.variation_axes))));
         variants.forEach((v, i) => { if (v.image instanceof File) fd.append(`variant_image_${i}`, v.image); });
       }
 

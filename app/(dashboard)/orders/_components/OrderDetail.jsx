@@ -679,7 +679,7 @@ export default function OrderDetailPage({ id }) {
         <Stack spacing={1.25} sx={{ display: { xs: 'flex', md: 'none' } }}>
           {order.order_products.map((product) => {
             const variant = product.variant
-              ? [product.variant.size_name, product.variant.color_name].filter(Boolean).join(' / ')
+              ? (product.variant.option_label || [product.variant.size_name, product.variant.color_name].filter(Boolean).join(' / '))
               : '';
             return (
               <Paper key={product.id} variant="outlined" sx={{ p: 1.5, borderRadius: '12px' }}>
@@ -749,7 +749,7 @@ export default function OrderDetailPage({ id }) {
                   <TableCell >{product.product.title}</TableCell>
                   <TableCell>
                     {product.variant 
-                      ? [product.variant.size_name, product.variant.color_name].filter(Boolean).join(' / ') || 'None'
+                      ? (product.variant.option_label || [product.variant.size_name, product.variant.color_name].filter(Boolean).join(' / ')) || 'None'
                       : 'None'}
                   </TableCell>
                   <TableCell>{product.quantity}</TableCell>

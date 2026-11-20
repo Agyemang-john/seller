@@ -1,60 +1,79 @@
 'use client';
 
 /**
- * /app/(dashboard)/products/bulk-upload/page.jsx
- *
- * Two-mode bulk upload page:
- *   "Add products"  — In-browser table (no CSV required). Primary for most sellers.
- *   "Import CSV"    — File upload for power users who prefer spreadsheets.
- *
- * Both modes share:
- *   • Subscription gate  (can_access_bulk_upload)
- *   • Product-slot banner
- *   • Sync / async result handling (async jobs are polled every 3 s)
+ * Add products in bulk. Two ways, same backend (vendor/bulk_upload.py):
+ *   "Add in the browser" — a card per product with photos and versions. Best for most sellers.
+ *   "Upload a spreadsheet" — the CSV template, for big catalogues kept in Excel / Google Sheets.
+ * The full seller guide is /products/bulk-upload/guide.
  */
 
-import {
-  useState, useCallback, useRef, useEffect, useMemo,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Box, Typography, Stack, Button, Chip, Alert, AlertTitle,
-  LinearProgress, Table, TableHead, TableBody, TableRow, TableCell,
-  TableContainer, Tooltip, IconButton, Paper, Collapse,
-  CircularProgress, Divider, Grid, Tab, Tabs,
+  Alert, AlertTitle, Box, Button, Chip, CircularProgress, Collapse, Divider, IconButton, LinearProgress,
+  Stack, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, TextField, Tooltip, Typography,
 } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DownloadIcon from '@mui/icons-material/Download';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
-import TableRowsOutlinedIcon from '@mui/icons-material/TableRowsOutlined';
+import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
+import ViewAgendaOutlinedIcon from '@mui/icons-material/ViewAgendaOutlined';
 import GridOnOutlinedIcon from '@mui/icons-material/GridOnOutlined';
+import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
 import BulkProductGrid from '@/components/products/BulkProductGrid';
 import { createAxiosClient } from '@/utils/clientFetch';
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-const API_BASE         = '/api/v1';
+const API = '/api/v1/vendor/products/bulk-upload';
 const MAX_PREVIEW_ROWS = 50;
-const MAX_FILE_MB      = 5;
-const POLL_INTERVAL_MS = 3000;
+const MAX_FILE_MB = 5;
+const POLL_MS = 3000;
 
-const REQUIRED_COLS = ['title', 'price', 'old_price', 'sub_category_slug', 'product_type', 'total_quantity'];
-const ALL_COLS = [
-  'title', 'price', 'old_price', 'sub_category_slug', 'brand_slug',
-  'product_type', 'total_quantity', 'weight', 'volume', 'life',
-  'variant', 'description', 'features', 'specifications',
-  'delivery_returns', 'size_names', 'color_names', 'color_codes',
-  'variant_prices', 'variant_quantities',
-];
+// ── CSV reading (quotes, commas and line breaks inside cells) ────────────────
+function parseCsv(text) {
+  const head = text.slice(0, 2048);
+  const delimiter = head.includes('\t') && !head.includes(',') ? '\t'
+    : (head.split(';').length > head.split(',').length ? ';' : ',');
+  const rows = [];
+  let row = [''];
+  let quoted = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (quoted) {
+      if (ch === '"' && text[i + 1] === '"') { row[row.length - 1] += '"'; i += 1; }
+      else if (ch === '"') quoted = false;
+      else row[row.length - 1] += ch;
+    } else if (ch === '"') quoted = true;
+    else if (ch === delimiter) row.push('');
+    else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && text[i + 1] === '\n') i += 1;
+      rows.push(row); row = [''];
+    } else row[row.length - 1] += ch;
+  }
+  if (row.length > 1 || row[0]) rows.push(row);
+  const [header = [], ...body] = rows;
+  const headers = header.map((h) => h.replace(/^﻿/, '').trim());
+  const data = body
+    .filter((r) => r.some((v) => v.trim()))
+    .map((r) => Object.fromEntries(headers.map((h, i) => [h, (r[i] ?? '').trim()])));
+  return { headers, rows: data };
+}
 
-// ── Upgrade gate ──────────────────────────────────────────────────────────────
+const ALIASES = {
+  sub_category_slug: 'category', brand_slug: 'brand', old_price: 'compare_at_price', total_quantity: 'stock',
+  product_type: 'condition', weight: 'weight_kg', gtin: 'barcode', return_period_days: 'return_days',
+};
+const canonical = (h) => { const k = h.trim().toLowerCase().replace(/ /g, '_'); return ALIASES[k] || k; };
+
+// ── Pieces ───────────────────────────────────────────────────────────────────
 function UpgradeGate() {
   const router = useRouter();
   return (
@@ -62,83 +81,98 @@ function UpgradeGate() {
       <Box sx={{ width: 72, height: 72, borderRadius: '20px', bgcolor: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
         <LockOutlinedIcon sx={{ fontSize: 32, color: 'warning.main' }} />
       </Box>
-      <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 28, md: 36 }, fontWeight: 700, letterSpacing: '-0.5px', mb: 1.5 }}>
-        Pro Feature
-      </Typography>
-      <Typography color="text.secondary" sx={{ maxWidth: 380, lineHeight: 1.75, mb: 4 }}>
-        Bulk product upload is available on the <strong>Pro plan</strong> and above.
-        Add up to 500 products at once — no spreadsheet skills needed.
+      <Typography sx={{ fontFamily: 'var(--font-figtree), system-ui, sans-serif', fontSize: { xs: 28, md: 36 }, fontWeight: 700, mb: 1.5 }}>Pro feature</Typography>
+      <Typography color="text.secondary" sx={{ maxWidth: 400, lineHeight: 1.75, mb: 4 }}>
+        Adding products in bulk comes with the <strong>Pro plan</strong> and above: up to 500 products at once, with photos and versions.
       </Typography>
       <Stack direction="row" spacing={1.5}>
-        <Button variant="outlined" onClick={() => router.back()} sx={{ borderRadius: '10px', borderColor: 'divider' }}>Go back</Button>
-        <Button variant="contained" disableElevation href="/subscribe"
-          sx={{ bgcolor: 'warning.main', color: 'common.white', borderRadius: '10px', fontWeight: 700, '&:hover': { bgcolor: 'warning.dark' } }}>
-          Upgrade to Pro
-        </Button>
+        <Button variant="outlined" onClick={() => router.back()} sx={{ borderRadius: '10px' }}>Go back</Button>
+        <Button variant="contained" disableElevation href="/subscribe" sx={{ bgcolor: 'warning.main', borderRadius: '10px', fontWeight: 700 }}>See plans</Button>
       </Stack>
     </Box>
   );
 }
 
-// ── Result report (shared between grid and CSV modes) ─────────────────────────
-function UploadReport({ result, onReset }) {
-  const [showErrors, setShowErrors] = useState(true);
-  const allPassed = result.failed_count === 0;
+function Stat({ icon, label, value, color }) {
+  return (
+    <Box sx={{ p: 2, borderRadius: '12px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', textAlign: 'center' }}>
+      <Box sx={{ color, mb: 0.5 }}>{icon}</Box>
+      <Typography sx={{ fontSize: 26, fontWeight: 800, lineHeight: 1, color }}>{value}</Typography>
+      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>{label}</Typography>
+    </Box>
+  );
+}
 
+const fieldName = { title: 'Name', category: 'Category', price: 'Price', stock: 'Stock', weight_kg: 'Weight', options: 'Versions',
+  ships_to: 'Ships to', delivery_methods: 'Delivery', seller_sku: 'SKU', image_url: 'Photo', more_image_urls: 'Photos',
+  compare_at_price: 'Old price', condition: 'Condition', brand: 'Brand', barcode: 'Barcode', return_days: 'Return days' };
+
+function UploadReport({ result, onReset, rowWord }) {
+  const [open, setOpen] = useState(true);
+  const drafts = (result.products || []).filter((p) => p.status === 'draft');
+  const warned = (result.products || []).filter((p) => p.warnings?.length && p.status !== 'draft');
   return (
     <Box>
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        {[
-          { icon: <InfoOutlinedIcon />, label: 'Total rows', value: result.total_rows, color: 'text.primary' },
-          { icon: <CheckCircleOutlineIcon />, label: 'Uploaded', value: result.success_count, color: 'success.main' },
-          { icon: <ErrorOutlineIcon />, label: 'Failed', value: result.failed_count, color: result.failed_count > 0 ? 'error.main' : 'text.disabled' },
-        ].map(({ icon, label, value, color }) => (
-          <Grid item xs={4} key={label}>
-            <Box sx={{ p: 2.5, borderRadius: '12px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', textAlign: 'center' }}>
-              <Box sx={{ color, mb: 0.5 }}>{icon}</Box>
-              <Typography sx={{ fontSize: 28, fontWeight: 800, lineHeight: 1, color }}>{value}</Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>{label}</Typography>
-            </Box>
-          </Grid>
-        ))}
+      <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
+        <Grid size={{ xs: 4 }}><Stat icon={<CheckCircleOutlineIcon />} label="Sent for review" value={(result.success_count || 0) - drafts.length} color="success.main" /></Grid>
+        <Grid size={{ xs: 4 }}><Stat icon={<EditNoteOutlinedIcon />} label="Drafts to finish" value={drafts.length} color={drafts.length ? 'warning.main' : 'text.disabled'} /></Grid>
+        <Grid size={{ xs: 4 }}><Stat icon={<ErrorOutlineIcon />} label="Not saved" value={result.failed_count || 0} color={result.failed_count ? 'error.main' : 'text.disabled'} /></Grid>
       </Grid>
 
-      {allPassed ? (
-        <Alert severity="success" sx={{ borderRadius: '10px', mb: 3 }}>
-          <AlertTitle>All products uploaded successfully!</AlertTitle>
-          {result.success_count} product{result.success_count !== 1 ? 's' : ''} added to your catalog and sent for review.
+      {!result.failed_count && drafts.length === 0 && (
+        <Alert severity="success" sx={{ borderRadius: '10px', mb: 2.5 }}>
+          <AlertTitle>All {result.success_count} products were sent for review</AlertTitle>
+          You&apos;ll find them in My Products. We&apos;ll let you know when they&apos;re live.
         </Alert>
-      ) : (
-        <Alert severity={result.success_count > 0 ? 'warning' : 'error'} sx={{ borderRadius: '10px', mb: 3 }}>
-          <AlertTitle>
-            {result.success_count > 0
-              ? `${result.failed_count} row${result.failed_count !== 1 ? 's' : ''} had errors — ${result.success_count} uploaded successfully`
-              : 'No products were uploaded — see errors below'}
-          </AlertTitle>
-          Fix the issues highlighted below and try again.
+      )}
+
+      {drafts.length > 0 && (
+        <Box sx={{ border: '1px solid', borderColor: 'warning.light', borderRadius: '12px', overflow: 'hidden', mb: 2.5 }}>
+          <Box sx={{ px: 2, py: 1.25, bgcolor: 'rgba(245,158,11,0.08)' }}>
+            <Typography sx={{ fontWeight: 700, fontSize: 14 }}>Saved as drafts: add a photo, then submit them</Typography>
+            <Typography variant="caption" color="text.secondary">Shoppers can&apos;t see a product until it has a photo and passes review.</Typography>
+          </Box>
+          {drafts.map((p) => (
+            <Stack key={p.product_id} direction={{ xs: 'column', sm: 'row' }} spacing={1} justifyContent="space-between" alignItems={{ sm: 'center' }}
+              sx={{ px: 2, py: 1.25, borderTop: '1px solid', borderColor: 'divider' }}>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{p.title}</Typography>
+                {p.warnings.map((w) => <Typography key={w} variant="caption" color="text.secondary" sx={{ display: 'block' }}>{w}</Typography>)}
+              </Box>
+              <Button size="small" variant="outlined" component={Link} href={`/products/product/${p.product_id}`}
+                sx={{ borderRadius: '8px', flexShrink: 0 }}>Finish</Button>
+            </Stack>
+          ))}
+        </Box>
+      )}
+
+      {warned.length > 0 && (
+        <Alert severity="info" sx={{ borderRadius: '10px', mb: 2.5 }}>
+          <AlertTitle>Saved, with a note</AlertTitle>
+          {warned.map((p) => <Typography key={p.product_id} variant="body2"><strong>{p.title}:</strong> {p.warnings.join(' ')}</Typography>)}
         </Alert>
       )}
 
       {result.errors?.length > 0 && (
-        <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '12px', overflow: 'hidden', mb: 3 }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between"
-            sx={{ px: 2, py: 1.25, bgcolor: 'rgba(239,68,68,0.05)', cursor: 'pointer', borderBottom: showErrors ? '1px solid' : 'none', borderColor: 'divider' }}
-            onClick={() => setShowErrors((p) => !p)}>
-            <Typography sx={{ fontWeight: 700, fontSize: 13, color: 'error.main' }}>
-              {result.errors.length} error{result.errors.length !== 1 ? 's' : ''} to fix
+        <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '12px', overflow: 'hidden', mb: 2.5 }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" onClick={() => setOpen((o) => !o)}
+            sx={{ px: 2, py: 1.25, bgcolor: 'rgba(239,68,68,0.05)', cursor: 'pointer' }}>
+            <Typography sx={{ fontWeight: 700, fontSize: 14, color: 'error.main' }}>
+              {result.errors.length} product{result.errors.length === 1 ? '' : 's'} not saved: fix and upload {result.errors.length === 1 ? 'it' : 'them'} again
             </Typography>
-            <IconButton size="small">{showErrors ? <ExpandLessIcon sx={{ fontSize: 18 }} /> : <ExpandMoreIcon sx={{ fontSize: 18 }} />}</IconButton>
+            <IconButton size="small" aria-label={open ? 'Hide' : 'Show'}>{open ? <ExpandLessIcon /> : <ExpandMoreIcon />}</IconButton>
           </Stack>
-          <Collapse in={showErrors}>
-            {result.errors.map((err, i) => (
-              <Box key={i} sx={{ px: 2, py: 1.5, borderBottom: i < result.errors.length - 1 ? '1px solid' : 'none', borderColor: 'divider' }}>
-                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
-                  <Chip label={`Row ${err.row}`} size="small" sx={{ fontSize: 10, fontWeight: 700, bgcolor: 'rgba(239,68,68,0.1)', color: 'error.main', borderRadius: '5px' }} />
-                  <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{err.title}</Typography>
+          <Collapse in={open}>
+            {result.errors.map((err) => (
+              <Box key={`${err.row}-${err.title}`} sx={{ px: 2, py: 1.25, borderTop: '1px solid', borderColor: 'divider' }}>
+                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
+                  <Chip size="small" label={rowWord === 'row' ? `Row ${(err.rows || [err.row]).join(', ')}` : `Product ${err.row}`}
+                    sx={{ height: 20, fontSize: 11, fontWeight: 700, bgcolor: 'rgba(239,68,68,0.1)', color: 'error.main' }} />
+                  <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{err.title}</Typography>
                 </Stack>
-                {Object.entries(err.errors).map(([field, msgs]) => (
-                  <Typography key={field} variant="caption" color="text.secondary" sx={{ display: 'block', pl: 0.5 }}>
-                    <strong>{field}:</strong> {Array.isArray(msgs) ? msgs.join(', ') : JSON.stringify(msgs)}
+                {Object.entries(err.errors || {}).map(([field, msg]) => (
+                  <Typography key={field} variant="body2" color="text.secondary">
+                    <strong>{fieldName[field] || field}:</strong> {Array.isArray(msg) ? msg.join(' ') : String(msg)}
                   </Typography>
                 ))}
               </Box>
@@ -147,194 +181,72 @@ function UploadReport({ result, onReset }) {
         </Box>
       )}
 
-      <Stack direction="row" spacing={1.5}>
-        <Button variant="outlined" onClick={onReset} sx={{ borderRadius: '10px', borderColor: 'divider', fontWeight: 600 }}>Upload more</Button>
-        <Button variant="contained" disableElevation href="/products"
-          sx={{ bgcolor: 'text.primary', color: 'background.paper', borderRadius: '10px', fontWeight: 600, '&:hover': { bgcolor: 'text.secondary' } }}>
-          View my products
+      <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
+        <Button variant="outlined" onClick={onReset} sx={{ borderRadius: '10px', fontWeight: 600 }}>
+          {result.errors?.length ? 'Fix the rest' : 'Add more'}
         </Button>
+        <Button variant="contained" disableElevation component={Link} href="/products"
+          sx={{ bgcolor: 'text.primary', color: 'background.paper', borderRadius: '10px', fontWeight: 600 }}>My products</Button>
       </Stack>
     </Box>
   );
 }
 
-// ── Async job panel ───────────────────────────────────────────────────────────
-function AsyncJobPanel({ job }) {
-  const isRunning = job.status === 'queued' || job.status === 'processing';
-  const pct = job.total_rows > 0 ? Math.round(((job.success_count + job.failed_count) / job.total_rows) * 100) : 0;
+function JobProgress({ job }) {
+  const done = (job.success_count || 0) + (job.failed_count || 0);
+  const pct = job.total_rows ? Math.round((done / job.total_rows) * 100) : 0;
+  if (job.status === 'failed') {
+    return <Alert severity="error" sx={{ borderRadius: '10px' }}><AlertTitle>The upload stopped</AlertTitle>{job.error_message}</Alert>;
+  }
   return (
-    <Box>
-      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2 }}>
-        {isRunning && <HourglassEmptyIcon sx={{ fontSize: 20, color: 'warning.main', animation: 'spin 2s linear infinite', '@keyframes spin': { from: { transform: 'rotate(0deg)' }, to: { transform: 'rotate(360deg)' } } }} />}
-        {job.status === 'failed' && <ErrorOutlineIcon sx={{ fontSize: 20, color: 'error.main' }} />}
-        <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
-          {job.status === 'queued'     && 'Upload queued — waiting for server…'}
-          {job.status === 'processing' && `Processing ${job.total_rows} products…`}
-          {job.status === 'failed'     && 'Upload failed on server'}
-        </Typography>
-      </Stack>
-      {isRunning && (
-        <LinearProgress
-          variant={job.status === 'queued' ? 'indeterminate' : 'determinate'}
-          value={pct}
-          sx={{ borderRadius: 4, height: 6, mb: 2 }}
-        />
-      )}
-      {job.status === 'failed' && job.error_message && (
-        <Alert severity="error" sx={{ borderRadius: '10px' }}>
-          <AlertTitle>Server error</AlertTitle>
-          {job.error_message}
-        </Alert>
-      )}
-    </Box>
-  );
-}
-
-// ── CSV drop zone ─────────────────────────────────────────────────────────────
-function DropZone({ onFile, disabled }) {
-  const [dragging, setDragging] = useState(false);
-  const inputRef = useRef(null);
-  const handle = (file) => {
-    if (!file) return;
-    const ok = file.name.endsWith('.csv') || file.name.endsWith('.tsv') || file.type === 'text/csv';
-    if (!ok) { alert('Please upload a .csv or .tsv file.'); return; }
-    if (file.size > MAX_FILE_MB * 1024 * 1024) { alert(`Max file size is ${MAX_FILE_MB} MB.`); return; }
-    onFile(file);
-  };
-  return (
-    <Box
-      onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={(e) => { e.preventDefault(); setDragging(false); handle(e.dataTransfer.files[0]); }}
-      onClick={() => !disabled && inputRef.current?.click()}
-      sx={{ border: '2px dashed', borderColor: dragging ? 'text.primary' : 'divider', borderRadius: '16px', p: { xs: 4, md: 6 }, textAlign: 'center', cursor: disabled ? 'not-allowed' : 'pointer', bgcolor: dragging ? 'action.selected' : 'action.hover', transition: 'all 0.2s', '&:hover': { borderColor: disabled ? 'divider' : 'text.disabled', bgcolor: 'action.selected' } }}
-    >
-      <input ref={inputRef} type="file" accept=".csv,.tsv,text/csv" style={{ display: 'none' }} onChange={(e) => handle(e.target.files[0])} disabled={disabled} />
-      <CloudUploadIcon sx={{ fontSize: 44, color: 'text.disabled', mb: 1.5 }} />
-      <Typography sx={{ fontWeight: 700, fontSize: 16, mb: 0.5 }}>Drop your CSV / spreadsheet file here</Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        or click to browse &nbsp;·&nbsp; .csv or .tsv &nbsp;·&nbsp; max {MAX_FILE_MB} MB &nbsp;·&nbsp; max 500 rows
+    <Box sx={{ p: 2.5, borderRadius: '12px', border: '1px solid', borderColor: 'divider' }}>
+      <Typography sx={{ fontWeight: 700, mb: 0.5 }}>
+        {job.status === 'queued' ? 'Getting started…' : `Adding products… ${done} of ${job.total_rows}`}
       </Typography>
-      <Button variant="outlined" size="small" sx={{ borderRadius: '8px', borderColor: 'divider', fontWeight: 600, fontSize: 12 }} disabled={disabled}>
-        Choose file
-      </Button>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+        Photos are being downloaded and checked, so this can take a few minutes. You can leave this page; the products will appear in My Products.
+      </Typography>
+      <LinearProgress variant={job.status === 'queued' ? 'indeterminate' : 'determinate'} value={pct} sx={{ height: 8, borderRadius: 4 }} />
     </Box>
   );
 }
 
-// ── CSV preview table ─────────────────────────────────────────────────────────
-function PreviewTable({ headers, rows, errorRows = new Set() }) {
-  const [expanded, setExpanded] = useState(true);
-  return (
-    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '12px', overflow: 'hidden' }}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between"
-        sx={{ px: 2, py: 1.25, bgcolor: 'action.hover', borderBottom: '1px solid', borderColor: 'divider', cursor: 'pointer' }}
-        onClick={() => setExpanded((p) => !p)}>
-        <Typography sx={{ fontWeight: 700, fontSize: 13 }}>
-          Preview — {rows.length} row{rows.length !== 1 ? 's' : ''}
-          {rows.length > MAX_PREVIEW_ROWS && ` (first ${MAX_PREVIEW_ROWS} shown)`}
-        </Typography>
-        <IconButton size="small">{expanded ? <ExpandLessIcon sx={{ fontSize: 18 }} /> : <ExpandMoreIcon sx={{ fontSize: 18 }} />}</IconButton>
-      </Stack>
-      <Collapse in={expanded}>
-        <TableContainer sx={{ maxHeight: 300 }}>
-          <Table size="small" stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700, fontSize: 11, bgcolor: 'background.paper' }}>#</TableCell>
-                {headers.map((h) => (
-                  <TableCell key={h} sx={{ fontWeight: 700, fontSize: 11, bgcolor: 'background.paper', color: REQUIRED_COLS.includes(h) ? 'error.main' : 'text.secondary', whiteSpace: 'nowrap' }}>
-                    {h}{REQUIRED_COLS.includes(h) ? ' *' : ''}
-                  </TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {rows.slice(0, MAX_PREVIEW_ROWS).map((row, i) => (
-                <TableRow key={i} sx={{ bgcolor: errorRows.has(i + 2) ? 'rgba(239,68,68,0.04)' : 'transparent' }}>
-                  <TableCell sx={{ fontSize: 11, color: 'text.disabled', fontWeight: 600 }}>
-                    {i + 2}{errorRows.has(i + 2) && <ErrorOutlineIcon sx={{ fontSize: 11, color: 'error.main', ml: 0.5, verticalAlign: 'middle' }} />}
-                  </TableCell>
-                  {headers.map((h) => (
-                    <TableCell key={h} sx={{ fontSize: 12, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row[h] ?? ''}</TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Collapse>
-    </Box>
-  );
-}
-
-// ── Column reference (CSV tab sidebar) ────────────────────────────────────────
-function ColumnReference() {
-  const [open, setOpen] = useState(false);
-  return (
-    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '12px', overflow: 'hidden' }}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between"
-        sx={{ px: 2, py: 1.5, cursor: 'pointer' }} onClick={() => setOpen((p) => !p)}>
-        <Typography sx={{ fontWeight: 700, fontSize: 13 }}>Column reference</Typography>
-        <IconButton size="small">{open ? <ExpandLessIcon sx={{ fontSize: 18 }} /> : <ExpandMoreIcon sx={{ fontSize: 18 }} />}</IconButton>
-      </Stack>
-      <Collapse in={open}>
-        <Divider />
-        <Box sx={{ p: 2 }}>
-          <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mb: 1.5 }}>
-            {ALL_COLS.map((c) => (
-              <Chip key={c} label={c} size="small" sx={{ fontSize: 10, fontWeight: 700, borderRadius: '5px', bgcolor: REQUIRED_COLS.includes(c) ? 'rgba(239,68,68,0.08)' : 'action.hover', color: REQUIRED_COLS.includes(c) ? 'error.main' : 'text.secondary', border: '1px solid', borderColor: REQUIRED_COLS.includes(c) ? 'rgba(239,68,68,0.3)' : 'divider' }} />
-            ))}
-          </Stack>
-          <Typography variant="caption" color="text.disabled">
-            <Box component="span" sx={{ color: 'error.main', fontWeight: 700 }}>Red * = required.</Box>
-            {' '}Use semicolons for multiple values: <code>S;M;L</code>
-          </Typography>
-        </Box>
-      </Collapse>
-    </Box>
-  );
-}
-
-// ── Slug lookup panel (reusable for sub-cats and brands) ──────────────────────
-function SlugLookupPanel({ title, items }) {
+function LookupPanel({ title, hint, items, code, label }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
-  const filtered = useMemo(() => {
-    if (!items?.length) return [];
+  const [copied, setCopied] = useState('');
+  const shown = useMemo(() => {
     const l = q.toLowerCase();
-    return items.filter((s) => (s.label ?? s.title).toLowerCase().includes(l) || s.slug.includes(l));
-  }, [items, q]);
-  const copyToClipboard = (text) => {
-    navigator.clipboard?.writeText(text).catch(() => {});
-  };
+    return (items || []).filter((i) => `${label(i)} ${code(i)}`.toLowerCase().includes(l)).slice(0, 200);
+  }, [items, q, code, label]);
+  const copy = (text) => { navigator.clipboard?.writeText(text).then(() => { setCopied(text); setTimeout(() => setCopied(''), 1200); }).catch(() => {}); };
   return (
     <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '12px', overflow: 'hidden' }}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between"
-        sx={{ px: 2, py: 1.5, cursor: 'pointer' }} onClick={() => setOpen((p) => !p)}>
-        <Typography sx={{ fontWeight: 700, fontSize: 13 }}>{title} ({items?.length ?? 0})</Typography>
-        <IconButton size="small">{open ? <ExpandLessIcon sx={{ fontSize: 18 }} /> : <ExpandMoreIcon sx={{ fontSize: 18 }} />}</IconButton>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 2, py: 1.25, cursor: 'pointer' }} onClick={() => setOpen((o) => !o)}>
+        <Box>
+          <Typography sx={{ fontWeight: 700, fontSize: 14 }}>{title} ({items?.length ?? 0})</Typography>
+          {hint && <Typography variant="caption" color="text.secondary">{hint}</Typography>}
+        </Box>
+        <IconButton size="small" aria-label={open ? 'Hide' : 'Show'}>{open ? <ExpandLessIcon /> : <ExpandMoreIcon />}</IconButton>
       </Stack>
       <Collapse in={open}>
         <Divider />
         <Box sx={{ p: 1.5 }}>
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${title.toLowerCase()}…`}
-            style={{ width: '100%', padding: '6px 10px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, outline: 'none', marginBottom: 8, boxSizing: 'border-box' }} />
-          <Box sx={{ maxHeight: 180, overflowY: 'auto' }}>
-            {filtered.map((s) => (
-              <Stack key={s.id ?? s.slug} direction="row" alignItems="center" justifyContent="space-between"
+          <TextField size="small" fullWidth placeholder="Search…" value={q} onChange={(e) => setQ(e.target.value)} sx={{ mb: 1 }} />
+          <Box sx={{ maxHeight: 240, overflowY: 'auto' }}>
+            {shown.map((i) => (
+              <Stack key={code(i)} direction="row" alignItems="center" justifyContent="space-between" spacing={1}
                 sx={{ py: 0.75, borderBottom: '1px solid', borderColor: 'divider' }}>
-                <Typography sx={{ fontSize: 12, flex: 1 }}>{s.label ?? s.title}</Typography>
-                <Tooltip title="Click to copy slug">
-                  <Typography
-                    onClick={() => copyToClipboard(s.slug)}
-                    sx={{ fontSize: 11, fontFamily: 'var(--font-mono-stack), ui-monospace, monospace', color: 'text.disabled', ml: 1, flexShrink: 0, cursor: 'copy', '&:hover': { color: 'text.primary' } }}>
-                    {s.slug}
-                  </Typography>
+                <Typography sx={{ fontSize: 13, flex: 1, minWidth: 0 }}>{label(i)}</Typography>
+                <Tooltip title={copied === code(i) ? 'Copied' : 'Copy'}>
+                  <Button size="small" onClick={() => copy(code(i))} endIcon={<ContentCopyOutlinedIcon sx={{ fontSize: 14 }} />}
+                    sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, textTransform: 'none', color: 'text.secondary', flexShrink: 0 }}>
+                    {code(i)}
+                  </Button>
                 </Tooltip>
               </Stack>
             ))}
-            {filtered.length === 0 && <Typography variant="caption" color="text.disabled">No results</Typography>}
+            {!shown.length && <Typography variant="caption" color="text.disabled">Nothing matches.</Typography>}
           </Box>
         </Box>
       </Collapse>
@@ -342,349 +254,318 @@ function SlugLookupPanel({ title, items }) {
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+function ColumnGuide({ columns }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '12px', overflow: 'hidden' }}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 2, py: 1.25, cursor: 'pointer' }} onClick={() => setOpen((o) => !o)}>
+        <Typography sx={{ fontWeight: 700, fontSize: 14 }}>What goes in each column</Typography>
+        <IconButton size="small" aria-label={open ? 'Hide' : 'Show'}>{open ? <ExpandLessIcon /> : <ExpandMoreIcon />}</IconButton>
+      </Stack>
+      <Collapse in={open}>
+        <Divider />
+        <Box sx={{ maxHeight: 420, overflowY: 'auto' }}>
+          {(columns || []).map((c) => (
+            <Box key={c.name} sx={{ px: 2, py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <Typography sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 12.5, fontWeight: 700, color: c.required ? 'error.main' : 'text.primary' }}>
+                {c.name}{c.required ? ' *' : ''}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">{c.help}</Typography>
+            </Box>
+          ))}
+        </Box>
+      </Collapse>
+    </Box>
+  );
+}
+
+function DropZone({ onFile, disabled }) {
+  const [dragging, setDragging] = useState(false);
+  const [error, setError] = useState('');
+  const inputRef = useRef(null);
+  const handle = (file) => {
+    setError('');
+    if (!file) return;
+    const name = file.name.toLowerCase();
+    if (/\.(xlsx|xls|numbers|ods)$/.test(name)) { setError('Save the sheet as CSV first (Excel: File › Save As › CSV UTF-8; Google Sheets: File › Download › CSV).'); return; }
+    if (!/\.(csv|tsv|txt)$/.test(name)) { setError('Choose a .csv file.'); return; }
+    if (file.size > MAX_FILE_MB * 1024 * 1024) { setError(`The file is larger than ${MAX_FILE_MB} MB. Split it into smaller files.`); return; }
+    onFile(file);
+  };
+  return (
+    <Box>
+      <Box role="button" tabIndex={0}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') inputRef.current?.click(); }}
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)}
+        onDrop={(e) => { e.preventDefault(); setDragging(false); handle(e.dataTransfer.files[0]); }}
+        onClick={() => !disabled && inputRef.current?.click()}
+        sx={{ border: '2px dashed', borderColor: dragging ? 'text.primary' : 'divider', borderRadius: '16px', p: { xs: 4, md: 6 }, textAlign: 'center',
+          cursor: disabled ? 'not-allowed' : 'pointer', bgcolor: dragging ? 'action.selected' : 'action.hover' }}>
+        <input ref={inputRef} type="file" accept=".csv,.tsv,.txt,text/csv" hidden onChange={(e) => { handle(e.target.files[0]); e.target.value = ''; }} disabled={disabled} />
+        <CloudUploadIcon sx={{ fontSize: 44, color: 'text.disabled', mb: 1 }} />
+        <Typography sx={{ fontWeight: 700, fontSize: 16, mb: 0.5 }}>Drop your CSV file here, or tap to choose it</Typography>
+        <Typography variant="body2" color="text.secondary">CSV · up to {MAX_FILE_MB} MB · up to 500 rows</Typography>
+      </Box>
+      {error && <Alert severity="error" sx={{ mt: 1.5, borderRadius: '10px' }}>{error}</Alert>}
+    </Box>
+  );
+}
+
+function PreviewTable({ headers, rows, required }) {
+  return (
+    <TableContainer sx={{ maxHeight: 320, border: '1px solid', borderColor: 'divider', borderRadius: '12px' }}>
+      <Table size="small" stickyHeader>
+        <TableHead>
+          <TableRow>
+            <TableCell sx={{ fontWeight: 700, fontSize: 11 }}>Row</TableCell>
+            {headers.map((h) => (
+              <TableCell key={h} sx={{ fontWeight: 700, fontSize: 11, whiteSpace: 'nowrap', color: required.includes(canonical(h)) ? 'error.main' : 'text.secondary' }}>{h}</TableCell>
+            ))}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {rows.slice(0, MAX_PREVIEW_ROWS).map((r, i) => (
+            <TableRow key={i} sx={{ opacity: (r[headers[0]] || '').startsWith('#') ? 0.45 : 1 }}>
+              <TableCell sx={{ fontSize: 11, color: 'text.disabled' }}>{i + 2}</TableCell>
+              {headers.map((h) => (
+                <TableCell key={h} sx={{ fontSize: 12, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r[h]}</TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+}
+
+// ── Page ─────────────────────────────────────────────────────────────────────
 export default function BulkUploadPage() {
-  const router  = useRouter();
-  const client  = createAxiosClient();
+  const router = useRouter();
+  const client = useMemo(() => createAxiosClient(), []);
   const gridRef = useRef(null);
-
-  const [accessChecked, setAccessChecked] = useState(false);
-  const [hasAccess,     setHasAccess]     = useState(false);
-  const [meta,          setMeta]          = useState(null);
-  const [tab,           setTab]           = useState(0);  // 0 = grid, 1 = CSV
-
-  // Shared result state
-  const [uploading,   setUploading]   = useState(false);
-  const [result,      setResult]      = useState(null);
-  const [asyncJob,    setAsyncJob]    = useState(null);
-  const [uploadError, setUploadError] = useState('');
-
-  // CSV-specific state
-  const [file,        setFile]        = useState(null);
-  const [csvHeaders,  setCsvHeaders]  = useState([]);
-  const [csvRows,     setCsvRows]     = useState([]);
-  const [missingCols, setMissingCols] = useState([]);
-
+  const sentIds = useRef([]);
   const pollRef = useRef(null);
 
-  // ── Load meta (also used as access check) ─────────────────────────────────
-  useEffect(() => {
-    client.get(`${API_BASE}/vendor/products/bulk-upload/meta/`)
-      .then((res) => { setMeta(res.data); setHasAccess(true); })
-      .catch(() => setHasAccess(false))
-      .finally(() => setAccessChecked(true));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const [checked, setChecked] = useState(false);
+  const [meta, setMeta] = useState(null);
+  const [tab, setTab] = useState(0);
+  const [uploading, setUploading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [job, setJob] = useState(null);
+  const [error, setError] = useState('');
+  const [file, setFile] = useState(null);
+  const [csv, setCsv] = useState({ headers: [], rows: [] });
 
-  // ── Async job polling ──────────────────────────────────────────────────────
-  const startPolling = useCallback((jobId) => {
-    const poll = async () => {
+  useEffect(() => {
+    client.get(`${API}/meta/`).then((res) => setMeta(res.data)).catch(() => setMeta(null)).finally(() => setChecked(true));
+  }, [client]);
+  // After an upload: the plan's room left (and the store's defaults) have changed.
+  useEffect(() => {
+    if (!result?.success_count) return;
+    client.get(`${API}/meta/`).then((res) => setMeta(res.data)).catch(() => {});
+  }, [result, client]);
+  useEffect(() => () => clearInterval(pollRef.current), []);
+
+  const poll = useCallback((jobId) => {
+    const tick = async () => {
       try {
-        const res = await client.get(`${API_BASE}/vendor/products/bulk-upload/job/${jobId}/`);
-        setAsyncJob(res.data);
-        if (res.data.status === 'done' || res.data.status === 'failed') {
+        const { data } = await client.get(`${API}/job/${jobId}/`);
+        setJob(data);
+        if (data.status === 'done' || data.status === 'failed') {
           clearInterval(pollRef.current);
-          pollRef.current = null;
           setUploading(false);
-          if (res.data.status === 'done') {
-            setResult({ mode: 'async', total_rows: res.data.total_rows, success_count: res.data.success_count, failed_count: res.data.failed_count, created_product_ids: res.data.created_product_ids, errors: res.data.errors });
-          }
+          if (data.status === 'done') setResult(data);
         }
-      } catch { /* ignore transient poll errors */ }
+      } catch { /* try again on the next tick */ }
     };
-    pollRef.current = setInterval(poll, POLL_INTERVAL_MS);
-    poll();
+    pollRef.current = setInterval(tick, POLL_MS);
+    tick();
   }, [client]);
 
-  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
-
-  // ── Shared response handler ────────────────────────────────────────────────
-  const handleAPIResponse = useCallback((data, httpStatus) => {
-    if (data.mode === 'async') {
-      setAsyncJob({ ...data, success_count: 0, failed_count: 0 });
-      startPolling(data.job_id);
-    } else {
-      setResult(data);
-      setUploading(false);
-    }
-  }, [startPolling]);
-
-  const handleAPIError = useCallback((err) => {
+  const handleResponse = (data) => {
+    if (data.mode === 'async') { setJob({ ...data, success_count: 0, failed_count: 0 }); poll(data.job_id); return; }
+    setResult(data);
     setUploading(false);
-    setUploadError(
-      err?.response?.data?.detail ||
-      err?.response?.data?.error  ||
-      'Upload failed. Please try again.'
-    );
-  }, []);
+  };
+  const handleError = (err) => {
+    setUploading(false);
+    const data = err?.response?.data;
+    if (data?.products || data?.errors) { setResult(data); return; }
+    setError(data?.detail || data?.error || 'The upload failed. Check your connection and try again.');
+  };
 
-  // ── Grid mode submit ───────────────────────────────────────────────────────
-  const handleGridSubmit = useCallback(async (rows) => {
-    setUploading(true);
-    setUploadError('');
-    setResult(null);
-    setAsyncJob(null);
+  const reset = () => {
+    clearInterval(pollRef.current);
+    setResult(null); setJob(null); setError(''); setUploading(false); setFile(null); setCsv({ headers: [], rows: [] });
+  };
+
+  // Table
+  const submitTable = async ({ products, files, ids }) => {
+    sentIds.current = ids;
+    setUploading(true); setError(''); setResult(null); setJob(null);
+    const form = new FormData();
+    form.append('products', JSON.stringify(products));
+    files.forEach(([key, f]) => form.append(key, f, f.name || 'photo.jpg'));
     try {
-      const res = await client.post(`${API_BASE}/vendor/products/bulk-upload/direct/`, { products: rows });
-      handleAPIResponse(res.data);
-    } catch (err) {
-      // If server returned per-row validation errors, push them back to the grid
-      if (err?.response?.data?.errors && gridRef.current?.applyServerErrors) {
-        gridRef.current.applyServerErrors(err.response.data.errors);
-      }
-      handleAPIError(err);
-    }
-  }, [client, handleAPIResponse, handleAPIError]);
+      const { data } = await client.post(`${API}/direct/`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      handleResponse(data);
+    } catch (err) { handleError(err); }
+  };
+  // After a table upload: saved products leave the list, the ones to fix stay with their errors.
+  const backToTable = () => {
+    const errors = result?.errors || [];
+    const failedIds = errors.map((e) => sentIds.current[e.row - 1]).filter(Boolean);
+    setResult(null); setJob(null); setError('');
+    setTimeout(() => {
+      gridRef.current?.keepOnly(failedIds);
+      if (errors.length) gridRef.current?.applyServerErrors(errors, sentIds.current);
+    }, 0);
+  };
 
-  // ── CSV mode ───────────────────────────────────────────────────────────────
-  const parseCSV = useCallback((f) => {
+  // Spreadsheet
+  const chooseFile = (f) => {
+    reset();
+    setFile(f);
     const reader = new FileReader();
-    reader.onload = (e) => {
-      const lines = e.target.result.split(/\r?\n/).filter(Boolean);
-      if (!lines.length) return;
-      const delim   = f.name.endsWith('.tsv') ? '\t' : ',';
-      const headers = lines[0].split(delim).map((h) => h.trim().replace(/^"|"$/g, ''));
-      const rows    = lines.slice(1, MAX_PREVIEW_ROWS + 1).map((line) => {
-        const vals = line.split(delim).map((v) => v.trim().replace(/^"|"$/g, ''));
-        return Object.fromEntries(headers.map((h, i) => [h, vals[i] ?? '']));
-      });
-      setCsvHeaders(headers);
-      setCsvRows(rows);
-      setMissingCols(REQUIRED_COLS.filter((c) => !headers.includes(c)));
-    };
+    reader.onload = (e) => setCsv(parseCsv(String(e.target.result || '')));
     reader.readAsText(f);
-  }, []);
-
-  const handleFile = useCallback((f) => {
-    setFile(f); setResult(null); setAsyncJob(null); setUploadError(''); parseCSV(f);
-  }, [parseCSV]);
-
-  const handleCSVUpload = async () => {
-    if (!file || missingCols.length > 0) return;
-    setUploading(true); setUploadError(''); setResult(null); setAsyncJob(null);
+  };
+  const required = meta?.required_columns || [];
+  const present = new Set(csv.headers.map(canonical));
+  const missing = file && csv.headers.length ? required.filter((c) => !present.has(c)) : [];
+  const realRows = csv.rows.filter((r) => !(r[csv.headers[0]] || '').startsWith('#'));
+  const uploadFile = async () => {
+    setUploading(true); setError(''); setResult(null); setJob(null);
     const form = new FormData();
     form.append('file', file);
     try {
-      const res = await client.post(`${API_BASE}/vendor/products/bulk-upload/`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
-      handleAPIResponse(res.data);
-    } catch (err) { handleAPIError(err); }
+      const { data } = await client.post(`${API}/`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      handleResponse(data);
+    } catch (err) { handleError(err); }
   };
-
-  const handleReset = () => {
-    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-    setFile(null); setCsvHeaders([]); setCsvRows([]); setMissingCols([]);
-    setResult(null); setAsyncJob(null); setUploadError(''); setUploading(false);
-  };
-
-  const handleDownloadTemplate = async () => {
+  const downloadTemplate = async () => {
     try {
-      const res = await client.get(`${API_BASE}/vendor/products/bulk-upload/template/`, { responseType: 'blob' });
-      const url = URL.createObjectURL(new Blob([res.data]));
+      const res = await client.get(`${API}/template/`, { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'text/csv' }));
       const a = document.createElement('a'); a.href = url; a.download = 'negromart_bulk_upload_template.csv'; a.click();
       URL.revokeObjectURL(url);
-    } catch { alert('Failed to download template.'); }
+    } catch { setError('The template could not be downloaded. Try again.'); }
   };
 
-  const errorRows    = useMemo(() => new Set((result?.errors ?? []).map((e) => e.row)), [result]);
-  const remainSlots  = meta?.remaining_slots;
-  const showResult   = !!result;
-  const showAsync    = asyncJob && !result;
-  const asyncRunning = asyncJob && (asyncJob.status === 'queued' || asyncJob.status === 'processing');
+  if (!checked) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 12 }}><CircularProgress size={32} /></Box>;
+  if (!meta) return <UpgradeGate />;
 
-  // ── Guards ─────────────────────────────────────────────────────────────────
-  if (!accessChecked) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 12 }}><CircularProgress size={32} /></Box>;
-  if (!hasAccess) return <UpgradeGate />;
+  const busyJob = job && !result;
+  const remaining = meta.remaining_slots;
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', px: { xs: 2, md: 4 }, py: { xs: 3, md: 5 } }}>
-
-      {/* Back */}
-      <Button startIcon={<ArrowBackIcon sx={{ fontSize: 16 }} />} onClick={() => router.back()}
-        sx={{ mb: 3, color: 'text.secondary', borderRadius: '8px', fontSize: 13, fontWeight: 600 }}>
-        Back
+    // minmax(0, 1fr): wide tables scroll inside their box instead of widening the page on phones.
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', width: '100%', maxWidth: 1100, mx: 'auto', px: { xs: 0, md: 2 }, py: { xs: 1, md: 3 } }}>
+      <Button startIcon={<ArrowBackIcon />} onClick={() => router.push('/products')} sx={{ justifySelf: 'start', mb: 2, color: 'text.secondary', borderRadius: '8px', fontWeight: 600 }}>
+        My products
       </Button>
 
-      {/* Header */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'flex-end' }} sx={{ mb: 1 }} spacing={2}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'flex-end' }} spacing={2} sx={{ mb: 2 }}>
         <Box>
-          <Typography sx={{ fontFamily: "var(--font-figtree), system-ui, sans-serif", fontSize: { xs: 32, md: 42 }, fontWeight: 700, letterSpacing: '-1px', lineHeight: 1, mb: 0.75 }}>
+          <Typography component="h1" sx={{ fontFamily: 'var(--font-figtree), system-ui, sans-serif', fontSize: { xs: 30, md: 40 }, fontWeight: 700, letterSpacing: '-0.8px', lineHeight: 1.1, mb: 0.75 }}>
             Add products in bulk
           </Typography>
-          <Typography color="text.secondary" sx={{ lineHeight: 1.7 }}>
-            Add multiple products at once.
-            {remainSlots != null && (
-              <Box component="span" sx={{ ml: 1, fontWeight: 600, color: remainSlots < 10 ? 'warning.main' : 'text.primary' }}>
-                {remainSlots} slot{remainSlots !== 1 ? 's' : ''} remaining on your plan.
-              </Box>
-            )}
+          <Typography color="text.secondary">
+            Up to 500 at once, with photos and versions.
+            {remaining != null && <Box component="span" sx={{ ml: 1, fontWeight: 600, color: remaining < 10 ? 'warning.main' : 'text.primary' }}>Room for {remaining} more on your plan.</Box>}
           </Typography>
         </Box>
+        <Button component={Link} href="/products/bulk-upload/guide" variant="outlined" startIcon={<MenuBookOutlinedIcon />}
+          sx={{ borderRadius: '10px', fontWeight: 600, flexShrink: 0 }}>How it works</Button>
       </Stack>
 
-      {/* Mode tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={tab} onChange={(_, v) => { setTab(v); handleReset(); }} sx={{ '& .MuiTab-root': { fontSize: 13, fontWeight: 600, textTransform: 'none', minHeight: 44 } }}>
-          <Tab
-            icon={<TableRowsOutlinedIcon sx={{ fontSize: 18 }} />}
-            iconPosition="start"
-            label="Add products (recommended)"
-            sx={{ gap: 0.75 }}
-          />
-          <Tab
-            icon={<GridOnOutlinedIcon sx={{ fontSize: 18 }} />}
-            iconPosition="start"
-            label="Import from CSV / spreadsheet"
-            sx={{ gap: 0.75 }}
-          />
-        </Tabs>
-      </Box>
+      <Tabs value={tab} onChange={(_, v) => { setTab(v); reset(); }} variant="fullWidth"
+        sx={{ mb: 3, borderBottom: 1, borderColor: 'divider', '& .MuiTab-root': { textTransform: 'none', fontWeight: 600, minHeight: 48 } }}>
+        <Tab icon={<ViewAgendaOutlinedIcon />} iconPosition="start" label="Add in the browser" />
+        <Tab icon={<GridOnOutlinedIcon />} iconPosition="start" label="Upload a spreadsheet" />
+      </Tabs>
 
-      {/* ── Tab 0: In-browser grid ─────────────────────────────────────────── */}
-      {tab === 0 && (
-        <Box>
-          {/* Quick guide */}
-          {!result && !showAsync && (
-            <Alert severity="info" icon={false} sx={{ borderRadius: '10px', mb: 3, bgcolor: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.15)' }}>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 1, sm: 3 }} flexWrap="wrap">
-                {[
-                  ['1', 'Fill in the table', 'Type your product details below. Required fields are marked *.'],
-                  ['2', 'Expand rows for more', 'Click the ❯ icon on any row to add brand, sizes, colours, description.'],
-                  ['3', 'Click Upload', 'Products go into "In Review" — you\'ll see them in My Products.'],
-                ].map(([n, title, desc]) => (
-                  <Stack key={n} direction="row" spacing={1} sx={{ flex: 1, minWidth: 200 }}>
-                    <Box sx={{ width: 20, height: 20, borderRadius: '6px', bgcolor: 'rgba(59,130,246,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, mt: 0.1 }}>
-                      <Typography sx={{ fontSize: 10, fontWeight: 800, color: 'info.main' }}>{n}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'info.dark' }}>{title}</Typography>
-                      <Typography sx={{ fontSize: 11, color: 'text.secondary', lineHeight: 1.4 }}>{desc}</Typography>
-                    </Box>
-                  </Stack>
-                ))}
-              </Stack>
-            </Alert>
-          )}
+      {error && <Alert severity="error" sx={{ borderRadius: '10px', mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
+      {busyJob && <Box sx={{ mb: 3 }}><JobProgress job={job} /></Box>}
+      {result && <Box sx={{ mb: 3 }}><UploadReport result={result} rowWord={tab === 1 ? 'row' : 'product'} onReset={tab === 0 ? backToTable : reset} /></Box>}
 
-          {showResult && <Box sx={{ mb: 3 }}><UploadReport result={result} onReset={handleReset} /></Box>}
-          {showAsync  && <Box sx={{ mb: 3 }}><AsyncJobPanel job={asyncJob} /></Box>}
-          {asyncJob?.status === 'failed' && (
-            <Button variant="outlined" onClick={handleReset} sx={{ borderRadius: '10px', borderColor: 'divider', fontWeight: 600, mb: 2 }}>Try again</Button>
-          )}
-
-          {uploadError && (
-            <Alert severity="error" sx={{ borderRadius: '10px', mb: 3 }}>
-              <AlertTitle>Upload error</AlertTitle>
-              {uploadError}
-            </Alert>
-          )}
-
-          {!showResult && !showAsync && (
-            <BulkProductGrid
-              ref={gridRef}
-              meta={meta}
-              onSubmit={handleGridSubmit}
-              submitting={uploading}
-            />
-          )}
+      {/* Kept mounted while a report shows, so "Fix the rest" returns to the same cards. */}
+      {tab === 0 && !busyJob && (
+        <Box sx={{ display: result ? 'none' : 'block' }}>
+          <Alert severity="info" icon={false} sx={{ borderRadius: '12px', mb: 2.5 }}>
+            <Typography variant="body2">
+              Fill in one card per product and add its photos. If it comes in colours, sizes, flavours or pack sizes, tap
+              <strong> Comes in versions?</strong>. Products with a photo go to review; without one they&apos;re saved as drafts.
+            </Typography>
+          </Alert>
+          <BulkProductGrid ref={gridRef} meta={meta} onSubmit={submitTable} submitting={uploading} />
         </Box>
       )}
 
-      {/* ── Tab 1: CSV upload ─────────────────────────────────────────────── */}
-      {tab === 1 && (
+      {tab === 1 && !result && !busyJob && (
         <Grid container spacing={3}>
-
-          {/* Left: workflow */}
-          <Grid item xs={12} md={8}>
-            <Stack spacing={3}>
-
-              <Stack direction="row" justifyContent="flex-end">
-                <Button startIcon={<DownloadIcon sx={{ fontSize: 15 }} />} variant="outlined" onClick={handleDownloadTemplate}
-                  sx={{ borderRadius: '10px', borderColor: 'divider', fontWeight: 600, fontSize: 13, color: 'text.primary', '&:hover': { borderColor: 'text.primary' } }}>
-                  Download template
-                </Button>
-              </Stack>
-
-              {!file ? (
-                <DropZone onFile={handleFile} disabled={uploading} />
-              ) : (
-                <Box sx={{ p: 2, borderRadius: '12px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
-                  <Stack direction="row" alignItems="center" justifyContent="space-between">
-                    <Stack direction="row" alignItems="center" spacing={1.5}>
-                      <Box sx={{ width: 40, height: 40, borderRadius: '10px', bgcolor: 'action.selected', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <CloudUploadIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
-                      </Box>
-                      <Box>
-                        <Typography sx={{ fontWeight: 700, fontSize: 13 }}>{file.name}</Typography>
-                        <Typography variant="caption" color="text.secondary">{(file.size / 1024).toFixed(1)} KB &nbsp;·&nbsp; {csvRows.length} rows</Typography>
-                      </Box>
-                    </Stack>
-                    {!uploading && !result && !asyncRunning && (
-                      <Tooltip title="Remove file"><IconButton size="small" onClick={handleReset}><DeleteOutlineIcon sx={{ fontSize: 18 }} /></IconButton></Tooltip>
-                    )}
+          <Grid size={{ xs: 12, md: 7 }}>
+            <Stack spacing={2.5}>
+              <Box sx={{ p: 2.5, borderRadius: '12px', border: '1px solid', borderColor: 'divider' }}>
+                <Typography sx={{ fontWeight: 700, mb: 1.5 }}>Four steps</Typography>
+                {[
+                  ['Download the template', 'It has every column and example rows (rows starting with # are skipped).'],
+                  ['Fill it in', 'One row per product. Versions: one row per version, all with the same title.'],
+                  ['Save as CSV', 'Excel: File › Save As › CSV UTF-8. Google Sheets: File › Download › CSV.'],
+                  ['Upload it here', 'We check every row and tell you exactly what to fix.'],
+                ].map(([t, d], i) => (
+                  <Stack key={t} direction="row" spacing={1.5} sx={{ mb: 1.25 }}>
+                    <Box sx={{ width: 24, height: 24, borderRadius: '8px', bgcolor: 'action.selected', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 12, fontWeight: 800 }}>{i + 1}</Box>
+                    <Box><Typography sx={{ fontSize: 14, fontWeight: 600 }}>{t}</Typography><Typography variant="body2" color="text.secondary">{d}</Typography></Box>
                   </Stack>
-                  {missingCols.length > 0 && (
-                    <Alert severity="error" sx={{ mt: 2, borderRadius: '8px' }}>
-                      <AlertTitle>Missing required columns</AlertTitle>
-                      <Stack direction="row" flexWrap="wrap" gap={0.5} sx={{ mt: 0.5 }}>
-                        {missingCols.map((c) => <Chip key={c} label={c} size="small" sx={{ fontSize: 10, fontWeight: 700, bgcolor: 'rgba(239,68,68,0.1)', color: 'error.main', borderRadius: '5px' }} />)}
-                      </Stack>
+                ))}
+                <Button startIcon={<DownloadIcon />} variant="contained" disableElevation onClick={downloadTemplate}
+                  sx={{ mt: 1, bgcolor: 'text.primary', color: 'background.paper', borderRadius: '10px', fontWeight: 700 }}>Download template</Button>
+              </Box>
+
+              {!file ? <DropZone onFile={chooseFile} disabled={uploading} /> : (
+                <Box sx={{ p: 2, borderRadius: '12px', border: '1px solid', borderColor: 'divider' }}>
+                  <Stack direction="row" alignItems="center" justifyContent="space-between">
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography sx={{ fontWeight: 700, fontSize: 14 }} noWrap>{file.name}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {realRows.length} row{realRows.length === 1 ? '' : 's'}{csv.rows.length > realRows.length ? ` (${csv.rows.length - realRows.length} example rows skipped)` : ''}
+                      </Typography>
+                    </Box>
+                    {!uploading && <Tooltip title="Choose another file"><IconButton aria-label="Remove file" onClick={reset}><DeleteOutlineIcon /></IconButton></Tooltip>}
+                  </Stack>
+                  {missing.length > 0 && (
+                    <Alert severity="error" sx={{ mt: 1.5, borderRadius: '8px' }}>
+                      <AlertTitle>Missing columns</AlertTitle>
+                      Add {missing.join(', ')}. Easiest: copy your rows into the template.
                     </Alert>
                   )}
                 </Box>
               )}
 
-              {csvRows.length > 0 && !result && !showAsync && (
-                <PreviewTable headers={csvHeaders} rows={csvRows} errorRows={errorRows} />
-              )}
-
-              {uploading && !asyncJob && (
-                <Box>
-                  <Typography sx={{ fontSize: 13, fontWeight: 600, mb: 0.75 }}>Uploading…</Typography>
-                  <LinearProgress sx={{ borderRadius: 4, height: 6 }} />
-                </Box>
-              )}
-
-              {showAsync  && <AsyncJobPanel job={asyncJob} />}
-              {showResult && <UploadReport result={result} onReset={handleReset} />}
-              {uploadError && <Alert severity="error" sx={{ borderRadius: '10px' }}><AlertTitle>Upload error</AlertTitle>{uploadError}</Alert>}
-
-              {file && !result && !showAsync && (
-                <Button variant="contained" disableElevation size="large" onClick={handleCSVUpload}
-                  disabled={uploading || missingCols.length > 0}
-                  sx={{ bgcolor: 'text.primary', color: 'background.paper', borderRadius: '12px', fontWeight: 700, fontSize: 14, py: 1.5, '&:hover': { bgcolor: 'text.secondary' }, '&:disabled': { bgcolor: 'action.disabledBackground' } }}>
-                  {uploading ? 'Uploading…' : `Upload ${csvRows.length} product${csvRows.length !== 1 ? 's' : ''}`}
+              {csv.rows.length > 0 && <PreviewTable headers={csv.headers} rows={csv.rows} required={required} />}
+              {uploading && !job && <LinearProgress sx={{ height: 6, borderRadius: 3 }} />}
+              {file && (
+                <Button variant="contained" disableElevation size="large" onClick={uploadFile} disabled={uploading || missing.length > 0 || !realRows.length}
+                  sx={{ bgcolor: 'text.primary', color: 'background.paper', borderRadius: '12px', fontWeight: 700, py: 1.5 }}>
+                  {uploading ? 'Uploading…' : `Upload ${realRows.length} row${realRows.length === 1 ? '' : 's'}`}
                 </Button>
-              )}
-              {asyncJob?.status === 'failed' && (
-                <Button variant="outlined" onClick={handleReset} sx={{ borderRadius: '10px', borderColor: 'divider', fontWeight: 600 }}>Try again</Button>
               )}
             </Stack>
           </Grid>
 
-          {/* Right: reference panels */}
-          <Grid item xs={12} md={4}>
-            <Stack spacing={2.5}>
-              <Box sx={{ p: 2.5, borderRadius: '12px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
-                <Typography sx={{ fontWeight: 700, fontSize: 14, mb: 1.5 }}>How to use the CSV template</Typography>
-                {[
-                  ['1', 'Download the template above'],
-                  ['2', 'Open it in Excel or Google Sheets'],
-                  ['3', 'Fill in your products, one per row'],
-                  ['4', 'Save as CSV and upload here'],
-                ].map(([n, t]) => (
-                  <Stack key={n} direction="row" spacing={1.5} sx={{ mb: 1.25, '&:last-child': { mb: 0 } }}>
-                    <Box sx={{ width: 20, height: 20, borderRadius: '6px', bgcolor: 'action.selected', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Typography sx={{ fontSize: 10, fontWeight: 800 }}>{n}</Typography>
-                    </Box>
-                    <Typography sx={{ fontSize: 13 }}>{t}</Typography>
-                  </Stack>
-                ))}
-              </Box>
-
-              <ColumnReference />
-
-              <SlugLookupPanel title="Category slugs" items={meta?.sub_categories} />
-              <SlugLookupPanel title="Brand slugs" items={meta?.brands} />
+          <Grid size={{ xs: 12, md: 5 }}>
+            <Stack spacing={2}>
+              <ColumnGuide columns={meta.columns} />
+              <LookupPanel title="Category codes" hint="For the category column" items={meta.sub_categories} code={(i) => i.slug} label={(i) => i.label} />
+              <LookupPanel title="Brands" hint="For the brand column" items={meta.brands} code={(i) => i.slug} label={(i) => i.title} />
+              <LookupPanel title="Countries" hint="For ships_to" items={meta.countries} code={(i) => i.code || i.name} label={(i) => i.name} />
+              <LookupPanel title="Delivery methods" hint="For delivery_methods" items={meta.delivery_methods} code={(i) => i.name} label={(i) => `${i.name} (${i.min_days}-${i.max_days} days)`} />
+              {meta.defaults?.ships_to?.length > 0 && (
+                <Typography variant="caption" color="text.secondary">
+                  Left empty, ships_to is {meta.defaults.ships_to.map((c) => c.name).join(', ')} and delivery is {meta.defaults.delivery_methods.map((d) => d.name).join(', ') || 'not set'}, like your latest product.
+                </Typography>
+              )}
             </Stack>
           </Grid>
         </Grid>

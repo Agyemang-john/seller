@@ -16,6 +16,8 @@ export const useProductForm = (id = null) => {
   const [brands, setBrands] = useState([]);
   const [colors, setColors] = useState([]);
   const [sizes, setSizes] = useState([]);
+  // Option types a version can differ by (backend product/variations.py).
+  const [variationOptions, setVariationOptions] = useState(null);
   const [regions, setRegions] = useState([]);
   const [deliveryOptions, setDeliveryOptions] = useState([]);
   const [imagePreview, setImagePreview] = useState(null);
@@ -39,6 +41,8 @@ export const useProductForm = (id = null) => {
     slug: "",
     sub_category: "",
     variant: "None",
+    // What versions differ by, in order: [{ key, label }] (Colour, Flavour...).
+    variation_axes: [],
     brand: "",
     // Empty, not a sample value: a pre-filled price gets published by mistake.
     price: "",
@@ -94,6 +98,7 @@ export const useProductForm = (id = null) => {
       setBrands(data.brands);
       setColors(data.colors);
       setSizes(data.sizes);
+      setVariationOptions(data.variation_options || null);
       setRegions(data.regions);
       setDeliveryOptions(data.delivery_options);
     } catch (err) {
@@ -122,8 +127,7 @@ export const useProductForm = (id = null) => {
       const formattedVariants = data.variants.map((v) => ({
         id: v.id,
         title: v.title || "",
-        size: v.size || null,
-        color: v.color || null,
+        options: v.options || {},
         image: v.image || null, // Keep null for formData
         quantity: v.quantity || 1,
         price: v.price || 0,
@@ -134,8 +138,7 @@ export const useProductForm = (id = null) => {
       const formattedForVariants = data.variants.map((v) => ({
         id: v.id,
         title: v.title || "",
-        size: v.size || null,
-        color: v.color || null,
+        options: v.options || {},
         image: v.image || null, // URL for existing variants
         quantity: v.quantity || 1,
         price: v.price || 0,
@@ -150,6 +153,7 @@ export const useProductForm = (id = null) => {
         slug: data.slug,
         sub_category: data.sub_category,
         variant: data.variant,
+        variation_axes: (data.variation_axes || []).map(({ key, label }) => ({ key, label })),
         brand: data.brand,
         price: data.price,
         old_price: data.old_price,
@@ -347,6 +351,7 @@ export const useProductForm = (id = null) => {
     brands,
     colors,
     sizes,
+    variationOptions,
     selectedCategory,
     selectedBrand,
     imagePreview,

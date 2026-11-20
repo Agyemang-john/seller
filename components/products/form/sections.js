@@ -24,6 +24,7 @@ import DescriptionSection from './DescriptionSection';
 import ShippingSection from './ShippingSection';
 import MoreDetailsSection from './MoreDetailsSection';
 import { plainText } from './fields';
+import { cleanValue, comboKey, optionLabel } from './variationOptions';
 import { deliveryOptionsError } from '../DeliveryOptions';
 
 const positive = (v) => parseFloat(v) > 0;
@@ -49,10 +50,11 @@ export const SECTIONS = [
       'fulfilment_type', 'sourcing_min_days', 'sourcing_max_days', 'sourced_from'],
   },
   {
-    id: 'variants', title: 'Variants', subtitle: 'Sizes and colours', icon: TuneOutlinedIcon, optional: true,
+    id: 'variants', title: 'Variants', subtitle: 'Colour, size, flavour, pack size…', icon: TuneOutlinedIcon, optional: true,
     component: VariantsSection,
-    isComplete: ({ formData, variants }) => formData.variant !== 'None' && variants.length > 0,
-    errorKeys: ['variants', 'variantRows', 'variant'],
+    isComplete: ({ formData, variants }) => formData.variant !== 'None'
+      && (formData.variation_axes?.length ?? 0) > 0 && variants.length > 0,
+    errorKeys: ['variants', 'variantRows', 'variant', 'variation_axes'],
   },
   {
     id: 'specs', title: 'Specs', subtitle: 'Details shoppers filter by', icon: ListAltOutlinedIcon, optional: true,
@@ -108,23 +110,35 @@ export function validateProduct({ formData, variants, isNew }) {
   if (delivery) errors.delivery_options = delivery;
 
   if (formData.variant !== 'None') {
-    if (!variants.length) {
-      errors.variants = 'Add at least one variant, or choose "No" for versions.';
+    const axes = formData.variation_axes || [];
+    if (!axes.length) {
+      errors.variation_axes = 'Choose what changes between versions (for example Colour or Flavour).';
+    } else if (!variants.length) {
+      errors.variants = 'Add at least one version, or choose "No, just one".';
     } else {
-      const needSize = ['Size', 'Size-Color'].includes(formData.variant);
-      const needColor = ['Color', 'Size-Color'].includes(formData.variant);
       const rows = {};
+      const seen = new Map();
       variants.forEach((v, i) => {
         const row = {};
+        const missing = {};
+        axes.forEach((a) => { if (!cleanValue(v.options?.[a.key])) missing[a.key] = `Enter a ${a.label.toLowerCase()}.`; });
+        if (Object.keys(missing).length) row.options = missing;
         if (!positive(v.price)) row.price = 'Enter a price.';
-        if (needSize && !v.size) row.size = 'Choose a size.';
-        if (needColor && !v.color) row.color = 'Choose a colour.';
+        if (!row.options) {
+          const key = comboKey(v.options, axes);
+          if (seen.has(key)) {
+            row.options = { [axes[0].key]: `Same as version ${seen.get(key) + 1}. Change one.` };
+          } else {
+            seen.set(key, i);
+          }
+        }
         if (Object.keys(row).length) rows[i] = row;
       });
       if (Object.keys(rows).length) {
         errors.variantRows = rows;
-        const first = Object.values(rows)[0];
-        errors.variants = `Variant ${Number(Object.keys(rows)[0]) + 1}: ${Object.values(first)[0]}`;
+        const [index, first] = Object.entries(rows)[0];
+        const message = first.options ? Object.values(first.options)[0] : first.price;
+        errors.variants = `${optionLabel(variants[index], axes) || `Version ${Number(index) + 1}`}: ${message}`;
       }
     }
   }

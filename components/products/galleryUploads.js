@@ -18,10 +18,14 @@ export const galleryFromApi = (gallery = []) =>
   gallery.map((g) => ({ key: `img-${g.id}`, id: g.id, file: null, url: g.images }));
 
 /** The variant as the product endpoint expects it (no files, no preview URLs). */
-export function toVariantPayload(v) {
-  const { gallery = [], key, ...rest } = v;
+export function toVariantPayload(v, axes = []) {
+  // size/color are worked out by the server from options (product/variations.py).
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { gallery = [], key, size, color, options = {}, ...rest } = v;
   return {
     ...rest,
+    // Only the product's current options; values trimmed like the server does.
+    options: Object.fromEntries(axes.map((a) => [a.key, String(options[a.key] ?? '').replace(/\s+/g, ' ').trim()])),
     // The form keeps what was typed (so a field can be cleared); send numbers.
     price: rest.price === '' || rest.price == null ? null : Number(rest.price),
     quantity: parseInt(rest.quantity, 10) || 0,

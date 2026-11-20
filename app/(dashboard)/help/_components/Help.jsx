@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import {
   Box, Typography, Stack, Card, CardActionArea, CardContent,
   Accordion, AccordionSummary, AccordionDetails,
@@ -88,18 +89,26 @@ const SECTIONS = [
         a: (
           <Stack spacing={1.5}>
             <Typography variant="body2" color="text.secondary">
-              Go to <strong>Products → Add Product</strong> in the left sidebar. The form is split into four tabs: General, Images, Variants, and Delivery.
+              Go to <strong>Products → Add Product</strong>. It is one page in sections (Basics, Photos &amp; video, Price &amp; stock, Variants, Specs, Description, Shipping, More details); jump between them with the side panel on a laptop or the chips at the top on a phone.
             </Typography>
             <StepList steps={[
-              'Enter a clear, concise product title in Title Case (e.g. "Sony WH-1000XM4 Wireless Headphones").',
-              'Select the correct sub-category so buyers can find your product easily.',
-              'Choose a brand, product type (New / Used / Refurbished / Book / Grocery), and variant style.',
-              'Set your price, optional old price (must be higher to show a discount), and total available quantity.',
-              'Add regions where you will ship the item.',
-              'Fill in the Description, Features, and Specifications using the rich-text editor.',
-              'Upload your main image and save.',
+              'Enter a clear product title in Title Case (e.g. "Sony WH-1000XM4 Wireless Headphones") and choose its category.',
+              'Add the main photo and more photos (or take them with your phone camera).',
+              'Set your price, optional old price (higher, to show a discount), stock and packed weight.',
+              'If it comes in versions (colour, size, flavour, pack size…), set them up in Variants.',
+              'Fill in Specs and the Description, and choose where you ship and how.',
+              'Tap Save. New products are reviewed before they go live.',
             ]} />
           </Stack>
+        ),
+      },
+      {
+        q: 'Can I add many products at once?',
+        a: (
+          <Typography variant="body2" color="text.secondary">
+            Yes, on the Pro plan and above: <strong>Products → Add in bulk</strong>. Fill in a card per product in the browser (with photos and versions), or upload a spreadsheet of up to 500 rows.
+            Read the <Link href="/products/bulk-upload/guide">bulk upload guide</Link> first; it takes about 5 minutes.
+          </Typography>
         ),
       },
       {
@@ -200,9 +209,9 @@ const SECTIONS = [
         q: 'What variant types are supported?',
         a: (
           <Stack spacing={1}>
-            <Typography variant="body2" color="text.secondary">Choose one of the following when creating or editing a product:</Typography>
+            <Typography variant="body2" color="text.secondary">In Variants, answer “Does this item come in different versions?” with Yes, then pick up to 3 things that change between them:</Typography>
             <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
-              {['None — single version of the product (no variants)', 'Size — e.g. S, M, L, XL, or shoe sizes', 'Color — e.g. Red, Blue, Black', 'Size + Color — a combination grid (e.g. Medium / Red)'].map(t => (
+              {['Colour, Size, Style, Material, Pattern', 'Flavour, Scent, Weight, Volume, Count, Pack size (groceries and beauty)', 'Capacity, Configuration, Power, Length, Finish, Shape, Edition, Age range', 'Or your own, e.g. “Roast level” or “Strength”', 'Type the values once and “Add versions” creates every combination (e.g. Vanilla / 500 g).'].map(t => (
                 <Box component="li" key={t} sx={{ fontSize: 13, color: mid, mb: 0.5 }}>{t}</Box>
               ))}
             </Box>
@@ -213,10 +222,10 @@ const SECTIONS = [
         q: 'How do I add variant-specific images?',
         a: (
           <StepList steps={[
-            'Select a variant type and save the main product.',
-            'Open the Variants tab.',
-            'Add each variant (size/colour) and upload a dedicated image for it.',
-            'Each variant image should also have a white/neutral background.',
+            "In Variants, each version has its own Photo box: tap it to add that version's main photo.",
+            'Add more photos for a version under its gallery (depends on your plan).',
+            "Shoppers see the version's photos when they pick it on the product page.",
+            'Version photos should also have a white or light background.',
           ]} />
         ),
       },

@@ -1,624 +1,521 @@
 'use client';
 
 /**
- * BulkProductGrid.jsx
+ * Add many products in the browser, no spreadsheet needed. One card per
+ * product, laid out for phones, tablets and laptops alike:
+ *  - the essentials on the card (name, category, price, stock, weight, photos);
+ *  - "Versions" for colour / size / flavour / pack size... (the same option
+ *    picker as the product form);
+ *  - "More details" for brand, description, SKU, barcode, ships-to, delivery.
+ * Ships-to and delivery start as the store's own (from its latest product).
  *
- * An in-browser spreadsheet for adding products in bulk without any CSV knowledge.
- * Sellers fill in a simple table — categories and brands are searchable dropdowns,
- * variants use plain comma-separated text (we convert behind the scenes).
- *
- * Props:
- *   meta          object   — data from /bulk-upload/meta/ (categories, brands, types)
- *   onSubmit      fn       — called with the cleaned rows array ready for the API
- *   submitting    bool     — disables form while upload is in progress
+ * Backend: vendor/bulk_upload.py. onSubmit receives { products, files }:
+ * products in the upload format, files keyed photos_<i> / version_photo_<i>_<v>.
  */
 
-import { useState, useCallback, useRef, memo, forwardRef, useImperativeHandle } from 'react';
+import { forwardRef, memo, useCallback, useImperativeHandle, useMemo, useState } from 'react';
 import {
-  Box, Table, TableHead, TableBody, TableRow, TableCell, TableContainer,
-  TextField, Select, MenuItem, Autocomplete, Button, IconButton,
-  Typography, Stack, Tooltip, Chip, Collapse, FormControl, Paper,
+  Alert, Autocomplete, Box, Button, Chip, Collapse, IconButton, InputAdornment, MenuItem, Stack,
+  TextField, Tooltip, Typography,
 } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
+import AddPhotoAlternateOutlinedIcon from '@mui/icons-material/AddPhotoAlternateOutlined';
+import CloseIcon from '@mui/icons-material/Close';
+import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import Swal from 'sweetalert2';
+import { squareifyImage, validateImage } from './fileValidators';
+import { OptionPicker, QuickAdd } from './Variant';
+import { fieldSx, NumberField } from './form/fields';
+import {
+  FALLBACK_VARIATIONS, cleanValue, comboKey, optionLabel, orderedTypes,
+} from './form/variationOptions';
 
-// ── Field configuration ────────────────────────────────────────────────────────
-
-const PRODUCT_TYPE_OPTIONS = [
-  { value: 'new',         label: 'New' },
-  { value: 'used',        label: 'Used' },
-  { value: 'book',        label: 'Book' },
-  { value: 'grocery',     label: 'Grocery / Food' },
-  { value: 'refurbished', label: 'Refurbished' },
-];
-
-const VARIANT_OPTIONS = [
-  { value: 'None',       label: 'No variants' },
-  { value: 'Size',       label: 'By size  (S, M, L …)' },
-  { value: 'Color',      label: 'By color' },
-  { value: 'Size-Color', label: 'By size & color' },
-];
-
-// Maps backend field name → friendly label for error display
 const FIELD_LABELS = {
-  title:            'Product name',
-  price:            'Selling price',
-  old_price:        'Original / compare-at price',
-  sub_category_slug:'Category',
-  product_type:     'Product type',
-  total_quantity:   'Stock quantity',
-  brand_slug:       'Brand',
-  variant:          'Variants',
-  size_names:       'Sizes',
-  color_names:      'Colors',
-  weight:           'Weight (kg)',
-  description:      'Description',
+  title: 'Name', category: 'Category', price: 'Price', stock: 'Stock', weight_kg: 'Weight',
+  compare_at_price: 'Old price', condition: 'Condition', brand: 'Brand', options: 'Versions',
+  seller_sku: 'SKU', barcode: 'Barcode', ships_to: 'Ships to', delivery_methods: 'Delivery',
+  image_url: 'Photo', more_image_urls: 'Photos', return_days: 'Return days', plan: 'Plan', product: 'Product',
 };
 
-let _nextId = 1;
-function makeRow() {
+let nextId = 1;
+const newKey = () => `k${nextId++}`;
+
+function makeProduct(meta) {
   return {
-    _id:          _nextId++,
-    _expanded:    false,
-    _errors:      {},
-    title:        '',
-    price:        '',
-    old_price:    '',
-    sub_category: null,   // full option object { slug, label, ... }
-    product_type: 'new',
-    total_quantity: '',
-    brand:        null,   // full option object { slug, title, ... }
-    variant:      'None',
-    size_names:   '',
-    color_names:  '',
-    weight:       '',
-    description:  '',
+    _id: newKey(), _more: false, _versionsOpen: false, _errors: {},
+    title: '', category: null, price: '', compare_at_price: '', stock: '', weight_kg: '', condition: 'new',
+    brand: null, description: '', seller_sku: '', barcode: '', return_days: '',
+    ships_to: meta?.defaults?.ships_to || [],
+    delivery: (meta?.defaults?.delivery_methods || []).map((d) => d.id),
+    photos: [], axes: [], versions: [],
   };
 }
 
-function makeRows(n) {
-  return Array.from({ length: n }, makeRow);
-}
+const positive = (v) => v !== '' && Number(v) > 0;
+const isBlank = (p) => !p.title.trim() && !p.price && !p.category && !p.photos.length;
 
-// ── Client-side validation ─────────────────────────────────────────────────────
-
-function validateRow(row) {
+/** Same checks as the server, so most mistakes are caught before uploading. */
+function validate(p) {
   const e = {};
-  if (!row.title.trim())                          e.title = 'Required';
-  if (!row.price || isNaN(+row.price) || +row.price <= 0) e.price = 'Enter a positive number';
-  if (!row.old_price || isNaN(+row.old_price))    e.old_price = 'Required (use same as price if no discount)';
-  if (!row.sub_category)                          e.sub_category_slug = 'Select a category';
-  if (!row.total_quantity || isNaN(+row.total_quantity) || +row.total_quantity < 0)
-    e.total_quantity = 'Enter 0 or more';
-  if ((row.variant === 'Size' || row.variant === 'Size-Color') && !row.size_names.trim())
-    e.size_names = 'Add at least one size, e.g. S, M, L';
-  if ((row.variant === 'Color' || row.variant === 'Size-Color') && !row.color_names.trim())
-    e.color_names = 'Add at least one color, e.g. Red, Blue';
+  if (!p.title.trim()) e.title = 'Add a name.';
+  if (!p.category) e.category = 'Choose a category.';
+  if (!positive(p.weight_kg)) e.weight_kg = 'Packed weight in kg.';
+  if (!p.ships_to.length) e.ships_to = 'Choose at least one country.';
+  if (!p.delivery.length) e.delivery_methods = 'Choose a delivery method.';
+  if (p.axes.length) {
+    if (!p.versions.length) e.options = 'Add the versions, or remove the options.';
+    const seen = new Set();
+    p.versions.forEach((v) => {
+      if (e.options) return;
+      const missing = p.axes.find((a) => !cleanValue(v.options?.[a.key]));
+      const name = optionLabel(v, p.axes) || 'A version';
+      if (missing) e.options = `${name}: enter a ${missing.label.toLowerCase()}.`;
+      else if (!positive(v.price)) e.options = `${name}: enter a price.`;
+      else if (v.stock === '' || Number(v.stock) < 0) e.options = `${name}: enter the stock (0 or more).`;
+      const key = comboKey(v.options, p.axes);
+      if (!e.options && seen.has(key)) e.options = `${name} is listed twice.`;
+      seen.add(key);
+    });
+  } else {
+    if (!positive(p.price)) e.price = 'Enter the price.';
+    if (p.stock === '' || Number(p.stock) < 0) e.stock = 'Enter the stock.';
+  }
   return e;
 }
 
-// Convert a grid row into the flat dict the backend serializer expects
-function rowToPayload(row, index) {
+/** The product in the upload format (vendor/bulk_upload.py COLUMNS). */
+function toPayload(p, index, meta, files) {
+  const deliveryNames = p.delivery
+    .map((id) => meta?.delivery_methods?.find((d) => d.id === id)?.name)
+    .filter(Boolean);
+  const base = {
+    title: p.title.trim(), category: p.category?.slug || '', price: p.price, stock: p.stock,
+    weight_kg: p.weight_kg, compare_at_price: p.compare_at_price, condition: p.condition,
+    brand: p.brand?.slug || '', description: p.description, seller_sku: p.seller_sku, barcode: p.barcode,
+    return_days: p.return_days, ships_to: p.ships_to.map((c) => c.code || c.name).join(';'),
+    delivery_methods: deliveryNames.join(';'),
+  };
+  p.photos.forEach((ph) => files.push([`photos_${index}`, ph.file]));
+  if (!p.axes.length) return base;
   return {
-    title:            row.title.trim(),
-    price:            row.price,
-    old_price:        row.old_price,
-    sub_category_slug: row.sub_category?.slug ?? '',
-    brand_slug:       row.brand?.slug ?? '',
-    product_type:     row.product_type,
-    total_quantity:   row.total_quantity,
-    weight:           row.weight || '1.0',
-    volume:           '1.0',
-    life:             '',
-    variant:          row.variant,
-    // Accept commas OR semicolons — normalise to semicolons for the backend
-    size_names:       row.size_names.replace(/,\s*/g, ';').trim(),
-    color_names:      row.color_names.replace(/,\s*/g, ';').trim(),
-    color_codes:      '',
-    variant_prices:   '',
-    variant_quantities: '',
-    description:      row.description.trim(),
-    features:         '',
-    specifications:   '',
-    delivery_returns: '',
+    rows: p.versions.map((v, vi) => {
+      if (v.photo?.file) files.push([`version_photo_${index}_${vi}`, v.photo.file]);
+      const row = vi === 0 ? { ...base } : { title: base.title };
+      row.price = v.price;
+      row.stock = v.stock;
+      row.seller_sku = v.seller_sku || '';
+      p.axes.forEach((a, n) => {
+        row[`option${n + 1}_name`] = a.label;
+        row[`option${n + 1}_value`] = cleanValue(v.options?.[a.key]);
+      });
+      return row;
+    }),
   };
 }
 
-// ── Tiny reusable cell text field ──────────────────────────────────────────────
+async function preparePhoto(file) {
+  const squared = await squareifyImage(file, 'pad', '#FFFFFF');
+  const check = await validateImage(squared, { maxSizeMB: 2, minResolution: 400, maxResolution: 1800, checkBackground: false });
+  if (!check.valid) {
+    Swal.fire({ icon: 'error', title: `${file.name} can't be used`, html: check.errors.join('<br/>') });
+    return null;
+  }
+  return { file: squared, url: URL.createObjectURL(squared) };
+}
 
-const CellInput = memo(function CellInput({ value, onChange, placeholder, type = 'text', error, width = 140 }) {
+// ── Pieces ───────────────────────────────────────────────────────────────────
+
+function FieldError({ message }) {
+  if (!message) return null;
+  return <Typography sx={{ fontSize: 12, color: 'error.main', mt: 0.5 }}>{message}</Typography>;
+}
+
+function PhotoStrip({ photos, limit, onAdd, onRemove, inputId }) {
+  const full = limit != null && photos.length >= limit;
   return (
-    <Box sx={{ minWidth: width }}>
-      <TextField
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        type={type}
-        size="small"
-        error={!!error}
-        inputProps={{ style: { fontSize: 13 } }}
-        sx={{
-          width: '100%',
-          '& .MuiOutlinedInput-root': {
-            borderRadius: '8px',
-            '& fieldset': { borderColor: error ? '#ef4444' : 'divider' },
-          },
-        }}
-      />
-      {error && (
-        <Typography sx={{ fontSize: 10, color: '#ef4444', mt: 0.25, pl: 0.5, lineHeight: 1.3 }}>
-          {error}
-        </Typography>
-      )}
-    </Box>
-  );
-});
-
-// ── Searchable autocomplete for categories / brands ────────────────────────────
-
-const SearchableSelect = memo(function SearchableSelect({ value, onChange, options, placeholder, error, width = 200 }) {
-  return (
-    <Box sx={{ minWidth: width }}>
-      <Autocomplete
-        value={value}
-        onChange={(_, v) => onChange(v)}
-        options={options}
-        getOptionLabel={(o) => o.label ?? o.title ?? ''}
-        isOptionEqualToValue={(o, v) => o.slug === v?.slug}
-        size="small"
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            placeholder={placeholder}
-            error={!!error}
-            inputProps={{ ...params.inputProps, style: { fontSize: 13 } }}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '8px',
-                '& fieldset': { borderColor: error ? '#ef4444' : 'divider' },
-              },
-            }}
-          />
-        )}
-        renderOption={(props, option) => (
-          <Box component="li" {...props} sx={{ fontSize: 12, py: '4px !important' }}>
-            {option.label ?? option.title}
+    <Box>
+      <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
+        {photos.map((ph, i) => (
+          <Box key={ph.url} sx={{ position: 'relative', width: 64, height: 64, borderRadius: '10px', overflow: 'hidden',
+            border: '1px solid', borderColor: i === 0 ? 'text.primary' : 'divider' }}>
+            <Box component="img" src={ph.url} alt="" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <IconButton size="small" aria-label="Remove photo" onClick={() => onRemove(i)}
+              sx={{ position: 'absolute', top: 2, right: 2, width: 22, height: 22, bgcolor: 'rgba(0,0,0,0.55)', color: '#fff',
+                '&:hover': { bgcolor: 'rgba(0,0,0,0.75)' } }}>
+              <CloseIcon sx={{ fontSize: 14 }} />
+            </IconButton>
+            {i === 0 && <Typography sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, fontSize: 9, fontWeight: 700,
+              textAlign: 'center', bgcolor: 'rgba(255,255,255,0.9)' }}>MAIN</Typography>}
+          </Box>
+        ))}
+        {!full && (
+          <Box component="label" htmlFor={inputId}
+            sx={{ width: 64, height: 64, borderRadius: '10px', border: '2px dashed', borderColor: 'divider', cursor: 'pointer',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'text.secondary',
+              '&:hover': { borderColor: 'text.primary' } }}>
+            <AddPhotoAlternateOutlinedIcon sx={{ fontSize: 20 }} />
+            <Typography sx={{ fontSize: 10, fontWeight: 600 }}>Photo</Typography>
+            <input id={inputId} type="file" accept="image/*" multiple hidden
+              onChange={(e) => { onAdd([...e.target.files]); e.target.value = ''; }} />
           </Box>
         )}
-        sx={{ width: '100%' }}
-        noOptionsText="No matches"
-        clearOnBlur={false}
-      />
-      {error && (
-        <Typography sx={{ fontSize: 10, color: '#ef4444', mt: 0.25, pl: 0.5, lineHeight: 1.3 }}>
-          {error}
-        </Typography>
-      )}
+      </Stack>
+    </Box>
+  );
+}
+
+function VersionsEditor({ product, variations, types, suggestionsFor, onChange }) {
+  const { axes, versions } = product;
+  const setVersion = (i, patch) => onChange({ versions: versions.map((v, j) => (j === i ? { ...v, ...patch } : v)) });
+  const addVersions = (rows) => onChange({
+    versions: [...versions, ...rows.map((options) => ({ key: newKey(), options, price: product.price || '', stock: '', seller_sku: '', photo: null }))],
+  });
+
+  return (
+    <Stack spacing={2}>
+      <OptionPicker axes={axes} types={types} maxAxes={variations.max_axes}
+        onAdd={(a) => !axes.some((x) => x.key === a.key) && axes.length < variations.max_axes && onChange({ axes: [...axes, a] })}
+        onRemove={(key) => onChange({ axes: axes.filter((a) => a.key !== key) })} />
+      {axes.length > 0 && <QuickAdd axes={axes} suggestionsFor={suggestionsFor} existing={versions} onCreate={addVersions} />}
+      {axes.length > 0 && versions.map((v, i) => (
+        <Box key={v.key} sx={{ p: 1.5, borderRadius: '12px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+            <Typography variant="body2" fontWeight={700}>{optionLabel(v, axes) || `Version ${i + 1}`}</Typography>
+            <IconButton size="small" aria-label="Remove version" onClick={() => onChange({ versions: versions.filter((_, j) => j !== i) })}>
+              <DeleteOutlineIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Stack>
+          <Grid container spacing={1.25}>
+            {axes.map((a) => (
+              <Grid key={a.key} size={{ xs: 6, md: 3 }}>
+                <TextField size="small" fullWidth label={a.label} sx={fieldSx} value={v.options?.[a.key] ?? ''}
+                  inputProps={{ maxLength: 40 }}
+                  onChange={(e) => setVersion(i, { options: { ...v.options, [a.key]: e.target.value } })} />
+              </Grid>
+            ))}
+            <Grid size={{ xs: 6, md: 2 }}>
+              <NumberField label="Price" value={v.price} onChange={(val) => setVersion(i, { price: val })}
+                InputProps={{ startAdornment: <InputAdornment position="start">GHS</InputAdornment> }} />
+            </Grid>
+            <Grid size={{ xs: 6, md: 2 }}>
+              <NumberField decimals={false} label="Stock" value={v.stock} onChange={(val) => setVersion(i, { stock: val })} />
+            </Grid>
+            <Grid size={{ xs: 8, md: 3 }}>
+              <TextField size="small" fullWidth label="SKU (optional)" sx={fieldSx} value={v.seller_sku}
+                inputProps={{ maxLength: 64 }} onChange={(e) => setVersion(i, { seller_sku: e.target.value })} />
+            </Grid>
+            <Grid size={{ xs: 4, md: 2 }}>
+              {v.photo ? (
+                <Stack direction="row" alignItems="center" spacing={0.5}>
+                  <Box component="img" src={v.photo.url} alt="" sx={{ width: 40, height: 40, borderRadius: '8px', objectFit: 'cover' }} />
+                  <IconButton size="small" aria-label="Remove version photo" onClick={() => setVersion(i, { photo: null })}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
+                </Stack>
+              ) : (
+                <Button component="label" size="small" startIcon={<AddPhotoAlternateOutlinedIcon />} sx={{ minHeight: 40, borderRadius: '8px' }}>
+                  Photo
+                  <input type="file" accept="image/*" hidden onChange={async (e) => {
+                    const file = e.target.files[0]; e.target.value = '';
+                    if (file) { const photo = await preparePhoto(file); if (photo) setVersion(i, { photo }); }
+                  }} />
+                </Button>
+              )}
+            </Grid>
+          </Grid>
+        </Box>
+      ))}
+    </Stack>
+  );
+}
+
+// ── One product ──────────────────────────────────────────────────────────────
+
+const ProductCard = memo(function ProductCard({ product: p, index, meta, variations, types, onUpdate, onDelete, onDuplicate, submitting }) {
+  const e = p._errors;
+  const set = useCallback((patch) => onUpdate(p._id, patch), [onUpdate, p._id]);
+  const field = (name) => (value) => set({ [name]: value, _errors: { ...e, [name]: undefined } });
+  const brandOptions = useMemo(() => (meta?.brands || []).map((b) => ({ ...b, label: b.title })), [meta]);
+  const limit = meta?.max_images_per_product ?? null;
+  const hasVersions = p.axes.length > 0;
+  const errorCount = Object.values(e).filter(Boolean).length;
+
+  const suggestionsFor = useCallback((key) => {
+    const used = p.versions.map((v) => cleanValue(v.options?.[key])).filter(Boolean);
+    const known = variations.types.find((t) => t.key === key)?.examples || [];
+    return [...new Set([...used, ...known])];
+  }, [p.versions, variations.types]);
+
+  const addPhotos = async (files) => {
+    const room = limit == null ? files.length : Math.max(limit - p.photos.length, 0);
+    if (files.length > room) Swal.fire({ icon: 'info', title: `Your plan allows ${limit} photos per product`, text: `Only the first ${room} were added.` });
+    const ready = (await Promise.all(files.slice(0, room).map(preparePhoto))).filter(Boolean);
+    if (ready.length) set({ photos: [...p.photos, ...ready] });
+  };
+
+  return (
+    <Box component="section" aria-label={`Product ${index + 1}`}
+      sx={{ borderRadius: '16px', border: '1px solid', borderColor: errorCount ? 'error.light' : 'divider', bgcolor: 'background.paper', overflow: 'hidden' }}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between"
+        sx={{ px: 2, py: 1, bgcolor: 'action.hover', borderBottom: '1px solid', borderColor: 'divider' }}>
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
+          <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', letterSpacing: '0.06em', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            #{index + 1}
+          </Typography>
+          {p.title && <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>{p.title}</Typography>}
+          {errorCount > 0 && <Chip size="small" color="error" variant="outlined" icon={<ErrorOutlineIcon />} label={`${errorCount} to fix`} sx={{ height: 22 }} />}
+        </Stack>
+        <Stack direction="row">
+          <Tooltip title="Duplicate (same details, new name)">
+            <IconButton aria-label="Duplicate product" onClick={() => onDuplicate(p._id)} disabled={submitting}><ContentCopyOutlinedIcon sx={{ fontSize: 18 }} /></IconButton>
+          </Tooltip>
+          <Tooltip title="Remove">
+            <IconButton aria-label="Remove product" onClick={() => onDelete(p._id)} disabled={submitting}><DeleteOutlineIcon sx={{ fontSize: 18 }} /></IconButton>
+          </Tooltip>
+        </Stack>
+      </Stack>
+
+      <Box sx={{ p: 2 }}>
+        <Grid container spacing={1.5}>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <TextField size="small" fullWidth required label="Product name" sx={fieldSx} value={p.title}
+              inputProps={{ maxLength: 150 }} error={!!e.title} onChange={(ev) => field('title')(ev.target.value)} />
+            <FieldError message={e.title} />
+          </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Autocomplete size="small" options={meta?.sub_categories || []} value={p.category}
+              getOptionLabel={(o) => o.label || o.title || ''} isOptionEqualToValue={(o, v) => o.slug === v?.slug}
+              onChange={(_, v) => field('category')(v)}
+              renderInput={(params) => <TextField {...params} required label="Category" placeholder="Search…" sx={fieldSx} error={!!e.category} />} />
+            <FieldError message={e.category} />
+          </Grid>
+
+          {!hasVersions && (
+            <>
+              <Grid size={{ xs: 6, sm: 3 }}>
+                <NumberField required label="Price" value={p.price} onChange={field('price')} error={!!e.price}
+                  InputProps={{ startAdornment: <InputAdornment position="start">GHS</InputAdornment> }} />
+                <FieldError message={e.price} />
+              </Grid>
+              <Grid size={{ xs: 6, sm: 3 }}>
+                <NumberField decimals={false} required label="Stock" value={p.stock} onChange={field('stock')} error={!!e.stock} />
+                <FieldError message={e.stock} />
+              </Grid>
+            </>
+          )}
+          <Grid size={{ xs: 6, sm: 3 }}>
+            <NumberField required label="Weight" decimals={3} value={p.weight_kg} onChange={field('weight_kg')} error={!!e.weight_kg}
+              InputProps={{ endAdornment: <InputAdornment position="end">kg</InputAdornment> }} />
+            <FieldError message={e.weight_kg} />
+          </Grid>
+          <Grid size={{ xs: 6, sm: 3 }}>
+            <TextField select size="small" fullWidth label="Condition" sx={fieldSx} value={p.condition}
+              onChange={(ev) => field('condition')(ev.target.value)}>
+              {(meta?.conditions || [{ value: 'new', label: 'New' }]).map((c) => <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>)}
+            </TextField>
+          </Grid>
+
+          <Grid size={{ xs: 12 }}>
+            <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', mb: 0.75 }}>
+              Photos {limit != null && `(up to ${limit})`} · the first is the main photo
+            </Typography>
+            <PhotoStrip photos={p.photos} limit={limit} inputId={`bulk-photos-${p._id}`} onAdd={addPhotos}
+              onRemove={(i) => set({ photos: p.photos.filter((_, j) => j !== i) })} />
+            {!p.photos.length && !p.versions.some((v) => v.photo) && (
+              <Typography variant="caption" color="text.secondary">No photo: it will be saved as a draft you can finish later.</Typography>
+            )}
+          </Grid>
+        </Grid>
+
+        <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: 'wrap', rowGap: 1 }}>
+          <Button size="small" startIcon={<TuneOutlinedIcon />} onClick={() => set({ _versionsOpen: !p._versionsOpen })}
+            variant={hasVersions ? 'contained' : 'outlined'} disableElevation
+            sx={{ borderRadius: '10px', fontWeight: 600, minHeight: 40, ...(hasVersions && { bgcolor: 'text.primary', color: 'background.paper' }) }}>
+            {hasVersions ? `${p.versions.length} version${p.versions.length === 1 ? '' : 's'} · ${p.axes.map((a) => a.label).join(', ')}` : 'Comes in versions? (colour, size, flavour…)'}
+          </Button>
+          <Button size="small" onClick={() => set({ _more: !p._more })} endIcon={p._more ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            sx={{ borderRadius: '10px', fontWeight: 600, minHeight: 40, color: 'text.primary' }}>
+            More details
+          </Button>
+        </Stack>
+        <FieldError message={e.options} />
+
+        <Collapse in={p._versionsOpen} unmountOnExit>
+          <Box sx={{ mt: 2, p: { xs: 1.5, sm: 2 }, borderRadius: '14px', bgcolor: 'action.hover' }}>
+            <VersionsEditor product={p} variations={variations} types={types} suggestionsFor={suggestionsFor}
+              onChange={(patch) => set({ ...patch, _errors: { ...e, options: undefined } })} />
+          </Box>
+        </Collapse>
+
+        <Collapse in={p._more} unmountOnExit>
+          <Grid container spacing={1.5} sx={{ mt: 1 }}>
+            <Grid size={{ xs: 6, sm: 4 }}>
+              <NumberField label="Old price (optional)" value={p.compare_at_price} onChange={field('compare_at_price')}
+                helperText="Shown crossed out" InputProps={{ startAdornment: <InputAdornment position="start">GHS</InputAdornment> }} />
+            </Grid>
+            <Grid size={{ xs: 6, sm: 4 }}>
+              <NumberField decimals={false} label="Return days" value={p.return_days} onChange={field('return_days')} helperText="Empty = no returns" />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <Autocomplete size="small" options={brandOptions} value={p.brand} getOptionLabel={(o) => o.title || ''}
+                isOptionEqualToValue={(o, v) => o.slug === v?.slug} onChange={(_, v) => field('brand')(v)}
+                renderInput={(params) => <TextField {...params} label="Brand (optional)" sx={fieldSx} />} />
+            </Grid>
+            {!hasVersions && (
+              <Grid size={{ xs: 6, sm: 4 }}>
+                <TextField size="small" fullWidth label="SKU (optional)" sx={fieldSx} value={p.seller_sku}
+                  inputProps={{ maxLength: 64 }} onChange={(ev) => field('seller_sku')(ev.target.value)} />
+              </Grid>
+            )}
+            <Grid size={{ xs: 6, sm: 4 }}>
+              <TextField size="small" fullWidth label="Barcode (optional)" sx={fieldSx} value={p.barcode}
+                inputProps={{ inputMode: 'numeric', maxLength: 14 }} onChange={(ev) => field('barcode')(ev.target.value.replace(/\D/g, ''))} />
+            </Grid>
+            <Grid size={{ xs: 12, sm: hasVersions ? 8 : 4 }}>
+              <Autocomplete multiple size="small" options={meta?.countries || []} value={p.ships_to}
+                getOptionLabel={(o) => o.name} isOptionEqualToValue={(o, v) => o.id === v.id}
+                onChange={(_, v) => field('ships_to')(v)}
+                renderInput={(params) => <TextField {...params} label="Ships to" sx={fieldSx} error={!!e.ships_to} />} />
+              <FieldError message={e.ships_to} />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', mb: 0.75 }}>
+                Delivery methods · the first one you pick is the default
+              </Typography>
+              <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
+                {(meta?.delivery_methods || []).map((d) => {
+                  const pos = p.delivery.indexOf(d.id);
+                  return (
+                    <Chip key={d.id} clickable label={`${d.name}${pos === 0 ? ' · default' : ''}`}
+                      variant={pos >= 0 ? 'filled' : 'outlined'}
+                      onClick={() => field('delivery')(pos >= 0 ? p.delivery.filter((x) => x !== d.id) : [...p.delivery, d.id])}
+                      sx={{ height: 36, borderRadius: '10px', fontWeight: 600,
+                        ...(pos >= 0 && { bgcolor: 'text.primary', color: 'background.paper' }) }} />
+                  );
+                })}
+              </Stack>
+              <FieldError message={e.delivery_methods} />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField size="small" fullWidth multiline minRows={3} label="Description" sx={fieldSx} value={p.description}
+                placeholder="What shoppers should know. A blank line starts a new paragraph."
+                onChange={(ev) => field('description')(ev.target.value)} />
+            </Grid>
+          </Grid>
+        </Collapse>
+      </Box>
     </Box>
   );
 });
 
-// ── Single grid row ────────────────────────────────────────────────────────────
-
-const GridRow = memo(function GridRow({ row, index, meta, onUpdate, onDelete, submitting }) {
-  const e = row._errors;
-  const showSizes  = row.variant === 'Size'  || row.variant === 'Size-Color';
-  const showColors = row.variant === 'Color' || row.variant === 'Size-Color';
-  const hasErrors  = Object.keys(e).length > 0;
-
-  const upd = useCallback((field, value) => {
-    onUpdate(row._id, { [field]: value, _errors: {} });
-  }, [onUpdate, row._id]);
-
-  const catOptions   = meta?.sub_categories ?? [];
-  const brandOptions = meta?.brands?.map((b) => ({ ...b, label: b.title })) ?? [];
-
-  return (
-    <>
-      {/* ── Main row ── */}
-      <TableRow
-        sx={{
-          bgcolor: hasErrors ? 'rgba(239,68,68,0.03)' : 'transparent',
-          '&:hover': { bgcolor: hasErrors ? 'rgba(239,68,68,0.05)' : 'action.hover' },
-          verticalAlign: 'top',
-        }}
-      >
-        {/* Row number */}
-        <TableCell sx={{ py: 1, px: 1, width: 36, textAlign: 'center' }}>
-          <Typography sx={{ fontSize: 11, color: hasErrors ? '#ef4444' : 'text.disabled', fontWeight: 600, pt: 0.75 }}>
-            {index}
-            {hasErrors && <WarningAmberIcon sx={{ fontSize: 10, ml: 0.25, verticalAlign: 'middle' }} />}
-          </Typography>
-        </TableCell>
-
-        {/* Product name */}
-        <TableCell sx={{ py: 1, px: 0.75 }}>
-          <CellInput
-            value={row.title}
-            onChange={(v) => upd('title', v)}
-            placeholder="e.g. Men's White Polo"
-            error={e.title}
-            width={200}
-          />
-        </TableCell>
-
-        {/* Selling price */}
-        <TableCell sx={{ py: 1, px: 0.75 }}>
-          <CellInput
-            value={row.price}
-            onChange={(v) => upd('price', v)}
-            placeholder="49.99"
-            type="number"
-            error={e.price}
-            width={100}
-          />
-        </TableCell>
-
-        {/* Original price */}
-        <TableCell sx={{ py: 1, px: 0.75 }}>
-          <CellInput
-            value={row.old_price}
-            onChange={(v) => upd('old_price', v)}
-            placeholder="69.99"
-            type="number"
-            error={e.old_price}
-            width={100}
-          />
-        </TableCell>
-
-        {/* Category */}
-        <TableCell sx={{ py: 1, px: 0.75 }}>
-          <SearchableSelect
-            value={row.sub_category}
-            onChange={(v) => upd('sub_category', v)}
-            options={catOptions}
-            placeholder="Search category…"
-            error={e.sub_category_slug}
-            width={220}
-          />
-        </TableCell>
-
-        {/* Product type */}
-        <TableCell sx={{ py: 1, px: 0.75 }}>
-          <Select
-            value={row.product_type}
-            onChange={(ev) => upd('product_type', ev.target.value)}
-            size="small"
-            sx={{ fontSize: 13, borderRadius: '8px', minWidth: 130,
-              '& fieldset': { borderColor: 'divider' } }}
-          >
-            {PRODUCT_TYPE_OPTIONS.map((o) => (
-              <MenuItem key={o.value} value={o.value} sx={{ fontSize: 13 }}>{o.label}</MenuItem>
-            ))}
-          </Select>
-        </TableCell>
-
-        {/* Stock */}
-        <TableCell sx={{ py: 1, px: 0.75 }}>
-          <CellInput
-            value={row.total_quantity}
-            onChange={(v) => upd('total_quantity', v)}
-            placeholder="100"
-            type="number"
-            error={e.total_quantity}
-            width={80}
-          />
-        </TableCell>
-
-        {/* Variant type */}
-        <TableCell sx={{ py: 1, px: 0.75 }}>
-          <Select
-            value={row.variant}
-            onChange={(ev) => upd('variant', ev.target.value)}
-            size="small"
-            sx={{ fontSize: 13, borderRadius: '8px', minWidth: 150,
-              '& fieldset': { borderColor: 'divider' } }}
-          >
-            {VARIANT_OPTIONS.map((o) => (
-              <MenuItem key={o.value} value={o.value} sx={{ fontSize: 13 }}>{o.label}</MenuItem>
-            ))}
-          </Select>
-        </TableCell>
-
-        {/* More / Less toggle */}
-        <TableCell sx={{ py: 1, px: 0.5, width: 36 }}>
-          <Tooltip title={row._expanded ? 'Hide extra fields' : 'Add brand, sizes, description…'}>
-            <IconButton
-              size="small"
-              onClick={() => onUpdate(row._id, { _expanded: !row._expanded })}
-              sx={{ color: row._expanded ? 'text.primary' : 'text.disabled' }}
-            >
-              {row._expanded ? <ExpandLessIcon sx={{ fontSize: 18 }} /> : <ExpandMoreIcon sx={{ fontSize: 18 }} />}
-            </IconButton>
-          </Tooltip>
-        </TableCell>
-
-        {/* Delete */}
-        <TableCell sx={{ py: 1, px: 0.5, width: 36 }}>
-          <Tooltip title="Remove this row">
-            <IconButton
-              size="small"
-              onClick={() => onDelete(row._id)}
-              disabled={submitting}
-              sx={{ color: 'text.disabled', '&:hover': { color: '#ef4444' } }}
-            >
-              <DeleteOutlineIcon sx={{ fontSize: 18 }} />
-            </IconButton>
-          </Tooltip>
-        </TableCell>
-      </TableRow>
-
-      {/* ── Expanded optional fields ── */}
-      <TableRow sx={{ bgcolor: 'transparent' }}>
-        <TableCell colSpan={10} sx={{ p: 0, border: 'none' }}>
-          <Collapse in={row._expanded} unmountOnExit>
-            <Box sx={{
-              mx: 2, mb: 1.5, mt: 0.5, p: 2, borderRadius: '10px',
-              bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider',
-            }}>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} flexWrap="wrap" useFlexGap>
-
-                {/* Brand */}
-                <Box>
-                  <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', mb: 0.5 }}>
-                    Brand <Typography component="span" sx={{ fontSize: 10, fontWeight: 400 }}>(optional)</Typography>
-                  </Typography>
-                  <SearchableSelect
-                    value={row.brand}
-                    onChange={(v) => upd('brand', v)}
-                    options={brandOptions}
-                    placeholder="Search brand…"
-                    width={180}
-                  />
-                </Box>
-
-                {/* Sizes */}
-                {showSizes && (
-                  <Box>
-                    <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', mb: 0.5 }}>
-                      Sizes <Typography component="span" sx={{ fontSize: 10, fontWeight: 400 }}>e.g. S, M, L, XL</Typography>
-                    </Typography>
-                    <CellInput
-                      value={row.size_names}
-                      onChange={(v) => upd('size_names', v)}
-                      placeholder="S, M, L, XL"
-                      error={e.size_names}
-                      width={180}
-                    />
-                  </Box>
-                )}
-
-                {/* Colors */}
-                {showColors && (
-                  <Box>
-                    <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', mb: 0.5 }}>
-                      Colors <Typography component="span" sx={{ fontSize: 10, fontWeight: 400 }}>e.g. Red, Blue, Black</Typography>
-                    </Typography>
-                    <CellInput
-                      value={row.color_names}
-                      onChange={(v) => upd('color_names', v)}
-                      placeholder="Red, Blue, Black"
-                      error={e.color_names}
-                      width={180}
-                    />
-                  </Box>
-                )}
-
-                {/* Weight */}
-                <Box>
-                  <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', mb: 0.5 }}>
-                    Weight (kg) <Typography component="span" sx={{ fontSize: 10, fontWeight: 400 }}>(optional)</Typography>
-                  </Typography>
-                  <CellInput
-                    value={row.weight}
-                    onChange={(v) => upd('weight', v)}
-                    placeholder="0.5"
-                    type="number"
-                    width={100}
-                  />
-                </Box>
-
-                {/* Description */}
-                <Box sx={{ flex: 1, minWidth: 220 }}>
-                  <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', mb: 0.5 }}>
-                    Description <Typography component="span" sx={{ fontSize: 10, fontWeight: 400 }}>(optional)</Typography>
-                  </Typography>
-                  <TextField
-                    value={row.description}
-                    onChange={(e) => upd('description', e.target.value)}
-                    placeholder="Short product description…"
-                    size="small"
-                    multiline
-                    rows={2}
-                    fullWidth
-                    inputProps={{ style: { fontSize: 13 } }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px', '& fieldset': { borderColor: 'divider' } } }}
-                  />
-                </Box>
-
-              </Stack>
-            </Box>
-          </Collapse>
-        </TableCell>
-      </TableRow>
-    </>
-  );
-});
-
-// ── Column header cell ─────────────────────────────────────────────────────────
-
-function TH({ children, required, tip }) {
-  return (
-    <TableCell sx={{ py: 1, px: 0.75, whiteSpace: 'nowrap', bgcolor: 'background.paper', borderBottom: '2px solid', borderColor: 'divider' }}>
-      <Stack direction="row" alignItems="center" spacing={0.5}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', color: 'text.secondary' }}>
-          {children}
-          {required && <Box component="span" sx={{ color: '#ef4444', ml: 0.25 }}>*</Box>}
-        </Typography>
-        {tip && (
-          <Tooltip title={tip} placement="top" arrow>
-            <InfoOutlinedIcon sx={{ fontSize: 12, color: 'text.disabled', cursor: 'help' }} />
-          </Tooltip>
-        )}
-      </Stack>
-    </TableCell>
-  );
-}
-
-// ── Server error translator ────────────────────────────────────────────────────
-
-function friendlyErrors(serverErrors) {
-  if (!serverErrors) return {};
-  const out = {};
-  Object.entries(serverErrors).forEach(([field, msgs]) => {
-    const label = FIELD_LABELS[field] ?? field;
-    out[field]  = `${label}: ${Array.isArray(msgs) ? msgs.join(' ') : JSON.stringify(msgs)}`;
-  });
-  return out;
-}
-
-// ── Main grid ──────────────────────────────────────────────────────────────────
+// ── All products ─────────────────────────────────────────────────────────────
 
 const BulkProductGrid = forwardRef(function BulkProductGrid({ meta, onSubmit, submitting }, ref) {
-  const [rows, setRows] = useState(() => makeRows(5));
+  const [products, setProducts] = useState(() => [makeProduct(meta), makeProduct(meta), makeProduct(meta)]);
+  const variations = meta?.variation_options || FALLBACK_VARIATIONS;
+  const types = useMemo(() => orderedTypes(variations, 'new'), [variations]);
 
-  const updateRow = useCallback((id, updates) => {
-    setRows((prev) => prev.map((r) => r._id === id ? { ...r, ...updates } : r));
-  }, []);
+  const update = useCallback((id, patch) => setProducts((prev) => prev.map((p) => (p._id === id ? { ...p, ...patch } : p))), []);
+  const remove = useCallback((id) => setProducts((prev) => (prev.length > 1 ? prev.filter((p) => p._id !== id) : [makeProduct(meta)])), [meta]);
+  const duplicate = useCallback((id) => setProducts((prev) => {
+    const i = prev.findIndex((p) => p._id === id);
+    const copy = { ...prev[i], _id: newKey(), _errors: {}, title: '', seller_sku: '', photos: [],
+      versions: prev[i].versions.map((v) => ({ ...v, key: newKey(), seller_sku: '', photo: null })) };
+    return [...prev.slice(0, i + 1), copy, ...prev.slice(i + 1)];
+  }), []);
+  const add = (n) => setProducts((prev) => [...prev, ...Array.from({ length: n }, () => makeProduct(meta))]);
 
-  const deleteRow = useCallback((id) => {
-    setRows((prev) => prev.length > 1 ? prev.filter((r) => r._id !== id) : prev);
-  }, []);
+  const filled = products.filter((p) => !isBlank(p));
 
-  const addRows = useCallback((n = 5) => {
-    setRows((prev) => [...prev, ...makeRows(n)]);
-  }, []);
-
-  const filledRows = rows.filter((r) =>
-    r.title.trim() || r.price || r.sub_category
-  );
-
-  // Expose applyServerErrors to the parent via ref
   useImperativeHandle(ref, () => ({
-    applyServerErrors(apiErrors) {
+    // Server errors: row = position among the products sent (1-based).
+    applyServerErrors(apiErrors, sentIds) {
       if (!Array.isArray(apiErrors)) return;
-      setRows((prev) => {
-        const updated = [...prev];
-        apiErrors.forEach(({ row, errors }) => {
-          const idx = row - 2; // API row numbers start at 2
-          if (updated[idx]) {
-            updated[idx] = { ...updated[idx], _errors: friendlyErrors(errors) };
-          }
+      setProducts((prev) => prev.map((p) => {
+        const hit = apiErrors.find((err) => sentIds?.[err.row - 1] === p._id);
+        if (!hit) return p;
+        const errors = {};
+        Object.entries(hit.errors || {}).forEach(([k, msg]) => {
+          const key = k === 'compare_at_price' ? 'price' : k;
+          errors[key] = `${FIELD_LABELS[k] ? `${FIELD_LABELS[k]}: ` : ''}${Array.isArray(msg) ? msg.join(' ') : msg}`;
         });
-        return updated;
+        return { ...p, _errors: errors, _more: p._more || ['ships_to', 'delivery_methods', 'seller_sku', 'barcode', 'brand'].some((k) => errors[k]) };
+      }));
+    },
+    // Products that were saved leave the list; the ones with problems stay to be fixed.
+    keepOnly(ids) {
+      setProducts((prev) => {
+        const left = prev.filter((p) => ids.includes(p._id));
+        return left.length ? left : [makeProduct(meta)];
       });
     },
-  }), []);
+  }), [meta]);
 
-  const handleSubmit = useCallback(() => {
-    if (filledRows.length === 0) return;
-
-    // Validate all filled rows
-    let valid = true;
-    const updated = rows.map((r) => {
-      if (!r.title.trim() && !r.price && !r.sub_category) return r; // blank row — skip
-      const errors = validateRow(r);
-      if (Object.keys(errors).length) valid = false;
-      return { ...r, _errors: errors };
+  const submit = () => {
+    let ok = true;
+    const checked = products.map((p) => {
+      if (isBlank(p)) return p;
+      const errors = validate(p);
+      if (Object.keys(errors).length) ok = false;
+      return { ...p, _errors: errors, _versionsOpen: p._versionsOpen || !!errors.options,
+        _more: p._more || !!(errors.ships_to || errors.delivery_methods) };
     });
-    setRows(updated);
-    if (!valid) return;
-
-    const payload = updated
-      .filter((r) => r.title.trim() || r.price || r.sub_category)
-      .map((r, i) => rowToPayload(r, i + 2));
-
-    onSubmit(payload);
-  }, [rows, filledRows, onSubmit]);
+    setProducts(checked);
+    if (!ok) {
+      Swal.fire({ icon: 'warning', title: 'A few things to fix', text: 'The products with problems are marked in red.' });
+      return;
+    }
+    const toSend = checked.filter((p) => !isBlank(p));
+    const files = [];
+    const payload = toSend.map((p, i) => toPayload(p, i, meta, files));
+    onSubmit({ products: payload, files, ids: toSend.map((p) => p._id) });
+  };
 
   return (
     <Box>
-      {/* Table */}
-      <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: '12px', mb: 2 }}>
-        <Table size="small" stickyHeader sx={{ minWidth: 900 }}>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ width: 36, bgcolor: 'background.paper', borderBottom: '2px solid', borderColor: 'divider' }} />
-              <TH required tip="The name customers will see on the product page">Product name</TH>
-              <TH required tip="The price you want customers to pay (GHS)">Price (GHS)</TH>
-              <TH required tip="The original / market price — shown crossed out. Use same as price if no discount.">Original price</TH>
-              <TH required tip="Which part of the shop this product belongs to">Category</TH>
-              <TH required tip="Condition of the product">Type</TH>
-              <TH required tip="How many units you have available right now">Stock</TH>
-              <TH tip="Does this product come in different sizes or colours?">Variants</TH>
-              <TableCell sx={{ width: 36, bgcolor: 'background.paper', borderBottom: '2px solid', borderColor: 'divider' }} />
-              <TableCell sx={{ width: 36, bgcolor: 'background.paper', borderBottom: '2px solid', borderColor: 'divider' }} />
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows.map((row, i) => (
-              <GridRow
-                key={row._id}
-                row={row}
-                index={i + 1}
-                meta={meta}
-                onUpdate={updateRow}
-                onDelete={deleteRow}
-                submitting={submitting}
-              />
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      {/* Footer actions */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'center' }} spacing={2}>
-        <Stack direction="row" spacing={1}>
-          <Button
-            size="small"
-            startIcon={<AddIcon sx={{ fontSize: 15 }} />}
-            onClick={() => addRows(5)}
-            disabled={submitting}
-            sx={{ borderRadius: '8px', fontSize: 12, fontWeight: 600, color: 'text.secondary', bgcolor: 'action.hover', '&:hover': { bgcolor: 'action.selected' } }}
-          >
-            Add 5 rows
-          </Button>
-          <Button
-            size="small"
-            onClick={() => addRows(10)}
-            disabled={submitting}
-            sx={{ borderRadius: '8px', fontSize: 12, fontWeight: 600, color: 'text.secondary', bgcolor: 'action.hover', '&:hover': { bgcolor: 'action.selected' } }}
-          >
-            Add 10 rows
-          </Button>
-        </Stack>
-
-        <Stack direction="row" alignItems="center" spacing={2}>
-          <Typography variant="caption" color="text.disabled">
-            {filledRows.length} product{filledRows.length !== 1 ? 's' : ''} ready to upload
-          </Typography>
-          <Button
-            variant="contained"
-            disableElevation
-            onClick={handleSubmit}
-            disabled={submitting || filledRows.length === 0}
-            sx={{
-              bgcolor: 'text.primary', color: 'background.paper',
-              borderRadius: '10px', fontWeight: 700, fontSize: 14, px: 3, py: 1.25,
-              '&:hover': { bgcolor: 'text.secondary' },
-              '&:disabled': { bgcolor: 'action.disabledBackground' },
-            }}
-          >
-            {submitting
-              ? 'Uploading…'
-              : `Upload ${filledRows.length} product${filledRows.length !== 1 ? 's' : ''}`}
-          </Button>
-        </Stack>
+      {!meta?.defaults?.delivery_methods?.length && (
+        <Alert severity="info" sx={{ borderRadius: '10px', mb: 2 }}>
+          Choose ships-to countries and delivery methods under “More details” on each product.
+        </Alert>
+      )}
+      <Stack spacing={2}>
+        {products.map((p, i) => (
+          <ProductCard key={p._id} product={p} index={i} meta={meta} variations={variations} types={types}
+            onUpdate={update} onDelete={remove} onDuplicate={duplicate} submitting={submitting} />
+        ))}
       </Stack>
+
+      {/* Sticky footer: always reachable on a phone */}
+      <Box sx={{ position: 'sticky', bottom: 0, zIndex: 3, mt: 2, mx: { xs: -2, md: 0 }, px: { xs: 2, md: 2 }, py: 1.5,
+        bgcolor: 'background.paper', borderTop: '1px solid', borderColor: 'divider', borderRadius: { md: '12px' },
+        boxShadow: '0 -4px 16px rgba(0,0,0,0.06)' }}>
+        {/* One row on every screen: on a phone the cards keep most of the height. */}
+        <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+          <Stack direction="row" spacing={1}>
+            <Button size="small" startIcon={<AddIcon />} onClick={() => add(1)} disabled={submitting}
+              sx={{ borderRadius: '10px', fontWeight: 600, minHeight: 44, bgcolor: 'action.hover', whiteSpace: 'nowrap' }}>
+              Add<Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>&nbsp;product</Box>
+            </Button>
+            <Button size="small" onClick={() => add(5)} disabled={submitting}
+              sx={{ display: { xs: 'none', sm: 'inline-flex' }, borderRadius: '10px', fontWeight: 600, minHeight: 44, bgcolor: 'action.hover' }}>Add 5</Button>
+          </Stack>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+              {filled.length} product{filled.length === 1 ? '' : 's'} ready
+            </Typography>
+            {/* Outlined while there is nothing to upload: a disabled dark button reads as a blank block. */}
+            <Button variant={filled.length ? 'contained' : 'outlined'} disableElevation onClick={submit} disabled={submitting || !filled.length}
+              sx={{ borderRadius: '12px', fontWeight: 700, minHeight: 48, px: { xs: 2, sm: 3 }, whiteSpace: 'nowrap',
+                ...(filled.length && { bgcolor: 'text.primary', color: 'background.paper', '&:hover': { bgcolor: 'text.secondary' } }) }}>
+              {submitting ? 'Uploading…' : filled.length ? `Upload ${filled.length} product${filled.length === 1 ? '' : 's'}` : 'Upload'}
+            </Button>
+          </Stack>
+        </Stack>
+      </Box>
     </Box>
   );
 });
