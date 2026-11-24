@@ -22,6 +22,10 @@ const AUDIENCES = [
 ];
 const STATUS = { queued: 'Queued', sending: 'Sending…', sent: 'Sent', failed: 'Failed' };
 const plural = (n, one, many = `${one}s`) => `${n.toLocaleString()} ${n === 1 ? one : many}`;
+// Audience size: {people, sms} from the server; a plain number from older servers. Never render the raw value.
+const sizeOf = (raw) => (raw && typeof raw === 'object'
+  ? { people: Number(raw.people) || 0, sms: Number(raw.sms) || 0 }
+  : { people: Number(raw) || 0, sms: 0 });
 
 function Compose({ data, onSent }) {
   const client = useMemo(() => createAxiosClient(), []);
@@ -39,7 +43,7 @@ function Compose({ data, onSent }) {
   const left = Math.max((data.allowance || 0) - (data.used || 0), 0);
   const smsLeft = Math.max((data.sms_allowance || 0) - (data.sms_used || 0), 0);
   const blockedUntil = data.next_allowed_at ? new Date(data.next_allowed_at) : null;
-  const size = data.audience_sizes?.[audience] || { people: 0, sms: 0 };
+  const size = sizeOf(data.audience_sizes?.[audience]);
   const sms = withSms ? size.sms : 0;
   const body = { audience, subject, message, product_ids: products.map((p) => p.id) };
   const written = subject.trim().length >= 4 && message.trim().length >= 10;
@@ -83,7 +87,7 @@ function Compose({ data, onSent }) {
           <Typography variant="caption" color="text.secondary">Send to</Typography>
           <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap', mt: 0.5 }}>
             {AUDIENCES.map((a) => (
-              <Chip key={a.key} clickable label={`${a.label} (${data.audience_sizes?.[a.key]?.people ?? 0})`} onClick={() => setAudience(a.key)}
+              <Chip key={a.key} clickable label={`${a.label} (${sizeOf(data.audience_sizes?.[a.key]).people})`} onClick={() => setAudience(a.key)}
                 variant={audience === a.key ? 'filled' : 'outlined'}
                 sx={{ fontWeight: 600, ...(audience === a.key && { bgcolor: 'text.primary', color: 'background.paper' }) }} />
             ))}
