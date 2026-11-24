@@ -97,6 +97,11 @@ export default function PriceStockSection({ formData, setField, setFormData, for
                 || (was > 0 && price > 0 && was <= price ? 'Should be higher than the selling price, or leave empty.'
                   : discount ? `Shoppers see ${discount}% off.` : 'Shown crossed out, to show a saving.')} />
           </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <NumberField label="Your cost per item (optional)" value={formData.unit_cost ?? ''}
+              onChange={(v) => setField('unit_cost', v)} InputProps={ghs} error={!!formErrors.unit_cost}
+              helperText={formErrors.unit_cost || 'Only you see this. It powers your profit report.'} />
+          </Grid>
         </Grid>
       </FieldGroup>
 

@@ -16,6 +16,7 @@ import InsightsRoundedIcon          from '@mui/icons-material/InsightsRounded';
 import PaymentsRoundedIcon          from '@mui/icons-material/PaymentsRounded';
 import StoreRoundedIcon             from '@mui/icons-material/StoreRounded';
 import HelpOutlineRoundedIcon       from '@mui/icons-material/HelpOutlineRounded';
+import HandymanRoundedIcon          from '@mui/icons-material/HandymanRounded';
 import { CAP } from '@/hooks/useVendorAccess';
 
 export interface NavLink {
@@ -60,6 +61,25 @@ export const NAV_GROUPS: NavGroup[] = [
       { id: 'sell-existing', text: 'Sell an existing item', path: '/products/sell-existing', capability: CAP.MANAGE_CATALOG, keywords: 'offer catalog match' },
       { id: 'bulk-upload',   text: 'Bulk upload',        path: '/products/bulk-upload', capability: CAP.MANAGE_CATALOG, keywords: 'csv spreadsheet import' },
       { id: 'low-stock',     text: 'Low-stock products', path: '/products?stock=low',   capability: CAP.MANAGE_CATALOG, searchOnly: true, keywords: 'inventory out of stock' },
+    ],
+  },
+  {
+    // Paid tools (backend tools/registry.py); each page shows an upgrade prompt when the plan lacks it.
+    id: 'tools', text: 'Seller tools', icon: <HandymanRoundedIcon />,
+    children: [
+      { id: 'tools',          text: 'All tools',      path: '/tools',                capability: CAP.MANAGE_CATALOG, keywords: 'premium features plan' },
+      { id: 'bulk-edit',      text: 'Bulk edit',      path: '/tools/bulk-edit',      capability: CAP.MANAGE_CATALOG, keywords: 'prices stock update many csv cost' },
+      { id: 'stock-forecast', text: 'Stock forecast', path: '/tools/stock',          capability: CAP.MANAGE_CATALOG, keywords: 'inventory reorder running out restock' },
+      { id: 'listing-doctor', text: 'Listing doctor', path: '/tools/listing-doctor', capability: CAP.MANAGE_CATALOG, keywords: 'ai rewrite title description quality score' },
+      { id: 'profit',         text: 'Profit report',  path: '/tools/profit',         capability: CAP.VIEW_FINANCE,   keywords: 'margin cost fees earnings' },
+      { id: 'pricing',        text: 'Pricing',        path: '/tools/pricing',        capability: CAP.MANAGE_CATALOG, keywords: 'competitors buy box repricer price' },
+      { id: 'demand',         text: 'What shoppers want', path: '/tools/demand',     capability: CAP.MANAGE_CATALOG, keywords: 'demand searches trends ideas what to sell' },
+      { id: 'promotions',     text: 'Promotions autopilot', path: '/tools/promotions', capability: CAP.MANAGE_CATALOG, keywords: 'win back coupon thank you weekly sale automatic marketing' },
+      { id: 'broadcasts',     text: 'Messages to followers', path: '/tools/broadcasts', capability: CAP.MANAGE_CATALOG, keywords: 'broadcast newsletter announce followers email customers' },
+      { id: 'labels',         text: 'Labels & pick lists', path: '/tools/labels',       capability: CAP.MANAGE_ORDERS,  keywords: 'print shipping label packing slip pick list barcode' },
+      { id: 'chat-tools',     text: 'Chat helpers',   path: '/tools/chat',           capability: CAP.MANAGE_MESSAGES, keywords: 'saved replies away message auto reply response time' },
+      { id: 'store-link',     text: 'Store link & page', path: '/tools/store',       keywords: 'qr code short link store page branding colour announcement featured' },
+      { id: 'api',            text: 'API & stock sync', path: '/tools/api',           capability: CAP.MANAGE_STORE, keywords: 'api key webhook integration stock sync pos developer' },
     ],
   },
   {

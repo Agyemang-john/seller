@@ -19,8 +19,11 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import Link from 'next/link';
 import type { Route } from 'next';
 import {
-  Alert, Avatar, Badge, Box, CircularProgress, IconButton, InputBase, Stack, Tooltip, Typography,
+  Alert, Avatar, Badge, Box, CircularProgress, IconButton, InputBase, ListItemText, Menu, MenuItem, Stack, Tooltip, Typography,
 } from '@mui/material';
+import QuickreplyRoundedIcon from '@mui/icons-material/QuickreplyRounded';
+import useSWR from 'swr';
+import { createAxiosClient } from '@/utils/clientFetch';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
@@ -346,6 +349,9 @@ export default function ChatThread({
                   borderTopRightRadius: own && !grouped ? 4 : 16, borderTopLeftRadius: !own && !grouped ? 4 : 16,
                   boxShadow: '0 1px 1px rgba(0,0,0,.08)',
                 }, own ? ownBubble : otherBubble]}>
+                  {m.is_automatic && (
+                    <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: 'text.secondary', mb: 0.25 }}>Automatic reply</Typography>
+                  )}
                   {m.side === 'vendor' && side === 'vendor' && m.sender_name && !grouped && (
                     <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'primary.main', mb: 0.25 }}>{m.sender_name}</Typography>
                   )}
@@ -393,6 +399,9 @@ export default function ChatThread({
           </Alert>
         )}
         <Stack direction="row" spacing={1} alignItems="flex-end">
+          {side === 'vendor' && !muted && (
+            <SavedReplies onPick={(body) => { setText((t) => (t.trim() ? `${t.trimEnd()} ${body}` : body)); inputRef.current?.focus(); }} />
+          )}
           <Box sx={[{ flex: 1, px: 1.75, py: 1, borderRadius: 3 }, fieldBg]}>
             <InputBase
               inputRef={inputRef}
@@ -427,6 +436,39 @@ export default function ChatThread({
         )}
       </Box>
     </Box>
+  );
+}
+
+// Saved replies (paid seller tool, backend tools/chat_tools.py). Hidden when the plan doesn't include them.
+type SavedReply = { id: number; title: string; body: string };
+function SavedReplies({ onPick }: { onPick: (body: string) => void }) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const { data } = useSWR<{ results: SavedReply[] } | null>('/api/v1/tools/chat/replies/',
+    (url: string) => createAxiosClient().get(url).then((r) => r.data).catch(() => null),
+    { revalidateOnFocus: false, shouldRetryOnError: false });
+  if (!data) return null;
+  const pick = (r: SavedReply) => {
+    setAnchor(null);
+    onPick(r.body);
+    createAxiosClient().post(`/api/v1/tools/chat/replies/${r.id}/`).catch(() => {});
+  };
+  return (
+    <>
+      <Tooltip title="Saved replies">
+        <IconButton onClick={(e) => setAnchor(e.currentTarget)} aria-label="Saved replies" sx={{ width: 46, height: 46 }}>
+          <QuickreplyRoundedIcon />
+        </IconButton>
+      </Tooltip>
+      <Menu anchorEl={anchor} open={!!anchor} onClose={() => setAnchor(null)} slotProps={{ paper: { sx: { maxWidth: 360, maxHeight: 360 } } }}>
+        {data.results.map((r) => (
+          <MenuItem key={r.id} onClick={() => pick(r)} sx={{ whiteSpace: 'normal' }}>
+            <ListItemText primary={r.title} secondary={r.body.length > 90 ? `${r.body.slice(0, 90)}…` : r.body} />
+          </MenuItem>
+        ))}
+        {!data.results.length && <MenuItem component={Link} href="/tools/chat">Add saved replies…</MenuItem>}
+        {data.results.length > 0 && <MenuItem component={Link} href="/tools/chat" sx={{ color: 'text.secondary', fontSize: 13 }}>Manage saved replies</MenuItem>}
+      </Menu>
+    </>
   );
 }
 

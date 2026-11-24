@@ -47,6 +47,8 @@ export const useProductForm = (id = null) => {
     // Empty, not a sample value: a pre-filled price gets published by mistake.
     price: "",
     old_price: "",
+    // What one unit costs the seller (private; profit report). Empty = not given.
+    unit_cost: "",
     features: "",
     description: "",
     specifications: "",
@@ -157,6 +159,7 @@ export const useProductForm = (id = null) => {
         brand: data.brand,
         price: data.price,
         old_price: data.old_price,
+        unit_cost: data.unit_cost ?? "",
         features: data.features,
         description: data.description,
         specifications: data.specifications,

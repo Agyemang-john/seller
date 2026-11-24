@@ -47,6 +47,8 @@ export interface ChatMessage {
   client_id: string;
   sender_name: string;
   product: ChatProduct | null;
+  // Posted by the store's away message (seller tool), not typed by a person.
+  is_automatic?: boolean;
   // Client-only, for optimistic bubbles.
   status?: 'sending' | 'failed';
 }
