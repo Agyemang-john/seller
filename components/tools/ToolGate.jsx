@@ -11,6 +11,8 @@ import useSWR from 'swr';
 import { Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { fetcher } from '@/components/dashboard/DashboardUI';
+import ToolGuide, { GuideSteps } from './ToolGuide';
+import GUIDES from './guides';
 
 export function useTools() {
   const { data, error, mutate } = useSWR('/api/v1/tools/', fetcher, { revalidateOnFocus: false });
@@ -29,6 +31,12 @@ export function LockedTool({ tool }) {
         {tool?.name || 'This tool'} isn&apos;t in your plan
       </Typography>
       <Typography color="text.secondary" sx={{ mb: 3, lineHeight: 1.7 }}>{tool?.summary}</Typography>
+      {GUIDES[tool?.key] && (
+        <Box sx={{ textAlign: 'left', mb: 3, p: 2, borderRadius: '14px', border: '1px solid', borderColor: 'divider' }}>
+          <Typography sx={{ fontWeight: 700, mb: 1 }}>What you get</Typography>
+          <GuideSteps guide={GUIDES[tool.key]} />
+        </Box>
+      )}
       <Stack direction="row" spacing={1.5} justifyContent="center">
         <Button component={Link} href="/tools" variant="outlined" sx={{ borderRadius: '10px', fontWeight: 600 }}>All tools</Button>
         <Button component={Link} href="/subscribe" variant="contained" disableElevation
@@ -45,7 +53,12 @@ export default function ToolGate({ toolKey, children }) {
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}><CircularProgress size={28} /></Box>;
   const tool = byKey[toolKey];
   if (!tool?.included) return <LockedTool tool={tool} />;
-  return children;
+  return (
+    <>
+      <ToolGuide toolKey={toolKey} name={tool.name} />
+      {children}
+    </>
+  );
 }
 
 /** Turns an API error into a sentence (403 upgrade replies included). */

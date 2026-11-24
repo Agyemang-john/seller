@@ -89,7 +89,7 @@ const SECTIONS = [
         a: (
           <Stack spacing={1.5}>
             <Typography variant="body2" color="text.secondary">
-              Go to <strong>Products → Add Product</strong>. It is one page in sections (Basics, Photos &amp; video, Price &amp; stock, Variants, Specs, Description, Shipping, More details); jump between them with the side panel on a laptop or the chips at the top on a phone.
+              Go to <strong>Catalog → Products → Add product</strong>. It is one page in sections (Basics, Photos &amp; video, Price &amp; stock, Variants, Specs, Description, Shipping, More details); jump between them with the side panel on a laptop or the chips at the top on a phone.
             </Typography>
             <StepList steps={[
               'Enter a clear product title in Title Case (e.g. "Sony WH-1000XM4 Wireless Headphones") and choose its category.',
@@ -106,7 +106,7 @@ const SECTIONS = [
         q: 'Can I add many products at once?',
         a: (
           <Typography variant="body2" color="text.secondary">
-            Yes, on the Pro plan and above: <strong>Products → Add in bulk</strong>. Fill in a card per product in the browser (with photos and versions), or upload a spreadsheet of up to 500 rows.
+            Yes, if your plan includes it: <strong>Catalog → Bulk upload</strong>. Fill in a card per product in the browser (with photos and versions), or upload a spreadsheet of up to 500 rows.
             Read the <Link href="/products/bulk-upload/guide">bulk upload guide</Link> first; it takes about 5 minutes.
           </Typography>
         ),
@@ -144,7 +144,7 @@ const SECTIONS = [
           <StepList steps={[
             'Open the Products page and locate the item you want to change.',
             'Click the edit icon or the product row to open the form.',
-            'Make your changes across any of the four tabs.',
+            'Make your changes in any section of the form.',
             'Click Save. Updates go live immediately for approved products.',
           ]} />
         ),
@@ -450,6 +450,25 @@ export default function Help() {
           }}
         />
       </Box>
+
+      {/* ── The full selling guide ───────────────────────────────────────── */}
+      {!q && (
+        <Card elevation={0} sx={{ mb: 4, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+          <CardActionArea component={Link} href="/help/selling-guide" sx={{ p: { xs: 2, sm: 2.5 } }}>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Box sx={{ width: 48, height: 48, borderRadius: 2, bgcolor: 'rgba(25,118,210,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <InventoryOutlinedIcon sx={{ color: blue, fontSize: 26 }} />
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography fontWeight={700}>New here? Read the selling guide</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Adding products step by step, versions like flavours and pack sizes, and adding many products at once. About 10 minutes.
+                </Typography>
+              </Box>
+            </Stack>
+          </CardActionArea>
+        </Card>
+      )}
 
       {/* ── Quick topic cards ────────────────────────────────────────────── */}
       {!q && (

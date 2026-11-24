@@ -32,7 +32,7 @@ export default function ToolsPage() {
   return (
     <PageContainer title="Seller tools" breadcrumbs={[{ title: 'Home', path: '/dashboard' }, { title: 'Seller tools' }]}>
       <Typography color="text.secondary" sx={{ mb: 3, maxWidth: 640 }}>
-        Tools that save you time and help you sell more. What&apos;s included depends on your plan.
+        Tools that save you time and help you sell more. What&apos;s included depends on your plan. Each tool opens with a short guide showing how to use it.
       </Typography>
       {loading ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress size={28} /></Box> : (
         <Grid container spacing={2}>

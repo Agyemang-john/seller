@@ -127,6 +127,7 @@ export const NAV_GROUPS: NavGroup[] = [
     id: 'help', text: 'Help', icon: <HelpOutlineRoundedIcon />,
     children: [
       { id: 'help',    text: 'Help & guides', path: '/help',    keywords: 'support faq how to' },
+      { id: 'selling-guide', text: 'Selling guide', path: '/help/selling-guide', keywords: 'how to add product variants versions flavour pack size bulk upload tutorial' },
       { id: 'connect', text: 'Community',     path: '/connect', keywords: 'forum sellers' },
       { id: 'about',   text: 'About',         path: '/about' },
     ],

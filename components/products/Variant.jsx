@@ -8,6 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import {
   Autocomplete, Box, Button, Chip, Collapse, IconButton, InputAdornment, Stack, TextField,
   ToggleButton, ToggleButtonGroup, Tooltip, Typography,
@@ -58,7 +59,11 @@ export function OptionPicker({ axes, types, maxAxes, onAdd, onRemove }) {
     <Box>
       <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>What changes between versions?</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-        Pick up to {maxAxes}, in the order shoppers should choose them.
+        Pick up to {maxAxes}, in the order shoppers should choose them (e.g. Flavour, then Pack size).{' '}
+        <Box component={Link} href="/help/selling-guide#versions" target="_blank"
+          sx={{ color: 'primary.main', fontWeight: 600, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
+          How versions work
+        </Box>
       </Typography>
 
       {axes.length > 0 && (
@@ -134,7 +139,8 @@ export function QuickAdd({ axes, suggestionsFor, existing, onCreate }) {
         <Typography variant="caption" color="text.secondary">
           {rows.length === 0 ? `Add at least one value for each option.`
             : fresh.length === 0 ? 'You already have all these versions.'
-              : `${fresh.length} new version${fresh.length === 1 ? '' : 's'}${rows.length > fresh.length ? ` (${rows.length - fresh.length} already added)` : ''}.`}
+              : `${fresh.length} new version${fresh.length === 1 ? '' : 's'}${rows.length > fresh.length ? ` (${rows.length - fresh.length} already added)` : ''}. `
+                + (axes.length > 1 ? 'This makes every combination: delete any you don\'t sell afterwards.' : '')}
         </Typography>
         <Button variant="contained" disableElevation onClick={create} disabled={!fresh.length}
           sx={{ borderRadius: '10px', minHeight: 40, fontWeight: 700, bgcolor: 'text.primary', color: 'background.paper',

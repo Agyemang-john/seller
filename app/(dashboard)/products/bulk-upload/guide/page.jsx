@@ -79,7 +79,7 @@ const FAQ = [
   ['"Unknown delivery method" or "Unknown country".', 'Use the exact names from the lists on the upload page (Delivery methods, Countries). Or leave the column empty to use the same as your latest product.'],
   ['Some rows were saved and some were not.', 'Every product is checked on its own: the good ones are saved, the others are listed with what to fix. Fix only those rows and upload them again. Don\'t upload the saved ones again: they would be refused as duplicates.'],
   ['My accents or ₵ look wrong after uploading.', 'Save the file as "CSV UTF-8" in Excel. Google Sheets downloads are always fine.'],
-  ['Can I update prices or stock of existing products in bulk?', 'Not with this page yet: it adds new products. Edit existing products from My Products.'],
+  ['Can I update prices or stock of existing products in bulk?', <>Not on this page: it adds new products. Use the <Link href="/tools/bulk-edit">Bulk edit</Link> tool (if your plan includes it) to change many prices and stock levels at once, or edit products one by one from Products.</>],
   ['How many products can I add?', 'Up to 500 per upload, within your plan\'s product limit (shown at the top of the upload page).'],
 ];
 
@@ -98,7 +98,7 @@ export default function BulkUploadGuidePage() {
       <Typography component="h1" sx={{ fontFamily: 'var(--font-figtree), system-ui, sans-serif', fontSize: { xs: 32, md: 42 }, fontWeight: 700, letterSpacing: '-1px', lineHeight: 1.1, mb: 1 }}>
         Adding products in bulk
       </Typography>
-      <P>Add up to 500 products at once, with their photos and versions (colours, sizes, flavours, pack sizes and more). This guide takes about 5 minutes to read.</P>
+      <P>Add up to 500 products at once, with their photos and versions (colours, sizes, flavours, pack sizes and more). This guide takes about 5 minutes to read. New to selling here? Start with the <Link href="/help/selling-guide">selling guide</Link>.</P>
 
       <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap', mb: 1 }}>
         {[['two-ways', 'Two ways'], ['browser', 'In the browser'], ['spreadsheet', 'Spreadsheet'], ['versions', 'Versions'], ['photos', 'Photos'], ['after', 'After uploading'], ['columns', 'All columns'], ['faq', 'Questions']].map(([id, label]) => (
@@ -160,6 +160,7 @@ export default function BulkUploadGuidePage() {
         [false, 'Don\'t put the colour or size in the title: shoppers pick them on the product page.'],
         [false, 'Two rows can\'t be the same version (e.g. Vanilla / 500 g twice).'],
       ]} />
+      <P>A third option goes in <code>option3_name</code> / <code>option3_value</code>. Put first the option shoppers choose first (usually Flavour, Colour or Scent): on the product page, each next option only shows what exists for the choices above it. Only write the versions you actually sell. The <Link href="/help/selling-guide#versions">selling guide</Link> explains versions with a try-it example.</P>
 
       <H id="photos">Photos</H>
       <Rules items={[
