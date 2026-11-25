@@ -24,6 +24,7 @@ import useSWR from 'swr';
 import { validateImage, squareifyImage } from './fileValidators';
 import { newVariantKey } from './galleryUploads';
 import VariantGallery from './VariantGallery';
+import { addVariantPhotos, imagesOnly, reportProblems } from './photoBatch';
 import { fieldSx, NumberField } from './form/fields';
 import {
   FALLBACK_VARIATIONS, cleanValue, combinations, comboKey, customKey, optionLabel, orderedTypes,
@@ -179,7 +180,19 @@ function VariantCard({ variant, index, axes, colorCode, suggestionsFor, imagePre
       <Box sx={{ p: 2 }}>
         <Grid container spacing={1.5}>
           <Grid size={{ xs: 4, sm: 3 }}>
-            <input type="file" accept="image/*" onChange={(e) => onImageChange(index, e.target.files[0])} hidden id={inputId} />
+            {/* Several at once: the first is this version's photo, the rest go to its "More photos" (plan limit applies). */}
+            <input type="file" accept="image/*" multiple hidden id={inputId} onChange={async (e) => {
+              const [first, ...rest] = imagesOnly(e.target.files);
+              e.target.value = '';
+              if (!first) return;
+              await onImageChange(index, first);
+              if (rest.length && galleryLimit != null) {
+                reportProblems(await addVariantPhotos({
+                  files: rest, current: (variant.gallery || []).length, limit: galleryLimit,
+                  onAdd: (items) => onGalleryChange(index, (prev) => [...prev, ...items]),
+                }));
+              }
+            }} />
             <Box component="label" htmlFor={inputId}
               sx={{ aspectRatio: '1', borderRadius: '12px', border: '2px dashed', borderColor: 'divider', overflow: 'hidden',
                 cursor: 'pointer', bgcolor: 'action.hover', position: 'relative', display: 'flex', alignItems: 'center',
@@ -190,7 +203,7 @@ function VariantCard({ variant, index, axes, colorCode, suggestionsFor, imagePre
               ) : (
                 <Stack alignItems="center" spacing={0.25} sx={{ textAlign: 'center', px: 0.5 }}>
                   <AddPhotoAlternateOutlinedIcon sx={{ fontSize: 22, color: 'text.disabled' }} />
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11, fontWeight: 600, lineHeight: 1.2 }}>Photo</Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11, fontWeight: 600, lineHeight: 1.2 }}>Photos</Typography>
                 </Stack>
               )}
             </Box>

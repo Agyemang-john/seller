@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { Box, Typography, Stack, IconButton, Button, Chip, Tooltip, CircularProgress } from '@mui/material';
 import AddPhotoAlternateOutlinedIcon from '@mui/icons-material/AddPhotoAlternateOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import { validateImage, squareifyImage } from './fileValidators';
-import Swal from 'sweetalert2';
+import { addVariantPhotos, imagesOnly, reportProblems, useBatchProgress, useDropPhotos } from './photoBatch';
 
 const THUMB = { xs: 76, sm: 88 };
 
@@ -34,41 +33,23 @@ function UpgradeLink({ children }) {
  */
 export default function VariantGallery({ index, gallery = [], limit, onChange }) {
   const inputRef = useRef(null);
-  const [busy, setBusy] = useState(false);
+  const { busy, label: progressLabel, run } = useBatchProgress();
 
   const locked = limit === 0;
   const remaining = limit == null ? 0 : Math.max(limit - gallery.length, 0);
 
   const handleFiles = async (fileList) => {
-    const files = Array.from(fileList || []);
+    const files = imagesOnly(fileList);
     if (inputRef.current) inputRef.current.value = '';
-    if (files.length === 0) return;
-
-    const accepted = files.slice(0, remaining);
-    const errors = [];
-    if (files.length > remaining) {
-      errors.push(`Only ${remaining} more photo${remaining === 1 ? '' : 's'} fit on this variant with your plan.`);
-    }
-
-    setBusy(true);
-    const added = [];
-    for (const file of accepted) {
-      const squared = await squareifyImage(file, 'pad', '#FFFFFF');
-      const check = await validateImage(squared, { maxSizeMB: 2, minResolution: 400, maxResolution: 1800, checkBackground: true });
-      if (!check.valid) {
-        errors.push(`<b>${file.name.replace(/[&<>"']/g, '')}</b>: ${check.errors.join(' ')}`);
-        continue;
-      }
-      added.push({
-        key: `pending-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-        id: null, file: squared, url: URL.createObjectURL(squared),
-      });
-    }
-    setBusy(false);
-
-    if (added.length) onChange(index, (prev) => [...prev, ...added]);
-    if (errors.length) Swal.fire({ icon: 'warning', title: 'Some photos were not added', html: errors.join('<br/>') });
+    if (files.length === 0 || busy || limit == null) return;      // plan still loading
+    const problems = await run(Math.min(files.length, remaining) || 1, (onProgress) => addVariantPhotos({
+      files, current: gallery.length, limit, onProgress,
+      onAdd: (items) => onChange(index, (prev) => [...prev, ...items]),
+    }));
+    reportProblems(problems);
   };
+
+  const { dragging, dropProps } = useDropPhotos(handleFiles, busy || locked);
 
   const remove = (key) => onChange(index, (prev) => {
     const item = prev.find((g) => g.key === key);
@@ -83,12 +64,13 @@ export default function VariantGallery({ index, gallery = [], limit, onChange })
   });
 
   return (
-    <Box sx={{ mt: 2, pt: 2, borderTop: '1px dashed', borderColor: 'divider' }}>
+    <Box {...dropProps} sx={{ mt: 2, pt: 2, borderTop: '1px dashed', borderColor: 'divider', borderRadius: '12px',
+      ...(dragging && { outline: '2px dashed', outlineColor: 'primary.main', outlineOffset: 4, bgcolor: 'rgba(25,118,210,0.06)' }) }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mb: 1.25 }}>
         <Box sx={{ minWidth: 0 }}>
           <Typography variant="body2" fontWeight={700} color="text.primary">More photos</Typography>
           <Typography variant="caption" color="text.disabled">
-            Other angles, close-ups, the item in use
+            Other angles, close-ups, the item in use. Select several at once or drag them in.
           </Typography>
         </Box>
         {locked ? (
@@ -165,7 +147,7 @@ export default function VariantGallery({ index, gallery = [], limit, onChange })
                 ? <CircularProgress size={18} />
                 : <AddPhotoAlternateOutlinedIcon sx={{ fontSize: 20, color: 'text.disabled' }} />}
               <Typography variant="caption" color="text.disabled" sx={{ fontSize: 10, fontWeight: 600 }}>
-                {busy ? 'Checking…' : 'Add photos'}
+                {busy ? progressLabel : 'Add photos'}
               </Typography>
             </Box>
           )}

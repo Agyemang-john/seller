@@ -75,6 +75,7 @@ export default function SellingGuidePage() {
       <Rules items={[
         [true, 'Main photo: the product alone, on a plain white or light background, filling most of the picture. It is squared automatically.'],
         [true, 'Add more photos: other sides, the label, the product in use, the size next to a hand. Four or more sells noticeably better.'],
+        [true, 'Save time: select several photos at once, or drag them from your computer onto the photos section. With no main photo yet, the first one becomes the main photo and the rest go into More photos. Each one is still checked, and your plan decides how many fit.'],
         [true, 'At least 400 × 400 pixels; phone photos are fine. Take them in daylight.'],
         [false, 'No watermarks, logos, phone numbers or text on photos, and no photos copied from other websites.'],
       ]} />
