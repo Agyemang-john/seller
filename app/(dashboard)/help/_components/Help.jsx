@@ -195,7 +195,7 @@ const SECTIONS = [
       },
       {
         q: 'Can I add a product video?',
-        a: <Typography variant="body2" color="text.secondary">Yes. On the <strong>Images tab</strong>, there is a video upload field. Keep videos under 30 seconds and under 50 MB for best results. Videos autoplay silently on the product page.</Typography>,
+        a: <Typography variant="body2" color="text.secondary">Yes. In the <strong>Photos &amp; video</strong> section of the product page, use <strong>Add a video</strong>. MP4, WebM or MOV, up to 90 seconds and 15 MB; 15 to 45 seconds showing the item from every side works best. On your product page shoppers see a Video tile next to the photos and watch it with sound in the video viewer, alongside customer review videos.</Typography>,
       },
     ],
   },

@@ -254,7 +254,7 @@ export const useProductForm = (id = null) => {
       });
     } else if (field === "video") {
       validation = await validateVideo(file, {
-        maxSizeMB: 10,
+        maxSizeMB: 15,          // backend: ProductSerializer.PRODUCT_VIDEO_MAX_BYTES
         maxDuration: 90,
         minResolution: [640, 480],
         maxResolution: [1920, 1080],

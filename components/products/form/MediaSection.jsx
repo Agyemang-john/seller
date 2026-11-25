@@ -163,7 +163,7 @@ export default function MediaSection({ formErrors, images, setImages, imagePrevi
       </FieldGroup>
       </Box>
 
-      <FieldGroup title="Video" hint="Optional. Up to 90 seconds and 10 MB. A short clip showing the item from all sides works best.">
+      <FieldGroup title="Video" hint="Optional. Up to 90 seconds and 15 MB. A short clip showing the item from all sides works best. Shoppers watch it from the photos on your product page.">
         {videoPreview ? (
           <Box sx={{ position: 'relative', borderRadius: '14px', overflow: 'hidden', bgcolor: '#000', maxWidth: 480 }}>
             <Box component="video" src={videoPreview} controls playsInline sx={{ width: '100%', display: 'block', maxHeight: 280 }} />
