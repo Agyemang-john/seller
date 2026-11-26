@@ -13,7 +13,9 @@
  * MAX_BYTES: what the product form and the upload checks expect.
  */
 
-import { adjustPixels, autoAdjust, cornersPlain, featherMask, maskBounds, measure, shiftMask } from './imageOps';
+import {
+  adjustPixels, autoAdjust, cornersPlain, dropSmallPieces, edgeSkinShare, featherMask, maskBounds, measure, shiftMask,
+} from './imageOps';
 
 export const OUTPUT_SIZE = 1600;
 export const WORK_MAX = 2048;          // longest side kept for editing
@@ -38,6 +40,7 @@ export const DEFAULTS = {
   flip: false,
   edgeShift: 0,            // px, - tighter / + looser
   edgeSoft: 1,             // px of feather
+  anchor: true,            // a product cut off by the photo's edge sits against the square's edge
   exposure: 0, contrast: 0, warmth: 0, saturation: 0, sharpness: 0,
   wb: [1, 1, 1],
 };
@@ -116,6 +119,7 @@ export async function loadPhoto(source, name = 'photo') {
 export class StudioDoc {
   constructor({ pixels, width, height, name, originalWidth, originalHeight }) {
     this.name = name;
+    this.key = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;   // identifies the photo to the engine
     this.w = width; this.h = height;
     this.originalSize = Math.max(originalWidth || width, originalHeight || height);
     this.pixels = pixels;
@@ -123,6 +127,7 @@ export class StudioDoc {
     this.foreground = null;    // edge-cleaned colours, full size
     this.params = { ...DEFAULTS };
     this.strokes = [];         // { mode: 'erase'|'restore', size, points: [x, y, ...] } in full-size pixels
+    this.regions = [];         // tap to select: { mode: 'remove'|'keep', mask (full size, 0-255), at: {x, y} }
     this.levels = {};
     this.cache = {};
     this.facts = null;
@@ -167,17 +172,40 @@ export class StudioDoc {
     return lv;
   }
 
-  /** The mask with touch-ups and edge settings applied, at one level. */
+  /**
+   * Add an object found by tap to select: 'remove' takes it out of the cut-out
+   * (grown by 2 px so no fringe of it is left), 'keep' adds it.
+   */
+  addRegion(mode, mask, at) {
+    const full = mode === 'remove' ? shiftMask(mask, this.w, this.h, 2) : mask;
+    this.regions = [...this.regions, { mode, mask: full, at, levels: {} }];
+  }
+
+  regionAt(region, lv) {
+    if (lv.kind === 'full') return region.mask;
+    if (!region.levels[lv.kind]) region.levels[lv.kind] = readRed(scaled(grayCanvas(region.mask, this.w, this.h), lv.w, lv.h));
+    return region.levels[lv.kind];
+  }
+
+  /** The mask with tap selections, touch-ups and edge settings applied, at one level. */
   finalMask(lv) {
     const p = this.params;
-    const key = `${this.strokes.length}:${this.strokeVersion || 0}:${p.edgeShift}:${p.edgeSoft}`;
+    const key = `${this.regions.length}:${this.strokes.length}:${this.strokeVersion || 0}:${p.edgeShift}:${p.edgeSoft}`;
     const slot = `mask:${lv.kind}`;
     if (this.cache[slot]?.key === key) return this.cache[slot].value;
     let mask = lv.mask;
+    if (this.regions.length) {
+      mask = Uint8Array.from(mask);
+      for (const r of this.regions) {
+        const rm = this.regionAt(r, lv);
+        if (r.mode === 'remove') for (let i = 0; i < mask.length; i++) mask[i] = (mask[i] * (255 - rm[i])) / 255;
+        else for (let i = 0; i < mask.length; i++) if (rm[i] > mask[i]) mask[i] = rm[i];
+      }
+    }
     if (this.strokes.length) {
       const c = makeCanvas(lv.w, lv.h);
       const g = ctx2d(c);
-      g.drawImage(lv.maskCanvas, 0, 0);
+      g.drawImage(this.regions.length ? grayCanvas(mask, lv.w, lv.h) : lv.maskCanvas, 0, 0);
       g.lineCap = 'round'; g.lineJoin = 'round';
       for (const s of this.strokes) {
         g.strokeStyle = s.mode === 'erase' ? '#000' : '#fff';
@@ -196,12 +224,21 @@ export class StudioDoc {
       }
       mask = readRed(c);
     }
-    const toLevel = (px) => (px ? Math.sign(px) * Math.max(1, Math.round(Math.abs(px) * lv.ratio)) : 0);
+    // Leftover fragments (fingertips after removing hands, specks) would also
+    // fool the framing into thinking the product is cut off: drop them.
+    mask = dropSmallPieces(mask, lv.w, lv.h);
+    const toLevel =(px) => (px ? Math.sign(px) * Math.max(1, Math.round(Math.abs(px) * lv.ratio)) : 0);
     mask = shiftMask(mask, lv.w, lv.h, toLevel(p.edgeShift));
     // A touch of feather always: a hard pixel edge is what makes cut-outs look pasted on.
     mask = featherMask(mask, lv.w, lv.h, Math.max(lv.kind === 'full' ? 1 : 0, Math.round(p.edgeSoft * lv.ratio)));
     const bounds = maskBounds(mask, lv.w, lv.h);
-    const value = { mask, bounds };
+    // Which edges of the original photo the product runs into (it was cut off there).
+    const edge = Math.max(1, Math.round(3 * lv.ratio));
+    const sides = bounds ? [
+      bounds.x <= edge && 'left', bounds.x + bounds.w >= lv.w - edge && 'right',
+      bounds.y <= edge && 'top', bounds.y + bounds.h >= lv.h - edge && 'bottom',
+    ].filter(Boolean) : [];
+    const value = { mask, bounds, sides };
     this.cache[slot] = { key, value };
     return value;
   }
@@ -236,7 +273,8 @@ export class StudioDoc {
       if (m) for (let i = 0; i < n; i++) out[i * 4 + 3] = m.mask[i];
       else for (let i = 0; i < n; i++) out[i * 4 + 3] = 255;
     }
-    return { canvas: canvasFromRgba(out, lv.w, lv.h), bounds: m && view !== 'touchup' ? m.bounds : null };
+    const final = m && view !== 'touchup';
+    return { canvas: canvasFromRgba(out, lv.w, lv.h), bounds: final ? m.bounds : null, sides: final ? m.sides : [] };
   }
 
   /**
@@ -261,9 +299,9 @@ export class StudioDoc {
       return null;
     }
 
-    const { canvas: layer, bounds } = this.layer(lv, view);
+    const { canvas: layer, bounds, sides } = this.layer(lv, view);
     const p = this.params;
-    const geo = this.geometryFor(lv, size, view === 'touchup' ? null : bounds);
+    const geo = this.geometryFor(lv, size, view === 'touchup' ? null : bounds, sides);
     g.fillStyle = view === 'touchup' ? '#FFFFFF' : p.background;
     g.fillRect(0, 0, size, size);
 
@@ -274,7 +312,9 @@ export class StudioDoc {
       g.translate(-geo.bx, -geo.by);
     };
 
-    if (view === 'final' && p.removeBg && this.hasCutout && bounds && p.shadow !== 'none') {
+    // No floor shadow under a product that runs off the bottom of the square.
+    const shadow = p.shadow === 'floor' && geo.anchor?.includes('bottom') ? 'none' : p.shadow;
+    if (view === 'final' && p.removeBg && this.hasCutout && bounds && shadow !== 'none') {
       this.drawShadow(g, layer, bounds, geo, place);
     }
     g.save();
@@ -291,7 +331,7 @@ export class StudioDoc {
    * the brush). Cut-out: the product's longest side takes `fill` of the square.
    * Photo kept: the photo fills the square and the rest is cropped.
    */
-  geometryFor(lv, size, bounds) {
+  geometryFor(lv, size, bounds, sides = []) {
     const p = this.params;
     const cut = !!bounds && p.removeBg;
     const box = cut ? bounds : { x: 0, y: 0, w: lv.w, h: lv.h };
@@ -299,13 +339,30 @@ export class StudioDoc {
     const turned = quarter % 2 === 1;
     const bw = turned ? box.h : box.w;
     const bh = turned ? box.w : box.h;
-    const base = cut ? (p.fill * size) / Math.max(bw, bh) : size / Math.min(bw, bh);
+    let base = cut ? (p.fill * size) / Math.max(bw, bh) : size / Math.min(bw, bh);
+
+    // A product cut off by the photo (a dress ending at the bottom of the shot)
+    // sits against that edge of the square, as a cropped studio shot does,
+    // instead of floating with a sliced-off hem. Only for an upright photo.
+    let anchor = cut && p.anchor && !quarter && !p.straighten ? sides : [];
+    if (p.flip) anchor = anchor.map((s) => (s === 'left' ? 'right' : s === 'right' ? 'left' : s));
+    const has = (s) => anchor.includes(s);
+    if (has('left') && has('right')) base = Math.max(base, size / bw);
+    if (has('top') && has('bottom')) base = Math.max(base, size / bh);
+    const scale = base * p.zoom;
+    let cx = size / 2;
+    let cy = size / 2;
+    if (has('bottom') && !has('top')) cy = size - (bh / 2) * scale;
+    else if (has('top') && !has('bottom')) cy = (bh / 2) * scale;
+    if (has('right') && !has('left')) cx = size - (bw / 2) * scale;
+    else if (has('left') && !has('right')) cx = (bw / 2) * scale;
+
     return {
-      size, scale: base * p.zoom,
-      cx: size / 2 + p.panX * size, cy: size / 2 + p.panY * size,
+      size, scale,
+      cx: cx + p.panX * size, cy: cy + p.panY * size,
       angle: ((quarter * 90 + p.straighten) * Math.PI) / 180,
       flip: p.flip ? -1 : 1,
-      bx: box.x + box.w / 2, by: box.y + box.h / 2, box, ratio: lv.ratio, cut,
+      bx: box.x + box.w / 2, by: box.y + box.h / 2, box, ratio: lv.ratio, cut, anchor,
     };
   }
 
@@ -389,7 +446,7 @@ export class StudioDoc {
     const cut = p.removeBg && this.hasCutout;
     const lv = this.level('preview');
     const m = cut ? this.finalMask(lv) : null;
-    const geo = this.geometryFor(lv, OUTPUT_SIZE, m?.bounds);
+    const geo = this.geometryFor(lv, OUTPUT_SIZE, m?.bounds, m?.sides);
     out.push({ ok: true, label: `${OUTPUT_SIZE} × ${OUTPUT_SIZE} px square` });
     if (cut) {
       out.push({ ok: !!m?.bounds, label: m?.bounds ? 'Clean background' : 'No product found: restore it with Touch up' });
@@ -398,7 +455,15 @@ export class StudioDoc {
         out.push({ ok: share >= 0.7 && share <= 0.95, label: share < 0.7 ? 'Product looks small: make it bigger in Frame'
           : share > 0.95 ? 'Product touches the edges: make it smaller in Frame' : 'Product fills the frame well' });
       }
-      if (this.facts?.cutOff?.length) out.push({ ok: false, warn: true, label: `The product is cut off at the ${this.facts.cutOff.join(' and ')} of the original photo` });
+      if (m?.sides?.length) {
+        const where = m.sides.join(' and ');
+        out.push(geo.anchor?.length
+          ? { ok: true, label: `Cut off at the ${where} of the photo: placed against that edge` }
+          : { ok: false, warn: true, label: `The product is cut off at the ${where} of the original photo` });
+      }
+      if (m?.bounds && m.sides.length && edgeSkinShare(lv.pixels, m.mask, lv.w, lv.h) > 0.25) {
+        out.push({ ok: false, warn: true, label: 'Hands or arms may be in the photo: open Touch up and tap them to remove' });
+      }
       if (this.facts?.uncertain > 0.3) out.push({ ok: false, warn: true, label: 'Some edges were hard to find: check them in Touch up' });
     } else {
       const probe = makeCanvas(OUTPUT_SIZE / 8, OUTPUT_SIZE / 8);
@@ -415,7 +480,7 @@ export class StudioDoc {
       if (sourcePx && sourcePx < 700) out.push({ ok: false, warn: true, label: 'Small original photo: it may look soft. A closer photo works best' });
       else if (upscale > 2.2) out.push({ ok: false, warn: true, label: 'Zoomed in a lot: it may look soft' });
       if (f.sharpness < 25) out.push({ ok: false, warn: true, label: 'The photo looks a little blurry. Try Sharpness, or retake it steady in good light' });
-      if (f.brightness < 0.18) out.push({ ok: false, warn: true, label: 'Quite dark: try Auto or Brightness' });
+      if (f.brightness < 0.22) out.push({ ok: false, warn: true, label: 'Quite dark: try Auto or Brightness' });
     }
     return out;
   }
@@ -436,12 +501,15 @@ export class StudioDoc {
     return new File([blob], `${base}-studio.jpg`, { type: 'image/jpeg', lastModified: Date.now() });
   }
 
-  /** Settings + strokes, for undo. */
-  snapshot() { return { params: { ...this.params, wb: [...this.params.wb] }, strokes: this.strokes.slice() }; }
+  /** Settings + strokes + tap selections, for undo. */
+  snapshot() {
+    return { params: { ...this.params, wb: [...this.params.wb] }, strokes: this.strokes.slice(), regions: this.regions.slice() };
+  }
 
   restore(snap) {
     this.params = { ...snap.params, wb: [...snap.params.wb] };
     this.strokes = snap.strokes.slice();
+    this.regions = (snap.regions || []).slice();
     this.strokeVersion = (this.strokeVersion || 0) + 1;
   }
 }

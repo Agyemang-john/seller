@@ -155,6 +155,46 @@ export function cleanSpecks(mask, minValue = 12) {
   return out;
 }
 
+/**
+ * Drop small pieces that aren't connected to the product: fingertips left after
+ * removing hands, a speck of hanger, a reflection. A piece is kept when it is
+ * at least `minShare` of the largest piece (so a pair of earrings keeps both).
+ * Pieces are found on the visible part of the mask (> 32), 8-connected.
+ */
+export function dropSmallPieces(mask, w, h, minShare = 0.015) {
+  const n = w * h;
+  const label = new Int32Array(n);
+  const sizes = [0];
+  const stack = new Int32Array(n);
+  for (let start = 0; start < n; start++) {
+    if (mask[start] <= 32 || label[start]) continue;
+    const id = sizes.length;
+    let size = 0; let top = 0;
+    stack[top++] = start; label[start] = id;
+    while (top) {
+      const i = stack[--top];
+      size++;
+      const x = i % w; const y = (i - x) / w;
+      for (let dy = -1; dy <= 1; dy++) {
+        const yy = y + dy;
+        if (yy < 0 || yy >= h) continue;
+        for (let dx = -1; dx <= 1; dx++) {
+          const xx = x + dx;
+          if (xx < 0 || xx >= w || (!dx && !dy)) continue;
+          const j = yy * w + xx;
+          if (mask[j] > 32 && !label[j]) { label[j] = id; stack[top++] = j; }
+        }
+      }
+    }
+    sizes.push(size);
+  }
+  if (sizes.length <= 2) return mask;
+  const keepFrom = Math.max(...sizes) * minShare;
+  const out = Uint8Array.from(mask);
+  for (let i = 0; i < n; i++) if (label[i] && sizes[label[i]] < keepFrom) out[i] = 0;
+  return out;
+}
+
 // ── Light and colour ─────────────────────────────────────────────────────────
 
 const toLinear = new Float32Array(256);
@@ -322,7 +362,8 @@ export function measure(rgba, mask, w, h) {
       if (m < 240) continue;
       const lap = 4 * Y(i) - Y(i - step) - Y(i + step) - Y(i - step * w) - Y(i + step * w);
       sum += lap; sum2 += lap * lap; k++;
-      light += Y(i); lightN++;
+      // Brightest channel, not luminance: a deep red dress is not a dark photo.
+      light += Math.max(rgba[i * 4], rgba[i * 4 + 1], rgba[i * 4 + 2]); lightN++;
     }
   }
   const variance = k ? sum2 / k - (sum / k) ** 2 : 0;
@@ -340,6 +381,36 @@ export function measure(rgba, mask, w, h) {
     cutOff: Object.entries(touches).filter(([, v]) => v).map(([side]) => side),
     productPixels: Math.max(bounds.w, bounds.h),
   };
+}
+
+/**
+ * Share of the kept area that looks like skin and runs in from the photo's
+ * edge: held-up hands and arms. Used only for a hint ("tap them to remove"),
+ * never to remove anything, since mannequins and some products are skin-toned.
+ * Skin test: the usual YCbCr box, on reasonably saturated, not-too-bright pixels.
+ */
+export function edgeSkinShare(rgba, mask, w, h) {
+  const band = Math.max(4, Math.round(Math.min(w, h) * 0.12));
+  let skin = 0; let kept = 0;
+  const step = Math.max(1, Math.round(Math.max(w, h) / 600));
+  for (let y = 0; y < h; y += step) {
+    for (let x = 0; x < w; x += step) {
+      const i = y * w + x;
+      if (mask[i] < 128) continue;
+      const nearEdge = x < band || y < band || x >= w - band || y >= h - band;
+      if (!nearEdge) continue;
+      kept++;
+      const r = rgba[i * 4]; const g = rgba[i * 4 + 1]; const b = rgba[i * 4 + 2];
+      const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
+      const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      // Hue up to ~30°: skin of every tone sits around 10-25°; gold mannequins (~40°) and reds (< 0°) don't.
+      const hue = max === min ? 0 : (60 * (g - b)) / (max - min);
+      if (cb > 77 && cb < 127 && cr > 135 && cr < 173 && max > 40 && max < 245 && r > g && g >= b && hue <= 30) skin++;
+    }
+  }
+  return kept ? skin / kept : 0;
 }
 
 /** Are the four corners of an output image plain and light (what the upload check asks)? */

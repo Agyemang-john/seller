@@ -9,7 +9,8 @@
  *   Frame       product size, move (drag), rotate, straighten, mirror
  *   Light       Auto, brightness, contrast, warmth, saturation, sharpness:
  *               photographic ranges, nothing cartoonish
- *   Touch up    erase / restore brush over the cut-out, with the removed parts tinted
+ *   Touch up    tap to remove / keep an object (hands, hanger, mannequin stand:
+ *               Segment Anything), erase / restore brush; removed parts tinted
  *
  * Several photos at once: "Save & next", with "Use these settings for the
  * rest". The next photo's background is removed while the seller works on
@@ -38,7 +39,7 @@ import AutoFixHighOutlinedIcon from '@mui/icons-material/AutoFixHighOutlined';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import { removeBackground, subscribe, warmUp } from './engine';
+import { prepareSelect, removeBackground, selectObject, subscribe, warmUp } from './engine';
 import { BACKGROUNDS, DEFAULTS, StudioDoc, loadPhoto } from './studioDoc';
 
 const PREVIEW_SIZE = 1024;
@@ -166,7 +167,8 @@ export default function PhotoStudio({ items: initialItems, onDone, onClose, titl
   const [tab, setTab] = useState('background');
   const [comparing, setComparing] = useState(false);
   const [status, setStatus] = useState({ stage: 'idle' });
-  const [brush, setBrush] = useState({ mode: 'erase', size: 40 });
+  const [brush, setBrush] = useState({ mode: 'remove', size: 40 });   // remove | keep (tap) · erase | restore (brush)
+  const [selecting, setSelecting] = useState(false);
   const [cursor, setCursor] = useState(null);
   const [saving, setSaving] = useState(false);
   const [applied, setApplied] = useState(false);
@@ -262,6 +264,28 @@ export default function PhotoStudio({ items: initialItems, onDone, onClose, titl
     return () => window.removeEventListener('keydown', onKey);
   }, [undo, redo]);
 
+  // ── Tap to select (hands, hanger, mannequin stand...) ──
+  const tapTool = brush.mode === 'remove' || brush.mode === 'keep';
+  const tapSelect = async ([x, y]) => {
+    if (!doc || selecting) return;
+    if (x < 0 || y < 0 || x >= doc.w || y >= doc.h) return;
+    setSelecting(true); setError('');
+    try {
+      const { mask } = await selectObject(doc.key, doc.pixels, doc.w, doc.h, [[x, y, 1]]);
+      remember();
+      doc.addRegion(brush.mode, mask, { x, y });
+      bump();
+    } catch (err) {
+      setError(err?.message || 'That could not be selected. Try tapping again, or use the brush.');
+    } finally {
+      setSelecting(false);
+    }
+  };
+  // Get the photo ready for tapping as soon as Touch up opens.
+  useEffect(() => {
+    if (tab === 'touchup' && doc?.hasCutout && tapTool) prepareSelect(doc.key, doc.pixels, doc.w, doc.h).catch(() => {});
+  }, [tab, doc, ready, tapTool]);
+
   // ── Pointer: move the photo (Frame) or paint (Touch up) ──
   const toCanvas = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
@@ -275,6 +299,7 @@ export default function PhotoStudio({ items: initialItems, onDone, onClose, titl
     if (view === 'touchup') {
       const src = doc.toSource(x, y);
       if (!src) return;
+      if (brush.mode === 'remove' || brush.mode === 'keep') { tapSelect(src); return; }
       remember();
       const size = doc.toSourceSize(brush.size);
       doc.strokes = [...doc.strokes, { mode: brush.mode, size, points: [src[0], src[1]] }];
@@ -289,7 +314,7 @@ export default function PhotoStudio({ items: initialItems, onDone, onClose, titl
 
   const onPointerMove = (e) => {
     if (!doc) return;
-    if (view === 'touchup') {
+    if (view === 'touchup' && !tapTool) {
       const rect = canvasRef.current.getBoundingClientRect();
       setCursor({ x: e.clientX - rect.left, y: e.clientY - rect.top, d: (brush.size / PREVIEW_SIZE) * rect.width });
     }
@@ -430,6 +455,15 @@ export default function PhotoStudio({ items: initialItems, onDone, onClose, titl
           <Control label="Zoom" value={p.zoom} min={1} max={3} step={0.01} onChange={(v) => live({ zoom: v })} onCommit={commit}
             format={(v) => `${v.toFixed(2)}×`} />
         )}
+        {cut && (
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Box>
+              <Typography variant="body2" fontWeight={600}>Cut-off edges against the frame</Typography>
+              <Typography variant="caption" color="text.secondary">When the product runs off the photo, it sits against that edge.</Typography>
+            </Box>
+            <Switch checked={!!p.anchor} onChange={(e) => change({ anchor: e.target.checked })} />
+          </Stack>
+        )}
         <Control label="Straighten" value={p.straighten} min={-15} max={15} step={0.5} onChange={(v) => live({ straighten: v })} onCommit={commit}
           format={(v) => `${v > 0 ? '+' : ''}${v}°`} />
         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
@@ -482,16 +516,32 @@ export default function PhotoStudio({ items: initialItems, onDone, onClose, titl
           <Alert severity="info" sx={{ borderRadius: '10px' }}>Turn on Remove background to touch up the cut-out.</Alert>
         ) : (
           <>
-            <ToggleButtonGroup exclusive size="small" fullWidth value={brush.mode} onChange={(_, v) => v && setBrush((b) => ({ ...b, mode: v }))}>
-              <ToggleButton value="erase">Erase</ToggleButton>
-              <ToggleButton value="restore">Restore</ToggleButton>
-            </ToggleButtonGroup>
-            <Control label="Brush size" value={brush.size} min={8} max={160} step={1} onChange={(v) => setBrush((b) => ({ ...b, size: v }))}
-              format={(v) => `${v}`} />
+            <Box>
+              <Typography variant="body2" fontWeight={700} sx={{ mb: 0.75 }}>Tap an object</Typography>
+              <ToggleButtonGroup exclusive size="small" fullWidth value={tapTool ? brush.mode : null} onChange={(_, v) => v && setBrush((b) => ({ ...b, mode: v }))}>
+                <ToggleButton value="remove">Tap to remove</ToggleButton>
+                <ToggleButton value="keep">Tap to keep</ToggleButton>
+              </ToggleButtonGroup>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
+                {selecting ? 'Finding it…' : 'Tap the hands, the hanger, a mannequin\'s head or stand, or anything else that isn\'t the product. Tap to keep brings back a part that was left out.'}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography variant="body2" fontWeight={700} sx={{ mb: 0.75 }}>Brush, for fine edges</Typography>
+              <ToggleButtonGroup exclusive size="small" fullWidth value={tapTool ? null : brush.mode} onChange={(_, v) => v && setBrush((b) => ({ ...b, mode: v }))}>
+                <ToggleButton value="erase">Erase</ToggleButton>
+                <ToggleButton value="restore">Restore</ToggleButton>
+              </ToggleButtonGroup>
+              {!tapTool && (
+                <Control label="Brush size" value={brush.size} min={8} max={160} step={1} onChange={(v) => setBrush((b) => ({ ...b, size: v }))}
+                  format={(v) => `${v}`} />
+              )}
+            </Box>
             <Typography variant="caption" color="text.secondary">
-              Paint over the photo. The pink parts are removed: use Restore to bring back a piece of the product, Erase to remove what&apos;s left of the background.
+              Pink shows what is removed. Undo any step with the arrow at the top.
             </Typography>
-            <Button size="small" disabled={!doc?.strokes.length} onClick={() => { remember(); doc.strokes = []; doc.strokeVersion += 1; bump(); }}>
+            <Button size="small" disabled={!doc?.strokes.length && !doc?.regions.length}
+              onClick={() => { remember(); doc.strokes = []; doc.regions = []; doc.strokeVersion += 1; bump(); }}>
               Clear touch-ups
             </Button>
           </>
@@ -534,7 +584,7 @@ export default function PhotoStudio({ items: initialItems, onDone, onClose, titl
           bgcolor: 'action.hover', backgroundImage: 'radial-gradient(rgba(0,0,0,0.05) 1px, transparent 1px)', backgroundSize: '14px 14px' }}>
           <Box sx={{ position: 'relative', width: { xs: 'min(100%, 46vh)', md: 'min(100%, calc(94vh - 200px), 640px)' }, aspectRatio: '1',
             boxShadow: '0 10px 40px rgba(0,0,0,0.12)', borderRadius: '6px', overflow: 'hidden', bgcolor: '#fff', touchAction: 'none',
-            cursor: view === 'touchup' ? 'none' : doc ? 'grab' : 'default' }}
+            cursor: view === 'touchup' ? (tapTool ? (selecting ? 'progress' : 'crosshair') : 'none') : doc ? 'grab' : 'default' }}
             onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
             onPointerLeave={() => setCursor(null)} onWheel={onWheel}>
             <canvas ref={canvasRef} width={PREVIEW_SIZE} height={PREVIEW_SIZE} style={{ width: '100%', height: '100%', display: 'block' }} aria-label="Photo being edited" />
@@ -542,7 +592,7 @@ export default function PhotoStudio({ items: initialItems, onDone, onClose, titl
               <Stack alignItems="center" justifyContent="center" sx={{ position: 'absolute', inset: 0 }}><CircularProgress /></Stack>
             )}
             {comparing && <Chip label="Original" size="small" sx={{ position: 'absolute', top: 10, left: 10, bgcolor: 'rgba(0,0,0,0.65)', color: '#fff' }} />}
-            {cursor && view === 'touchup' && (
+            {cursor && view === 'touchup' && !tapTool && (
               <Box sx={{ position: 'absolute', left: cursor.x - cursor.d / 2, top: cursor.y - cursor.d / 2, width: cursor.d, height: cursor.d,
                 borderRadius: '50%', border: '2px solid #fff', boxShadow: '0 0 0 1px rgba(0,0,0,0.6)', pointerEvents: 'none' }} />
             )}

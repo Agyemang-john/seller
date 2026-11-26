@@ -47,7 +47,8 @@ const FAQ = [
   ['The first time it says "Getting the studio ready".', 'The studio downloads its background-removal model once (about 100 MB) and keeps it in your browser. Use Wi-Fi for that first time; after that it starts in seconds, even offline.'],
   ['How long does a photo take?', 'From under a second to about 6 seconds with graphics acceleration (most recent phones and computers), 10 to 20 seconds without. While you work on one photo, the next one is already being prepared. Framing and light changes are instant.'],
   ['What is "HD edges"?', 'On devices with graphics acceleration, HD edges finds the outline again at twice the detail: worth it for hair, fur, lace, mesh or a see-through bottle. It downloads once (about 115 MB) the first time you use it, then takes a few seconds per photo.'],
-  ['Part of my product was removed (or some background was left).', 'Open Touch up. Pink shows what was removed. Choose Restore and paint over the missing part, or Erase and paint over what is left of the background. Undo with Ctrl+Z.'],
+  ['My hands (or the hanger) are still in the photo.', 'Open Touch up, choose Tap to remove and tap each hand, arm or hook. The first tap on a photo takes a few seconds; the next ones are quick.'],
+  ['Part of my product was removed (or some background was left).', 'Open Touch up. Pink shows what was removed. Use Tap to keep on the missing part, or the Restore / Erase brush for small bits. Undo with Ctrl+Z.'],
   ['The edges look too sharp or show a thin line of the old background.', 'In Background, move Edge position a step towards Tighter, or raise Edge softness by 1 or 2.'],
   ['Can I keep my own background?', 'Yes: turn off Remove background. The studio then crops, straightens and corrects the light only. The background must still be plain and light to be accepted.'],
   ['My photo was refused when adding a product.', 'When a photo doesn\'t pass the checks (background, size), the product form offers "Fix in Photo studio". The studio\'s photos always pass.'],
@@ -101,8 +102,13 @@ export default function PhotoStudioGuidePage() {
         ['Brightness, Contrast, Warmth, Colour, Sharpness', 'small corrections. Ranges are kept natural on purpose: the photo must show the real product'],
       ]} />
       <Tool name="Touch up" items={[
-        ['Erase / Restore', 'paint over the photo to remove leftover background or bring back part of the product. Pink = removed'],
-        ['Brush size', 'smaller for fine edges'],
+        ['Tap to remove', 'tap anything that isn\'t the product (hands holding a shirt, the hanger, a mannequin\'s head or stand, a picture on the wall) and it is removed. Tap again for what is left'],
+        ['Tap to keep', 'brings back a part of the product that was left out'],
+        ['Erase / Restore brush', 'for fine edges. Pink = removed'],
+      ]} />
+      <Rules items={[
+        [true, 'Product cut off by the photo (a dress ending at the bottom of the picture)? The studio places it against that edge of the square, like a cropped studio shot, so the cut never looks sliced. Turn it off in Frame if you prefer.'],
+        [true, 'Mannequins can stay: a clean mannequin on white is fine for clothing. Remove only its head or stand if they distract.'],
       ]} />
       <Rules items={[
         [true, 'Hold the compare button (top bar) to see the original.'],

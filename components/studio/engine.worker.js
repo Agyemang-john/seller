@@ -24,7 +24,7 @@
  *      { type: 'result', id, mask, foreground, quality, inputSize, device, timing }
  *      { type: 'error', id?, message, retryOnCpu?, hdFailed? } · { type: 'gpu-failed' }
  */
-import { env, pipeline, RawImage } from '@huggingface/transformers';
+import { AutoProcessor, env, pipeline, RawImage, SamModel, Tensor } from '@huggingface/transformers';
 import { cleanSpecks, estimateForeground } from './imageOps';
 
 env.allowLocalModels = false;
@@ -44,6 +44,14 @@ const MODELS = {
   // The file is already half precision: load it as is (dtype fp32 = no file-name suffix).
   hd: { id: 'jiabins0303/birefnet-lite-1024-webgpu', revision: '1ad01cef0f4101a285c5a3e0bd7f15597d93403f', dtype: 'fp32', model_file_name: 'model_fp16', inputSize: 1024 },
 };
+
+/**
+ * Tap to select an object (hands, hanger, mannequin stand, a picture behind):
+ * SlimSAM (Apache-2.0), a compressed Segment Anything. ~21 MB on the CPU
+ * (8-bit), ~40 MB on the GPU. The photo is encoded once ("embed"); each tap
+ * then takes a fraction of a second ("select").
+ */
+const SAM = { id: 'Xenova/slimsam-77-uniform', revision: '5850ab45f587c112167512ffef949107115e26a0' };
 
 let device = null;            // 'webgpu' | 'wasm', decided once per worker
 let skipGpu = false;
@@ -171,6 +179,64 @@ async function cutout({ id, width, height, buffer, quality = 'fast' }) {
     [mask.buffer, foreground.buffer]);
 }
 
+// ── Tap to select ────────────────────────────────────────────────────────────
+
+let sam = null;
+let embedded = null;          // { key, inputs, embeddings } for the last photo encoded
+
+function samSession() {
+  if (!sam) {
+    sam = (async () => {
+      await pickDevice();
+      self.postMessage({ type: 'status', stage: 'starting', quality: 'select', device: label(), hd: hdAvailable() });
+      const dtype = device === 'webgpu' ? 'fp32' : 'q8';
+      const [model, processor] = await Promise.all([
+        SamModel.from_pretrained(SAM.id, { revision: SAM.revision, dtype, device, progress_callback: progressFor('select') }),
+        AutoProcessor.from_pretrained(SAM.id, { revision: SAM.revision }),
+      ]);
+      return { model, processor };
+    })();
+    sam.catch(() => { sam = null; });
+  }
+  return sam;
+}
+
+async function embed({ id, key, width, height, buffer }) {
+  if (embedded?.key === key) { self.postMessage({ type: 'embedded', id, key }); return; }
+  const rgba = new Uint8ClampedArray(buffer);
+  const rgb = new Uint8ClampedArray(width * height * 3);
+  for (let i = 0, j = 0; i < rgba.length; i += 4, j += 3) {
+    rgb[j] = rgba[i]; rgb[j + 1] = rgba[i + 1]; rgb[j + 2] = rgba[i + 2];
+  }
+  const { model, processor } = await samSession();
+  self.postMessage({ type: 'status', stage: 'embedding', quality: 'select', device: label(), hd: hdAvailable() });
+  const inputs = await processor(new RawImage(rgb, width, height, 3));
+  const embeddings = await model.get_image_embeddings(inputs);
+  embedded = { key, inputs, embeddings, width, height };
+  self.postMessage({ type: 'embedded', id, key });
+}
+
+/** points: [[x, y, 1 = this object | 0 = not this]] in photo pixels → the object's mask (0/255), photo size. */
+async function select({ id, key, points }) {
+  if (embedded?.key !== key) throw new Error('Open the photo again to select on it.');
+  const { model, processor } = await samSession();
+  const [h0, w0] = embedded.inputs.original_sizes[0];
+  const [h1, w1] = embedded.inputs.reshaped_input_sizes[0];
+  const pts = points.map(([x, y]) => [(x / w0) * w1, (y / h0) * h1]);
+  const input_points = new Tensor('float32', Float32Array.from(pts.flat()), [1, 1, pts.length, 2]);
+  const input_labels = new Tensor('int64', BigInt64Array.from(points.map((p) => BigInt(p[2]))), [1, 1, pts.length]);
+  const out = await model({ ...embedded.embeddings, input_points, input_labels });
+  const masks = await processor.post_process_masks(out.pred_masks, embedded.inputs.original_sizes, embedded.inputs.reshaped_input_sizes);
+  // SAM offers three readings of a tap (part, object, whole): take its most confident.
+  const scores = Array.from(out.iou_scores.data);
+  const best = scores.indexOf(Math.max(...scores));
+  const data = masks[0].data;
+  const n = w0 * h0;
+  const mask = new Uint8Array(n);
+  for (let i = 0; i < n; i++) mask[i] = data[best * n + i] ? 255 : 0;
+  self.postMessage({ type: 'selected', id, mask, score: scores[best] }, [mask.buffer]);
+}
+
 // One photo at a time: a model session is not shared between runs.
 let queue = Promise.resolve();
 self.onmessage = (e) => {
@@ -179,6 +245,14 @@ self.onmessage = (e) => {
     try {
       if (msg.type === 'load') { skipGpu = !!msg.skipGpu; await session('fast'); }
       else if (msg.type === 'cutout') await cutout(msg);
+      else if (msg.type === 'embed' || msg.type === 'select') {
+        try {
+          await (msg.type === 'embed' ? embed(msg) : select(msg));
+        } catch (err) {
+          // E.g. the GPU out of memory with both models loaded: the CPU takes over.
+          throw device === 'webgpu' && !err?.retryOnCpu ? retryOnCpu(err) : err;
+        }
+      }
     } catch (err) {
       self.postMessage({ type: 'error', id: msg.id, message: err?.message || String(err),
         retryOnCpu: !!err?.retryOnCpu, hdFailed: !!err?.hdFailed, hd: hdAvailable() });
