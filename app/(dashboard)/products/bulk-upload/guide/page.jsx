@@ -107,7 +107,7 @@ export default function BulkUploadGuidePage() {
       <P>Add up to 500 products at once, with their photos and versions (colours, sizes, flavours, pack sizes and more). This guide takes about 5 minutes to read. New to selling here? Start with the <Link href="/help/selling-guide">selling guide</Link>.</P>
 
       <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap', mb: 1 }}>
-        {[['two-ways', 'Two ways'], ['same', 'Same as one by one'], ['browser', 'In the browser'], ['spreadsheet', 'Spreadsheet'], ['versions', 'Versions'], ['photos', 'Photos'], ['specs', 'Specs'], ['stock-type', 'Abroad / made to order'], ['after', 'After uploading'], ['columns', 'All columns'], ['faq', 'Questions']].map(([id, label]) => (
+        {[['two-ways', 'Two ways'], ['same', 'Same as one by one'], ['browser', 'In the browser'], ['spreadsheet', 'Spreadsheet'], ['versions', 'Versions'], ['photos', 'Photos'], ['specs', 'Specs'], ['sections', 'Your sections'], ['stock-type', 'Abroad / made to order'], ['after', 'After uploading'], ['columns', 'All columns'], ['faq', 'Questions']].map(([id, label]) => (
           <Chip key={id} label={label} component="a" href={`#${id}`} clickable variant="outlined" sx={{ borderRadius: '10px', fontWeight: 600 }} />
         ))}
       </Stack>
@@ -149,7 +149,8 @@ export default function BulkUploadGuidePage() {
               ['Specs (details shoppers filter by)', 'More details › Specs', 'specs'],
               ['Ships from abroad / made to order', 'More details › Stock type', 'stock_type, sourcing_days, sourced_from'],
               ['Ships to, delivery methods', 'More details (start as your latest product\'s)', 'ships_to, delivery_methods (empty = your latest product\'s)'],
-              ['Description, key features', 'More details', 'description, features, specifications, delivery_returns'],
+              ['Description, key features', 'More details', 'description, features, delivery_returns'],
+              ['Product information (your own sections)', 'More details › Product information', 'sections (Title: text | Title: text)'],
               ['Brand, SKU, barcode, return days', 'More details', 'brand, seller_sku, barcode, return_days'],
             ].map(([a, b, c]) => (
               <TableRow key={a}>
@@ -227,6 +228,18 @@ export default function BulkUploadGuidePage() {
       ]} />
       <Sheet headers={['title', 'category', 'price', 'stock', 'weight_kg', 'specs']} rows={[
         ['Canvas Backpack', 'backpacks', '180.00', '15', '0.9', 'Material: Canvas; Capacity: 20 L; Waterproof: yes'],
+      ]} />
+
+      <H id="sections">Product information: sections you name</H>
+      <P>Besides the description, you can add sections named for your product, the same as on the product form: Ingredients and Storage for food, Display and Battery for a phone, Material and Size &amp; fit for clothes. Shoppers open them under Product information on the product page.</P>
+      <Rules items={[
+        [true, 'In the browser: open “More details”, then Product information. Tap a suggested name or type your own, and write the text.'],
+        [true, 'In a spreadsheet: use the sections column, as Title: text, with | between sections.'],
+        [true, 'The old specifications column still works: it becomes a section called “Additional details”.'],
+        [true, 'To add lists, tables or bold text, open the product from Products afterwards and use the editor.'],
+      ]} />
+      <Sheet headers={['title', 'category', 'sections']} rows={[
+        ['Shea Butter 250 g', 'skin-care', 'Ingredients: 100% raw shea butter | How to use: Warm a little in your hands and apply | Storage: Keep below 30 °C'],
       ]} />
 
       <H id="stock-type">Items from abroad or made to order</H>

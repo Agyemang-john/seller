@@ -97,7 +97,17 @@ export default function SellingGuidePage() {
       <P>Details for this category, like screen size, material or volume. Shoppers <b>filter</b> by these, so a product without specs disappears when they narrow a search. Fill every one you know.</P>
 
       <H3>Description</H3>
-      <P>What it is, who it is for and why it is worth buying, plus short feature points (one per line) that shoppers scan first. Add anything not covered in Specs: what is in the box, care, ingredients.</P>
+      <P>What it is, who it is for and why it is worth buying, plus short feature points (one per line) that shoppers scan first.</P>
+
+      <H3>Product information (your own sections)</H3>
+      <P>Add sections and <b>name them yourself</b>, the way you choose the options for versions. Each one has the same editor as the description, so lists and tables work. Shoppers open them under <b>Product information</b> on your product page, next to the Specs as &ldquo;Item details&rdquo;.</P>
+      <Rules items={[
+        [true, <><b>A laptop:</b> Processor, Display, Memory &amp; storage, Battery, Ports &amp; slots, What&apos;s in the box.</>],
+        [true, <><b>Food:</b> Ingredients, Nutrition facts, Allergens, How to prepare, Storage.</>],
+        [true, <><b>Clothing:</b> Material, Size &amp; fit, Care instructions, Measurements.</>],
+        [true, 'Tap a suggested name to add it, or type your own. Use the arrows to put the most important first. Up to 12 sections.'],
+        [false, "Don't repeat what Specs already shows, and don't leave a section empty: remove it instead."],
+      ]} />
 
       <H3>Shipping</H3>
       <Rules items={[

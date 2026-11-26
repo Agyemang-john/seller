@@ -22,6 +22,7 @@ import { usePinnedComplements } from './PinnedComplements';
 import { useProductSpecs } from './form/useProductSpecs';
 import { SECTIONS, sectionStatus, sectionForError, validateProduct } from './form/sections';
 import { SectionCard } from './form/fields';
+import { sectionsPayload } from './form/infoSectionRules';
 import { DesktopRail, MobileActionBar, MobileSectionBar, scrollToSection, useScrollSpy } from './form/FormNav';
 
 // Optional numbers the model can't store empty: send these instead of ''.
@@ -164,6 +165,8 @@ export default function ProductForm({ id = null }) {
           value.forEach((rid) => fd.append('available_in_regions', rid));
         } else if (key === 'delivery_options') {
           fd.append('delivery_options', JSON.stringify(value));
+        } else if (key === 'info_sections') {
+          fd.append('info_sections', JSON.stringify(sectionsPayload(value)));
         } else if (key === 'variation_axes') {
           // No versions: no options (the server then treats the product as one version).
           fd.append('variation_axes', JSON.stringify(formData.variant === 'None' ? [] : value));

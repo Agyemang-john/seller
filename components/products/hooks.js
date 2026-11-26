@@ -5,6 +5,7 @@ import { createAxiosClient } from "@/utils/clientFetch";
 import { slugify } from "@/components/Functions";
 import { validateImage, validateVideo, squareifyImage  } from "./fileValidators";
 import { galleryFromApi } from "./galleryUploads";
+import { newSection } from "./form/infoSectionRules";
 import Swal from 'sweetalert2';
 
 
@@ -51,7 +52,8 @@ export const useProductForm = (id = null) => {
     unit_cost: "",
     features: "",
     description: "",
-    specifications: "",
+    // Product information sections the seller names: [{ key, title, body }] (form/InfoSections.jsx).
+    info_sections: [],
     delivery_returns: "",
     total_quantity: "",
     seller_sku: "",
@@ -162,7 +164,7 @@ export const useProductForm = (id = null) => {
         unit_cost: data.unit_cost ?? "",
         features: data.features,
         description: data.description,
-        specifications: data.specifications,
+        info_sections: (data.info_sections || []).map((s) => newSection(s.title, s.body)),
         delivery_returns: data.delivery_returns,
         total_quantity: data.total_quantity,
         seller_sku: data.seller_sku || '',

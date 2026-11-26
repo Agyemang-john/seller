@@ -41,6 +41,7 @@ import { usePhotoStudio } from '@/components/studio/usePhotoStudio';
 import AutoFixHighOutlinedIcon from '@mui/icons-material/AutoFixHighOutlined';
 import { OptionPicker, QuickAdd } from './Variant';
 import { fieldSx, NumberField } from './form/fields';
+import { MAX_SECTIONS, MAX_TITLE, newSection, suggestedTitles } from './form/infoSectionRules';
 import {
   FALLBACK_VARIATIONS, cleanValue, comboKey, optionLabel, orderedTypes,
 } from './form/variationOptions';
@@ -51,11 +52,11 @@ const FIELD_LABELS = {
   seller_sku: 'SKU', barcode: 'Barcode', ships_to: 'Ships to', delivery_methods: 'Delivery',
   image_url: 'Photo', more_image_urls: 'Photos', return_days: 'Return days', plan: 'Plan', product: 'Product',
   unit_cost: 'Your cost', stock_type: 'Stock type', sourcing_days: 'Time to get it', sourced_from: 'Ordered from',
-  specs: 'Specs',
+  specs: 'Specs', sections: 'Product information',
 };
 // Fields kept under "More details": open it when the server flags one of them.
 const MORE_FIELDS = ['ships_to', 'delivery_methods', 'seller_sku', 'barcode', 'brand', 'unit_cost', 'stock_type',
-  'sourcing_days', 'sourced_from', 'specs', 'return_days'];
+  'sourcing_days', 'sourced_from', 'specs', 'sections', 'return_days'];
 
 // Like the product form: imported items in weeks, made to order in days.
 const SOURCING = {
@@ -75,7 +76,7 @@ function makeProduct(meta) {
     _id: newKey(), _more: false, _versionsOpen: false, _errors: {},
     title: '', category: null, price: '', compare_at_price: '', stock: '', weight_kg: '', condition: 'new',
     brand: null, description: '', features: '', seller_sku: '', barcode: '', return_days: '', unit_cost: '',
-    stock_type: 'in_stock', sourcing_min: '', sourcing_max: '', sourced_from: null, specs: {},
+    stock_type: 'in_stock', sourcing_min: '', sourcing_max: '', sourced_from: null, specs: {}, sections: [],
     ships_to: meta?.defaults?.ships_to || [],
     delivery: (meta?.defaults?.delivery_methods || []).map((d) => d.id),
     photos: [], axes: [], versions: [],
@@ -142,6 +143,10 @@ function toPayload(p, index, meta, files) {
   // Specs go as the product form sends them ({slug: value}); only filled ones.
   const specs = Object.fromEntries(Object.entries(p.specs || {}).filter(([, v]) => !isEmptySpec(v)));
   if (Object.keys(specs).length) base.specs = specs;
+  // Product information sections, as the form sends them (body here is plain text).
+  const sections = (p.sections || []).map((x) => ({ title: x.title.trim(), body: x.body.trim() }))
+    .filter((x) => x.title || x.body);
+  if (sections.length) base.sections = sections;
   p.photos.forEach((ph) => files.push([`photos_${index}`, ph.file]));
   if (!p.axes.length) return base;
   return {
@@ -380,6 +385,50 @@ function StockType({ product: p, meta, errors, set }) {
   );
 }
 
+/** Product information sections the seller names (the form's InfoSections, as plain text). */
+function CardSections({ product: p, set, error }) {
+  const sections = p.sections || [];
+  const used = new Set(sections.map((x) => x.title.trim().toLowerCase()));
+  const unused = suggestedTitles(p.category, p.condition).filter((t) => !used.has(t.toLowerCase()));
+  const full = sections.length >= MAX_SECTIONS;
+  const put = (next) => set({ sections: next });
+  const update = (key, patch) => put(sections.map((x) => (x.key === key ? { ...x, ...patch } : x)));
+  const add = (title = '') => { if (!full) put([...sections, newSection(title)]); };
+  return (
+    <Box sx={{ mt: 0.5, p: { xs: 1.5, sm: 2 }, borderRadius: '14px', border: '1px solid', borderColor: error ? 'error.light' : 'divider' }}>
+      <Typography sx={{ fontWeight: 700, fontSize: 14 }}>Product information (optional)</Typography>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.25 }}>
+        Your own sections, named for this product: Ingredients, Display, Size &amp; fit… You can format them later in the product form.
+      </Typography>
+      {error && <Alert severity="error" sx={{ borderRadius: '10px', mb: 1.5 }}>{error}</Alert>}
+      <Stack spacing={1.25}>
+        {sections.map((x) => (
+          <Stack key={x.key} direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ alignItems: { sm: 'flex-start' } }}>
+            <Autocomplete freeSolo size="small" options={unused} inputValue={x.title} sx={{ width: { xs: '100%', sm: 220 }, flexShrink: 0 }}
+              onInputChange={(_, v) => update(x.key, { title: v.slice(0, MAX_TITLE) })}
+              renderInput={(params) => <TextField {...params} label="Title" placeholder="e.g. Ingredients" sx={fieldSx} />} />
+            <TextField size="small" fullWidth multiline minRows={2} label="Text" sx={fieldSx} value={x.body}
+              placeholder="A blank line starts a new paragraph."
+              onChange={(ev) => update(x.key, { body: ev.target.value })} />
+            <Tooltip title="Remove section">
+              <IconButton size="small" aria-label="Remove section" onClick={() => put(sections.filter((y) => y.key !== x.key))}>
+                <DeleteOutlineIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        ))}
+      </Stack>
+      <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1, mt: sections.length ? 1.25 : 0 }}>
+        <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={() => add()} disabled={full}
+          sx={{ borderRadius: '8px', textTransform: 'none' }}>Add a section</Button>
+        {!full && unused.slice(0, 6).map((t) => (
+          <Chip key={t} size="small" variant="outlined" label={`+ ${t}`} onClick={() => add(t)} sx={{ borderRadius: '8px' }} />
+        ))}
+      </Stack>
+    </Box>
+  );
+}
+
 /** The category's specs (attributes/), the same fields as the product form's Specs section. */
 function CardSpecs({ product: p, set, error }) {
   const { data: definitions = [], error: loadError, isLoading } = useSWR(
@@ -588,6 +637,9 @@ const ProductCard = memo(function ProductCard({ product: p, index, meta, variati
             </Grid>
             <Grid size={{ xs: 12 }}>
               <CardSpecs product={p} set={set} error={e.specs} />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <CardSections product={p} set={set} error={e.sections} />
             </Grid>
           </Grid>
         </Collapse>

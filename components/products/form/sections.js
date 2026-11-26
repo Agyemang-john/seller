@@ -26,6 +26,7 @@ import MoreDetailsSection from './MoreDetailsSection';
 import { plainText } from './fields';
 import { cleanValue, comboKey, optionLabel } from './variationOptions';
 import { deliveryOptionsError } from '../DeliveryOptions';
+import { sectionsError } from './infoSectionRules';
 
 const positive = (v) => parseFloat(v) > 0;
 
@@ -63,10 +64,10 @@ export const SECTIONS = [
     errorKeys: ['attributes'],
   },
   {
-    id: 'description', title: 'Description', subtitle: 'What shoppers read', icon: NotesOutlinedIcon,
+    id: 'description', title: 'Description', subtitle: 'Description and your own info sections', icon: NotesOutlinedIcon,
     component: DescriptionSection,
     isComplete: ({ formData }) => plainText(formData.description).length > 0,
-    errorKeys: ['description', 'features', 'specifications', 'delivery_returns'],
+    errorKeys: ['description', 'features', 'specifications', 'info_sections', 'delivery_returns'],
   },
   {
     id: 'shipping', title: 'Shipping', subtitle: 'Where it ships and how', icon: LocalShippingOutlinedIcon,
@@ -108,6 +109,8 @@ export function validateProduct({ formData, variants, isNew }) {
   if (!(formData.available_in_regions?.length > 0)) errors.available_in_regions = 'Choose at least one country.';
   const delivery = deliveryOptionsError(formData.delivery_options || []);
   if (delivery) errors.delivery_options = delivery;
+  const sections = sectionsError(formData.info_sections);
+  if (sections) errors.info_sections = sections;
 
   if (formData.variant !== 'None') {
     const axes = formData.variation_axes || [];
