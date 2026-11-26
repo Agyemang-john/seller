@@ -60,6 +60,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { id: 'add-product',   text: 'Add a product',      path: '/products/product',     capability: CAP.MANAGE_CATALOG, searchOnly: true, keywords: 'new listing create item' },
       { id: 'sell-existing', text: 'Sell an existing item', path: '/products/sell-existing', capability: CAP.MANAGE_CATALOG, keywords: 'offer catalog match' },
       { id: 'bulk-upload',   text: 'Bulk upload',        path: '/products/bulk-upload', capability: CAP.MANAGE_CATALOG, keywords: 'csv spreadsheet import' },
+      { id: 'photo-studio',  text: 'Photo studio',       path: '/products/photo-studio', capability: CAP.MANAGE_CATALOG, keywords: 'remove background white edit photo image picture crop resize' },
       { id: 'low-stock',     text: 'Low-stock products', path: '/products?stock=low',   capability: CAP.MANAGE_CATALOG, searchOnly: true, keywords: 'inventory out of stock' },
     ],
   },

@@ -81,6 +81,11 @@ const FAQ = [
   ['My accents or ₵ look wrong after uploading.', 'Save the file as "CSV UTF-8" in Excel. Google Sheets downloads are always fine.'],
   ['Can I update prices or stock of existing products in bulk?', <>Not on this page: it adds new products. Use the <Link href="/tools/bulk-edit">Bulk edit</Link> tool (if your plan includes it) to change many prices and stock levels at once, or edit products one by one from Products.</>],
   ['How many products can I add?', 'Up to 500 per upload, within your plan\'s product limit (shown at the top of the upload page).'],
+  ['Is a product added in bulk different from one added on its own?', 'No. It is the same product: same review, same product page, same delivery prices, same filters. You can open and edit it from Products like any other.'],
+  ['How do I add a video or "Buy it with" items?', 'Those are added one product at a time: after uploading, open the product from Products › Edit, add the video (up to 15 MB) or the "Buy it with" items, and save.'],
+  ['"is not a spec of this category".', 'Specs depend on the category. On the upload page, open "Specs by category", choose the category and copy the names from there. Or leave the specs column empty and add them later.'],
+  ['The report says "Add its specs" but the product was saved.', 'The product is saved, but some details shoppers filter by are missing. Open it from Products and fill in the Specs section: it helps shoppers find it.'],
+  ['My item comes from abroad. What do I put?', 'Set stock_type to ships_from_abroad and sourcing_days to how long it takes to reach you, e.g. 4-6 weeks. Shoppers see "Ships from abroad" and the extra time before they buy.'],
 ];
 
 export default function BulkUploadGuidePage() {
@@ -88,6 +93,7 @@ export default function BulkUploadGuidePage() {
   const [meta, setMeta] = useState(null);
   useEffect(() => { client.get('/api/v1/vendor/products/bulk-upload/meta/').then((r) => setMeta(r.data)).catch(() => {}); }, [client]);
   const photos = meta?.max_images_per_product;
+  const versionPhotos = meta?.max_images_per_variant || 0;
 
   return (
     // minmax(0, 1fr): wide tables scroll inside their box instead of widening the page on phones.
@@ -101,7 +107,7 @@ export default function BulkUploadGuidePage() {
       <P>Add up to 500 products at once, with their photos and versions (colours, sizes, flavours, pack sizes and more). This guide takes about 5 minutes to read. New to selling here? Start with the <Link href="/help/selling-guide">selling guide</Link>.</P>
 
       <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap', mb: 1 }}>
-        {[['two-ways', 'Two ways'], ['browser', 'In the browser'], ['spreadsheet', 'Spreadsheet'], ['versions', 'Versions'], ['photos', 'Photos'], ['after', 'After uploading'], ['columns', 'All columns'], ['faq', 'Questions']].map(([id, label]) => (
+        {[['two-ways', 'Two ways'], ['same', 'Same as one by one'], ['browser', 'In the browser'], ['spreadsheet', 'Spreadsheet'], ['versions', 'Versions'], ['photos', 'Photos'], ['specs', 'Specs'], ['stock-type', 'Abroad / made to order'], ['after', 'After uploading'], ['columns', 'All columns'], ['faq', 'Questions']].map(([id, label]) => (
           <Chip key={id} label={label} component="a" href={`#${id}`} clickable variant="outlined" sx={{ borderRadius: '10px', fontWeight: 600 }} />
         ))}
       </Stack>
@@ -121,13 +127,49 @@ export default function BulkUploadGuidePage() {
       </Stack>
       <P>Have ready: the category of each product, the price, how many you have, the <strong>packed weight</strong> in kg (it sets the delivery price) and good photos.</P>
 
+      <H id="same">The same as adding products one by one</H>
+      <P>A product added in bulk is exactly the same as one added with <Link href="/products/product">Add product</Link>: it goes through the same review, gets the same product page, delivery prices and search filters, and you edit it the same way afterwards. Everything on the product form can be filled in here too:</P>
+      <TableContainer sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '12px', mb: 2 }}>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 700 }}>On the product form</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>In the browser cards</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>In a spreadsheet</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {[
+              ['Name, category, condition', 'On the card', 'title, category, condition'],
+              ['Price, old price, stock, weight', 'On the card / More details', 'price, compare_at_price, stock, weight_kg'],
+              ['Your cost per item', 'More details', 'unit_cost'],
+              ['Main photo and more photos', 'Photos on the card', 'image_url, more_image_urls'],
+              ['Versions (colour, size, flavour…)', 'Comes in versions?', 'option1_name … option3_value, one row per version'],
+              ['Photos of each version', 'Photos under each version', 'image_url and more_image_urls on the version\'s row'],
+              ['Specs (details shoppers filter by)', 'More details › Specs', 'specs'],
+              ['Ships from abroad / made to order', 'More details › Stock type', 'stock_type, sourcing_days, sourced_from'],
+              ['Ships to, delivery methods', 'More details (start as your latest product\'s)', 'ships_to, delivery_methods (empty = your latest product\'s)'],
+              ['Description, key features', 'More details', 'description, features, specifications, delivery_returns'],
+              ['Brand, SKU, barcode, return days', 'More details', 'brand, seller_sku, barcode, return_days'],
+            ].map(([a, b, c]) => (
+              <TableRow key={a}>
+                <TableCell sx={{ fontSize: 13, fontWeight: 600, verticalAlign: 'top' }}>{a}</TableCell>
+                <TableCell sx={{ fontSize: 13, verticalAlign: 'top' }}>{b}</TableCell>
+                <TableCell sx={{ fontSize: 12.5, fontFamily: 'ui-monospace, monospace', verticalAlign: 'top', wordBreak: 'break-word' }}>{c}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      <P>Only two things are added afterwards, one product at a time: a <strong>video</strong> and <strong>&ldquo;Buy it with&rdquo;</strong> items. Open the product from Products › Edit once it is uploaded.</P>
+
       <H id="browser">Adding in the browser</H>
       <Steps items={[
         ['Open Products › Add in bulk', 'Three empty cards are ready. Add more with “Add product” at the bottom.'],
         ['Fill in the essentials', 'Name, category (type to search), price, stock and packed weight. Pick the condition if it isn\'t new.'],
-        ['Add photos', `Tap “Photo” and choose one or more pictures; the first is the main photo${photos ? ` (your plan allows ${photos} per product)` : ''}. Photos are squared with a white background automatically.`],
-        ['Versions, if any', 'Tap “Comes in versions?”, pick what changes (e.g. Flavour and Size), type the values once and tap “Add versions”. Then set each version\'s price and stock, and a photo if it looks different.'],
-        ['More details (optional)', 'Old price, brand, description, SKU, barcode, return days. Ships-to countries and delivery methods start as your latest product\'s; change them here if needed.'],
+        ['Add photos', `Tap “Photos” and select several at once, or drag them from your computer onto the card, just like on the product form. The first is the main photo; tap “Make main” on another to swap${photos != null ? ` (a main photo plus ${photos} more on your plan)` : ''}. Photos are squared on a white background and checked automatically. The same works for each version's photos.`],
+        ['Versions, if any', `Tap “Comes in versions?”, pick what changes (e.g. Flavour and Size), type the values once and tap “Add versions”. Then set each version's price and stock, and a photo if it looks different${versionPhotos ? ` (up to ${versionPhotos + 1} photos per version on your plan)` : ''}.`],
+        ['More details (optional)', 'Old price, your cost, brand, description, key features, SKU, barcode, return days, stock type (in stock, from abroad, made to order) and the category\'s specs. Ships-to countries and delivery methods start as your latest product\'s; change them here if needed.'],
         ['Upload', 'Tap “Upload”. Saved products leave the list; any with problems stay, marked in red, so you can fix them and upload again.'],
       ]} />
       <Alert severity="info" sx={{ borderRadius: '12px', mb: 2 }}>Use <strong>Duplicate</strong> on a card for similar products: everything is copied except the name, SKU and photos.</Alert>
@@ -160,24 +202,54 @@ export default function BulkUploadGuidePage() {
         [false, 'Don\'t put the colour or size in the title: shoppers pick them on the product page.'],
         [false, 'Two rows can\'t be the same version (e.g. Vanilla / 500 g twice).'],
       ]} />
+      <P>Each version row can also have its own <code>unit_cost</code> (what it costs you) and <code>more_image_urls</code> (more photos of that version{versionPhotos ? `, up to ${versionPhotos} on your plan` : ', on plans that include extra version photos'}). On the first row, <code>more_image_urls</code> are the product&apos;s own extra photos.</P>
       <P>A third option goes in <code>option3_name</code> / <code>option3_value</code>. Put first the option shoppers choose first (usually Flavour, Colour or Scent): on the product page, each next option only shows what exists for the choices above it. Only write the versions you actually sell. The <Link href="/help/selling-guide#versions">selling guide</Link> explains versions with a try-it example.</P>
 
       <H id="photos">Photos</H>
       <Rules items={[
         [true, 'JPG, PNG or WebP, at least 400 × 400 pixels (1000+ looks best), up to 10 MB.'],
         [true, 'Main photo: the product on a plain white or light background, filling most of the frame.'],
-        [true, `In a spreadsheet, put the main photo in image_url and more in more_image_urls, separated by ;${photos ? ` (up to ${photos} per product on your plan)` : ''}.`],
+        [true, `In a spreadsheet, put the main photo in image_url and more in more_image_urls, separated by ;${photos != null ? ` (a main photo plus up to ${photos} more on your plan, the same as the product form)` : ''}.`],
         [true, 'Links that work: a direct link to the image file (often ends in .jpg/.png), a Google Drive link shared as “Anyone with the link”, or a Dropbox share link.'],
         [false, 'Links to a web page, a Google Photos album, Instagram or WhatsApp don\'t work: they aren\'t the image itself.'],
         [false, 'No watermarks, phone numbers or text on photos.'],
       ]} />
       <P>When photos come from links, your upload runs in the background: photos are downloaded, checked, resized and stripped of hidden location data. You can leave the page; products appear in My Products as they are added.</P>
 
+      <H id="specs">Specs: the details shoppers filter by</H>
+      <P>Many categories have specs, such as Material, Screen size or Waterproof. Shoppers use them to filter and compare, so products with specs are easier to find. They are optional, but fill in as many as you can.</P>
+      <Rules items={[
+        [true, 'In the browser: choose the category, open “More details” and fill in the Specs box. It shows the same fields as the product form.'],
+        [true, 'In a spreadsheet: write them in the specs column as Name: value, separated by ; — for example: Material: Cotton; Capacity: 12 L; Waterproof: no'],
+        [true, 'On the upload page, “Specs by category” lists each category\'s spec names and allowed values, with a line you can copy.'],
+        [true, 'Choices must be one of the listed values (any capitals). Several values for one spec: separate them with commas. Numbers can include the unit (12 L). Yes/no specs: yes or no.'],
+        [false, 'Don\'t use spec names from another category: the row will be refused and the report says which names to use.'],
+      ]} />
+      <Sheet headers={['title', 'category', 'price', 'stock', 'weight_kg', 'specs']} rows={[
+        ['Canvas Backpack', 'backpacks', '180.00', '15', '0.9', 'Material: Canvas; Capacity: 20 L; Waterproof: yes'],
+      ]} />
+
+      <H id="stock-type">Items from abroad or made to order</H>
+      <P>If you don&apos;t hold the item yet when it sells, say so, the same as on the product form. Shoppers then see the extra time before they buy, and your ship-by date moves with it.</P>
+      <Sheet headers={['title', 'stock_type', 'sourcing_days', 'sourced_from']} rows={[
+        ['Smart Watch X2', 'ships_from_abroad', '4-6 weeks', 'China'],
+        ['Kente Stole', 'made_to_order', '7-14', ''],
+        ['Cotton Tote Bag', '', '', ''],
+      ]} />
+      <Rules items={[
+        [true, 'stock_type: in_stock (or empty), ships_from_abroad or made_to_order.'],
+        [true, 'sourcing_days: shortest-longest time until the item is in your hands, in days (7-14) or weeks (4-6 weeks). At most 10 weeks.'],
+        [true, 'sourced_from: the country you order it from, for ships_from_abroad (optional).'],
+        [false, 'Don\'t mark imported items as in stock: shoppers would be promised a delivery date you can\'t meet.'],
+      ]} />
+
       <H id="after">After uploading</H>
       <Rules items={[
         [true, 'With a photo: the product goes to review. You\'re notified when it\'s live.'],
         [true, 'Without a usable photo: it\'s saved as a draft. The report has a “Finish” button for each; add a photo and save to send it to review.'],
         [true, 'With a problem: it isn\'t saved, and the report says what to fix. Fix those rows only and upload them again.'],
+        [true, 'With a note (e.g. a photo link that failed, or specs to add): it is saved; the note tells you what to finish from Products.'],
+        [true, 'Want a video or “Buy it with” items? Open the product from Products › Edit and add them there.'],
       ]} />
 
       <H id="columns">All spreadsheet columns</H>

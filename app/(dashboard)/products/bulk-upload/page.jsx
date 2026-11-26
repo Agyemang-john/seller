@@ -11,7 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Alert, AlertTitle, Box, Button, Chip, CircularProgress, Collapse, Divider, IconButton, LinearProgress,
+  Alert, AlertTitle, Autocomplete, Box, Button, Chip, CircularProgress, Collapse, Divider, IconButton, LinearProgress,
   Stack, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, TextField, Tooltip, Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
@@ -70,6 +70,8 @@ function parseCsv(text) {
 const ALIASES = {
   sub_category_slug: 'category', brand_slug: 'brand', old_price: 'compare_at_price', total_quantity: 'stock',
   product_type: 'condition', weight: 'weight_kg', gtin: 'barcode', return_period_days: 'return_days',
+  cost: 'unit_cost', cost_price: 'unit_cost', fulfilment: 'stock_type', fulfilment_type: 'stock_type',
+  attributes: 'specs',
 };
 const canonical = (h) => { const k = h.trim().toLowerCase().replace(/ /g, '_'); return ALIASES[k] || k; };
 
@@ -248,6 +250,70 @@ function LookupPanel({ title, hint, items, code, label }) {
             ))}
             {!shown.length && <Typography variant="caption" color="text.disabled">Nothing matches.</Typography>}
           </Box>
+        </Box>
+      </Collapse>
+    </Box>
+  );
+}
+
+/** The specs of one category, for the `specs` column: names, allowed values and a line to copy. */
+function SpecsLookup({ categories }) {
+  const [open, setOpen] = useState(false);
+  const [category, setCategory] = useState(null);
+  const [defs, setDefs] = useState(null);
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!category) { setDefs(null); return; }
+    let alive = true;
+    setDefs(undefined);
+    createAxiosClient().get(`/api/v1/attributes/sub-category/${category.id}/`)
+      .then((r) => { if (alive) setDefs(r.data.results || []); })
+      .catch(() => { if (alive) setDefs([]); });
+    return () => { alive = false; };
+  }, [category]);
+  const example = (d) => (d.type === 'choice' ? d.options[0]?.value || '' : d.type === 'number' ? `10${d.unit ? ` ${d.unit}` : ''}`
+    : d.type === 'boolean' ? 'yes' : '…');
+  const line = (defs || []).map((d) => `${d.name}: ${example(d)}`).join('; ');
+  const copy = () => navigator.clipboard?.writeText(line).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1200); }).catch(() => {});
+
+  return (
+    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '12px', overflow: 'hidden' }}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 2, py: 1.25, cursor: 'pointer' }} onClick={() => setOpen((o) => !o)}>
+        <Box>
+          <Typography sx={{ fontWeight: 700, fontSize: 14 }}>Specs by category</Typography>
+          <Typography variant="caption" color="text.secondary">For the specs column</Typography>
+        </Box>
+        <IconButton size="small" aria-label={open ? 'Hide' : 'Show'}>{open ? <ExpandLessIcon /> : <ExpandMoreIcon />}</IconButton>
+      </Stack>
+      <Collapse in={open} unmountOnExit>
+        <Divider />
+        <Box sx={{ p: 1.5 }}>
+          <Autocomplete size="small" options={categories || []} value={category} onChange={(_, v) => setCategory(v)}
+            getOptionLabel={(o) => o.label || o.title || ''} isOptionEqualToValue={(o, v) => o.id === v?.id}
+            renderInput={(params) => <TextField {...params} placeholder="Choose a category…" />} sx={{ mb: 1 }} />
+          {defs === undefined && <LinearProgress sx={{ borderRadius: 2 }} />}
+          {defs && !defs.length && <Typography variant="caption" color="text.secondary">This category has no specs: leave the column empty.</Typography>}
+          {defs?.length > 0 && (
+            <>
+              <Box sx={{ maxHeight: 260, overflowY: 'auto' }}>
+                {defs.map((d) => (
+                  <Box key={d.slug} sx={{ py: 0.75, borderBottom: '1px solid', borderColor: 'divider' }}>
+                    <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
+                      {d.name}{d.unit ? ` (${d.unit})` : ''}{d.required ? ' · asked for' : ''}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {d.type === 'choice' ? `${d.multi ? 'One or more, separated by commas: ' : 'One of: '}${d.options.map((o) => o.value).join(', ')}`
+                        : d.type === 'number' ? 'A number' : d.type === 'boolean' ? 'yes or no' : 'Any text'}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+              <Button size="small" onClick={copy} endIcon={<ContentCopyOutlinedIcon sx={{ fontSize: 14 }} />}
+                sx={{ mt: 1, textTransform: 'none', fontFamily: 'ui-monospace, monospace', fontSize: 12, color: 'text.secondary', textAlign: 'left' }}>
+                {copied ? 'Copied' : line}
+              </Button>
+            </>
+          )}
         </Box>
       </Collapse>
     </Box>
@@ -561,6 +627,7 @@ export default function BulkUploadPage() {
               <LookupPanel title="Brands" hint="For the brand column" items={meta.brands} code={(i) => i.slug} label={(i) => i.title} />
               <LookupPanel title="Countries" hint="For ships_to" items={meta.countries} code={(i) => i.code || i.name} label={(i) => i.name} />
               <LookupPanel title="Delivery methods" hint="For delivery_methods" items={meta.delivery_methods} code={(i) => i.name} label={(i) => `${i.name} (${i.min_days}-${i.max_days} days)`} />
+              <SpecsLookup categories={meta.sub_categories} />
               {meta.defaults?.ships_to?.length > 0 && (
                 <Typography variant="caption" color="text.secondary">
                   Left empty, ships_to is {meta.defaults.ships_to.map((c) => c.name).join(', ')} and delivery is {meta.defaults.delivery_methods.map((d) => d.name).join(', ') || 'not set'}, like your latest product.

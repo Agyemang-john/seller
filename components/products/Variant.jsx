@@ -24,7 +24,9 @@ import useSWR from 'swr';
 import { validateImage, squareifyImage } from './fileValidators';
 import { newVariantKey } from './galleryUploads';
 import VariantGallery from './VariantGallery';
-import { addVariantPhotos, imagesOnly, reportProblems } from './photoBatch';
+import { addVariantPhotos, imagesOnly, reportOrFix, reportProblems } from './photoBatch';
+import { usePhotoStudio } from '@/components/studio/usePhotoStudio';
+import AutoFixHighOutlinedIcon from '@mui/icons-material/AutoFixHighOutlined';
 import { fieldSx, NumberField } from './form/fields';
 import {
   FALLBACK_VARIATIONS, cleanValue, combinations, comboKey, customKey, optionLabel, orderedTypes,
@@ -155,7 +157,7 @@ export function QuickAdd({ axes, suggestionsFor, existing, onCreate }) {
 
 // ── 3. One version ───────────────────────────────────────────────────────────
 function VariantCard({ variant, index, axes, colorCode, suggestionsFor, imagePreview, galleryLimit, error,
-  onFieldChange, onOptionChange, onImageChange, onGalleryChange, onRemove }) {
+  onFieldChange, onOptionChange, onImageChange, onEditImage, onGalleryChange, onRemove }) {
   const inputId = `variant-img-${variant.key || index}`;
   const label = optionLabel(variant, axes);
 
@@ -179,7 +181,17 @@ function VariantCard({ variant, index, axes, colorCode, suggestionsFor, imagePre
 
       <Box sx={{ p: 2 }}>
         <Grid container spacing={1.5}>
-          <Grid size={{ xs: 4, sm: 3 }}>
+          <Grid size={{ xs: 4, sm: 3 }} sx={{ position: 'relative' }}>
+            {imagePreview && onEditImage && (
+              <Tooltip title="Edit in Photo studio">
+                <IconButton aria-label={`Edit the photo of ${label || `version ${index + 1}`} in the Photo studio`} size="small"
+                  onClick={() => onEditImage(index)}
+                  sx={{ position: 'absolute', zIndex: 1, left: 6, bottom: 6, width: 30, height: 30, bgcolor: 'rgba(0,0,0,0.6)', color: '#fff',
+                    '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' } }}>
+                  <AutoFixHighOutlinedIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </Tooltip>
+            )}
             {/* Several at once: the first is this version's photo, the rest go to its "More photos" (plan limit applies). */}
             <input type="file" accept="image/*" multiple hidden id={inputId} onChange={async (e) => {
               const [first, ...rest] = imagesOnly(e.target.files);
@@ -321,12 +333,17 @@ const VariantRow = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   [setLocalVariants]);
 
+  const studio = usePhotoStudio();
+  const openStudio = studio.open;
+
   const handleImageChange = useCallback(async (index, file) => {
     if (!file) return;
     const squaredFile = await squareifyImage(file, 'pad', '#FFFFFF');
     const validation = await validateImage(squaredFile, { maxSizeMB: 2, minResolution: 400, maxResolution: 1800, checkBackground: true });
     if (!validation.valid) {
-      Swal.fire({ icon: 'error', title: 'Invalid image', html: validation.errors.join('<br/>') });
+      // Offer the Photo studio, which fixes the background and size.
+      const [fixed] = await reportOrFix([validation.errors.join(' ')], [file], { open: openStudio });
+      if (fixed) await handleImageChange(index, fixed);
       return;
     }
     const reader = new FileReader();
@@ -336,7 +353,15 @@ const VariantRow = ({
     };
     reader.readAsDataURL(squaredFile);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setVariantImagePreviews, setLocalVariants]);
+  }, [setVariantImagePreviews, setLocalVariants, openStudio]);
+
+  const handleEditImage = useCallback(async (index) => {
+    const v = localVariants[index];
+    const source = v?.image instanceof File ? v.image : variantImagePreviews[index];
+    if (!source) return;
+    const [file] = (await openStudio([{ source, name: `version-${index + 1}` }])) || [];
+    if (file) await handleImageChange(index, file);
+  }, [localVariants, variantImagePreviews, openStudio, handleImageChange]);
 
   // New versions start at the product's price: a variant price is what the
   // shopper pays, and an untouched 0 would sell it for free.
@@ -439,6 +464,7 @@ const VariantRow = ({
                         onFieldChange={handleFieldChange}
                         onOptionChange={handleOptionChange}
                         onImageChange={handleImageChange}
+                        onEditImage={handleEditImage}
                         onGalleryChange={handleGalleryChange}
                         onRemove={handleRemove}
                       />
@@ -455,6 +481,7 @@ const VariantRow = ({
           )}
         </Stack>
       )}
+      {studio.element}
     </Box>
   );
 };

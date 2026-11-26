@@ -16,7 +16,7 @@ const AT_ONCE = 3;
 const escape = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 export const imagesOnly = (fileList) => Array.from(fileList || []).filter((f) => f.type?.startsWith('image/'));
 
-/** One photo → { file } (squared, passed) or { error } (safe HTML). */
+/** One photo → { file } (squared, passed) or { error } (safe HTML). The studio's own output always passes. */
 export async function checkPhoto(file) {
   try {
     const squared = await squareifyImage(file, 'pad', '#FFFFFF');
@@ -41,7 +41,34 @@ export async function checkPhotos(files, onProgress) {
     }
   };
   await Promise.all(Array.from({ length: Math.min(AT_ONCE, files.length) }, worker));
-  return { good: results.filter((r) => r.file).map((r) => r.file), problems: results.filter((r) => r.error).map((r) => r.error) };
+  return {
+    good: results.filter((r) => r.file).map((r) => r.file),
+    problems: results.filter((r) => r.error).map((r) => r.error),
+    // The originals that didn't pass: the photo studio can usually fix them.
+    failed: files.filter((_, i) => results[i].error),
+  };
+}
+
+/**
+ * Report photos that didn't pass and, when the photo studio is at hand
+ * (studio = usePhotoStudio()), offer to fix them there. Resolves to the fixed
+ * files (ready to add), or [] when the seller declines.
+ */
+export async function reportOrFix(problems, failed, studio) {
+  if (!problems.length) return [];
+  if (!studio || !failed?.length) { reportProblems(problems); return []; }
+  const { isConfirmed } = await Swal.fire({
+    icon: 'info',
+    title: failed.length === 1 ? 'This photo needs a touch-up' : `${failed.length} photos need a touch-up`,
+    html: `${problems.join('<br/>')}<br/><br/>The <b>Photo studio</b> can fix ${failed.length === 1 ? 'it' : 'them'}: it removes the background, sizes the photo and keeps it looking real.`,
+    showCancelButton: true,
+    confirmButtonText: 'Fix in Photo studio',
+    cancelButtonText: 'Not now',
+    reverseButtons: true,
+  });
+  if (!isConfirmed) return [];
+  const files = await studio.open(failed.map((f) => ({ source: f, name: f.name })));
+  return (files || []).filter(Boolean);
 }
 
 /** "N didn't fit" note for the plan limit. */

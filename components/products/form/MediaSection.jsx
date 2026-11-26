@@ -5,18 +5,23 @@
  * photos at once: with no main photo yet, the first becomes the main photo and
  * the rest fill the gallery up to the plan's limit. Every photo is squared and
  * checked (photoBatch.js). On a phone the picker offers the camera as well.
+ * Photos that don't pass can be fixed in the Photo studio (components/studio),
+ * and any photo can be opened there with its Studio button.
  */
 
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
+import { takeStudioPhotos } from '@/components/studio/outbox';
 import { Alert, Box, Button, CircularProgress, IconButton, Stack, Typography } from '@mui/material';
 import AddPhotoAlternateOutlinedIcon from '@mui/icons-material/AddPhotoAlternateOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import VideocamOutlinedIcon from '@mui/icons-material/VideocamOutlined';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
+import AutoFixHighOutlinedIcon from '@mui/icons-material/AutoFixHighOutlined';
 import useSWR from 'swr';
 import { fetcher } from '@/components/dashboard/DashboardUI';
-import { checkPhoto, checkPhotos, imagesOnly, overLimitNote, reportProblems, useBatchProgress, useDropPhotos } from '../photoBatch';
+import { checkPhoto, checkPhotos, imagesOnly, overLimitNote, reportOrFix, useBatchProgress, useDropPhotos } from '../photoBatch';
+import { photoName, usePhotoStudio } from '@/components/studio/usePhotoStudio';
 import { FieldGroup } from './fields';
 
 const TILE = { borderRadius: '14px', overflow: 'hidden', position: 'relative', aspectRatio: '1', border: '1px solid', borderColor: 'divider', bgcolor: 'action.hover' };
@@ -40,6 +45,7 @@ export default function MediaSection({ formErrors, images, setImages, imagePrevi
   const limit = plan?.max_images_per_product ?? null; // null: no limit
   const filled = images.filter((i) => i.previewUrl);
   const room = limit == null ? Infinity : Math.max(limit - filled.length, 0);
+  const studio = usePhotoStudio();
 
   /**
    * main: 'fill' = the first photo becomes the main photo if there is none yet,
@@ -53,18 +59,21 @@ export default function MediaSection({ formErrors, images, setImages, imagePrevi
     const accepted = files.slice(0, room);
     const skipped = files.length - accepted.length;
 
+    const failed = [];
+    let mainFailed = false;
     const problems = await run((mainFile ? 1 : 0) + accepted.length, async (onProgress) => {
       const out = [];
       if (mainFile) {
         const r = await checkPhoto(mainFile);
         if (r.file) handleFileChange({ target: { files: [r.file] } }, 'image');
-        else out.push(r.error);
+        else { out.push(r.error); failed.push(mainFile); mainFailed = true; }
         onProgress(1, (mainFile ? 1 : 0) + accepted.length);
       }
       if (accepted.length) {
         const offset = mainFile ? 1 : 0;
-        const { good, problems: bad } = await checkPhotos(accepted, (done) => onProgress(done + offset, accepted.length + offset));
+        const { good, problems: bad, failed: badFiles } = await checkPhotos(accepted, (done) => onProgress(done + offset, accepted.length + offset));
         out.push(...bad);
+        failed.push(...badFiles);
         const items = await Promise.all(good.map(async (file) => ({ id: null, file, previewUrl: await readAsDataUrl(file), title: '' })));
         // Drop empty slots left by the old form; keep order: existing first, new after.
         if (items.length) setImages((prev) => [...prev.filter((i) => i.previewUrl), ...items]);
@@ -72,10 +81,40 @@ export default function MediaSection({ formErrors, images, setImages, imagePrevi
       return out;
     });
     if (skipped > 0) problems.push(overLimitNote(skipped, limit));
-    reportProblems(problems);
+    const fixed = await reportOrFix(problems, failed, studio);
+    // The studio's photos pass the checks: add them where the originals were going.
+    if (fixed.length) addPhotos(fixed, mainFailed ? (main === 'replace' ? 'replace' : 'fill') : 'none');
   };
 
+  /** Open photos in the studio; each finished one replaces its original. */
+  const editInStudio = async (targets) => {
+    const files = await studio.open(targets.map((t) => ({ source: t.source, name: photoName(t.source, t.name) })),
+      { title: targets.length > 1 ? 'Photo studio: all photos' : 'Photo studio' });
+    if (!files) return;
+    for (let i = 0; i < targets.length; i += 1) {
+      const file = files[i];
+      if (!file) continue;
+      const t = targets[i];
+      if (t.kind === 'main') {
+        handleFileChange({ target: { files: [file] } }, 'image');
+      } else {
+        // eslint-disable-next-line no-await-in-loop
+        const previewUrl = await readAsDataUrl(file);
+        setImages((prev) => prev.map((img) => (img === t.img ? { ...img, id: null, file, previewUrl } : img)));
+      }
+    }
+  };
+  const mainTarget = imagePreview ? [{ kind: 'main', source: imagePreview, name: 'main-photo' }] : [];
+  const galleryTargets = filled.map((img, i) => ({ kind: 'gallery', img, source: img.file || img.previewUrl, name: `photo-${i + 2}` }));
+
   const { dragging, dropProps } = useDropPhotos((files) => addPhotos(files, 'fill'), busy);
+
+  // Photos sent from the Photo studio page ("Create a product with these photos").
+  useEffect(() => {
+    const fromStudio = takeStudioPhotos();
+    if (fromStudio.length) addPhotos(fromStudio, 'fill');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const removePhoto = (index) => setImages((prev) => prev.filter((_, i) => i !== index));
 
@@ -125,9 +164,29 @@ export default function MediaSection({ formErrors, images, setImages, imagePrevi
               </Stack>
             )}
           </Box>
-          <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
-            JPG or PNG, at least 400 px, up to 2 MB. Show the whole item, centred, with nothing else in the picture.
-          </Typography>
+          <Stack spacing={1.5} alignItems={{ xs: 'center', sm: 'flex-start' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+              JPG or PNG, at least 400 px, up to 2 MB. Show the whole item, centred, with nothing else in the picture.
+            </Typography>
+            {imagePreview && (
+              <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
+                <Button size="small" variant="outlined" startIcon={<AutoFixHighOutlinedIcon />} disabled={busy}
+                  onClick={() => editInStudio(mainTarget)}
+                  sx={{ borderRadius: '10px', fontWeight: 700, borderColor: 'divider', color: 'text.primary', minHeight: 40 }}>
+                  Edit in Photo studio
+                </Button>
+                {filled.length > 0 && (
+                  <Button size="small" disabled={busy} onClick={() => editInStudio([...mainTarget, ...galleryTargets])}
+                    sx={{ borderRadius: '10px', fontWeight: 600, color: 'text.secondary', minHeight: 40 }}>
+                    All {filled.length + 1} photos
+                  </Button>
+                )}
+              </Stack>
+            )}
+            <Typography variant="caption" color="text.secondary">
+              The Photo studio removes the background, sizes the photo and corrects the light, on your device.
+            </Typography>
+          </Stack>
         </Box>
         {formErrors.image && <Alert severity="error" sx={{ borderRadius: '10px' }}>{formErrors.image}</Alert>}
       </FieldGroup>
@@ -141,6 +200,10 @@ export default function MediaSection({ formErrors, images, setImages, imagePrevi
                 sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
               <IconButton aria-label={`Remove photo ${index + 1}`} size="small" onClick={() => removePhoto(images.indexOf(img))} sx={removeBtn}>
                 <CloseIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+              <IconButton aria-label={`Edit photo ${index + 1} in the Photo studio`} size="small" disabled={busy}
+                onClick={() => editInStudio([galleryTargets[index]])} sx={{ ...removeBtn, top: 'auto', right: 'auto', bottom: 6, left: 6, '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' } }}>
+                <AutoFixHighOutlinedIcon sx={{ fontSize: 16 }} />
               </IconButton>
             </Box>
           ))}
@@ -182,6 +245,7 @@ export default function MediaSection({ formErrors, images, setImages, imagePrevi
         )}
         {formErrors.video && <Alert severity="error" sx={{ borderRadius: '10px' }}>{formErrors.video}</Alert>}
       </FieldGroup>
+      {studio.element}
     </Box>
   );
 }
