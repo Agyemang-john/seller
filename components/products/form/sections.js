@@ -65,8 +65,10 @@ export const SECTIONS = [
   },
   {
     id: 'description', title: 'Description', subtitle: 'Description and your own info sections', icon: NotesOutlinedIcon,
+    optional: true,   // the seller's own sections can describe the product instead
     component: DescriptionSection,
-    isComplete: ({ formData }) => plainText(formData.description).length > 0,
+    isComplete: ({ formData }) => plainText(formData.description).length > 0
+      || (formData.info_sections || []).some((s) => (s.title || '').trim() && plainText(s.body).length > 0),
     errorKeys: ['description', 'features', 'specifications', 'info_sections', 'delivery_returns'],
   },
   {

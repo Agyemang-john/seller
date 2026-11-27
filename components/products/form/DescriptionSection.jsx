@@ -8,7 +8,7 @@ import InfoSections from './InfoSections';
 const Editor = dynamic(() => import('../Editor'), { ssr: false, loading: () => <Skeleton variant="rounded" height={140} /> });
 
 const BLOCKS = [
-  { field: 'description', label: 'Description', hint: 'What it is, who it is for, and why it is worth buying.', placeholder: 'Describe the product…' },
+  { field: 'description', label: 'Description', hint: 'Optional. What it is, who it is for, and why it is worth buying.', placeholder: 'Describe the product…' },
   { field: 'features', label: 'Key features', hint: 'Short points shoppers scan first.', placeholder: 'One feature per line…' },
   { field: 'delivery_returns', label: 'Delivery & returns note', hint: 'Optional. Anything special about sending or returning this item.', placeholder: 'e.g. Fragile, packed in a hard box…' },
 ];
